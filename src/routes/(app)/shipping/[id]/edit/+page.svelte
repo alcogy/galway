@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ArrowLeft, Plus, Trash2 } from '@lucide/svelte';
-	import { Button, Card, Label, Select } from '$lib/components';
+	import { Button, Card, Label, SearchableSelect } from '$lib/components';
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
 
@@ -77,7 +77,7 @@
 					{#each editDetails as detail, i (i)}
 						<div class="details-row">
 							<div class="col-product">
-								<Select
+								<SearchableSelect
 									options={productOptions}
 									placeholder="商品を選択"
 									bind:value={detail.product_id}
