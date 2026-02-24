@@ -1,6 +1,8 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-
+import { getDb } from '$lib/server/db';
+import * as schema from '$lib/server/db/schema';
+import { parseCSV } from '$lib/utils/csv';
 export interface Supplier {
 	id: string;
 	code: string;
@@ -34,5 +36,64 @@ export const actions = {
 	},
 	delete: async () => {
 		return fail(501, { error: 'Not implemented' });
+	},
+	import: async ({ request }) => {
+		const data = await request.formData();
+		const file = data.get('file') as File | null;
+		const mode = data.get('mode')?.toString();
+
+		if (!file) return fail(400, { error: 'ファイルが選択されていません' });
+		if (mode !== 'append' && mode !== 'replace') return fail(400, { error: '無効なインポートモードです' });
+
+		const text = await file.text();
+		const rows = parseCSV(text);
+
+		if (rows.length < 2) return fail(400, { error: 'CSVにデータがありません（ヘッダー行 + 1件以上のデータが必要です）' });
+
+		const [header, ...dataRows] = rows;
+
+		//const nameIdx = header.indexOf('商品名');
+		//const unitPriceIdx = header.indexOf('単価');
+		//const unitIdx = header.indexOf('単位');
+		//const categoryIdIdx = header.indexOf('カテゴリID');
+
+		//if (nameIdx === -1) {
+		//	return fail(400, { error: 'CSVに「商品名」列が必要です' });
+		//}
+
+		//const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+		//const records = dataRows.map((row) => {
+		//	const rawPrice = unitPriceIdx >= 0 ? row[unitPriceIdx]?.trim() : '';
+		//	const unit_price = rawPrice ? parseInt(rawPrice.replace(/[^0-9-]/g, ''), 10) || 0 : 0;
+		//	const rawCategoryId = categoryIdIdx >= 0 ? row[categoryIdIdx]?.trim() : '';
+		//	const category_id = rawCategoryId && UUID_RE.test(rawCategoryId) ? rawCategoryId : null;
+		//	return {
+		//		name: row[nameIdx]?.trim() ?? '',
+		//		unit_price,
+		//		unit: unitIdx >= 0 ? (row[unitIdx]?.trim() || '') : '',
+		//		category_id
+		//	};
+		//});
+
+		//const invalid = records.filter((r) => !r.name);
+		//if (invalid.length > 0) {
+		//	return fail(400, { error: `${invalid.length}行に「商品名」がありません` });
+		//}
+
+		//const db = getDb('');
+
+		try {
+			//if (mode === 'replace') {
+			//	await db.delete(schema.products);
+			//}
+			//if (records.length > 0) {
+			//	await db.insert(schema.products).values(records);
+			//}
+			return { success: true, count: 0 };
+		} catch (error) {
+			console.error('Failed to import suppliers:', error);
+			return fail(500, { error: '仕入先のインポートに失敗しました。' });
+		}
 	}
 } satisfies Actions;

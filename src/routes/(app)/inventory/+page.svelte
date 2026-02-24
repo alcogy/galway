@@ -42,7 +42,7 @@
 	<div class="page-header">
 		<h1 class="page-title">在庫管理</h1>
 		<div class="page-actions">
-			<Button onclick={openStocktake}>
+			<Button size="sm" onclick={openStocktake}>
 				<ClipboardList size={16} />
 				棚卸登録
 			</Button>

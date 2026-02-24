@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { Plus, Pencil, Trash2 } from '@lucide/svelte';
-	import { Button, Input, Label, Modal, ConfirmDialog, Table, SearchBar, Textarea, Pagination } from '$lib/components';
+	import { Plus, Pencil, Trash2, Download, Upload } from '@lucide/svelte';
+	import { goto, invalidateAll } from '$app/navigation';
+	import { Button, Input, Label, Modal, ConfirmDialog, Table, SearchBar, Textarea, Pagination, CsvImportDialog } from '$lib/components';
 	import type { PageData } from './$types';
 	import type { Product } from './+page.server';
 
@@ -8,10 +9,12 @@
 
 	let showModal = $state(false);
 	let showDeleteDialog = $state(false);
+	let showImportDialog = $state(false);
 	let editing = $state<Product | null>(null);
 	let deletingId = $state<string | null>(null);
 	let searchQuery = $state('');
 	let page = $state(1);
+	let importNotification = $state<{ type: 'success' | 'error'; message: string } | null>(null);
 
 	const ITEMS_PER_PAGE = 20;
 
@@ -60,6 +63,23 @@
 		showDeleteDialog = true;
 	}
 
+	function handleSearch() {
+		const params = new URLSearchParams();
+		if (searchQuery) {
+			params.set('search', searchQuery);
+		}		
+		params.set('page', '1'); // Reset to first page when searching
+		goto(`?${params.toString()}`, { keepFocus: true });
+	}
+
+	function getExportUrl() {
+		const params = new URLSearchParams();
+		if (searchQuery) {
+			params.set('search', searchQuery);
+		}		
+		return `/supplier/export?${params.toString()}`;
+	}
+
 	const columns = [
 		{ key: 'code', label: '商品コード', width: '160px' },
 		{ key: 'name', label: '商品名' },
@@ -76,12 +96,25 @@
 	<div class="page-header">
 		<h1 class="page-title">商品管理</h1>
 		<div class="page-actions">
-			<SearchBar placeholder="商品名・コードで検索" bind:value={searchQuery} />
-			<Button onclick={openCreate}>
+			<Button variant="secondary" size="sm" onclick={() => (showImportDialog = true)}>
+				<Upload size={14} />
+				CSVインポート
+			</Button>
+			<a href={getExportUrl()} download>
+				<Button variant="secondary" size="sm">
+					<Download size={14} />
+					CSVダウンロード
+				</Button>
+			</a>
+			<Button size="sm" onclick={openCreate}>
 				<Plus size={16} />
 				新規登録
 			</Button>
 		</div>
+	</div>
+
+	<div class="filters">
+		<SearchBar bind:value={searchQuery} placeholder="商品名・コードで検索..." onsubmit={handleSearch} />		
 	</div>
 
 	<div class="table-with-pagination">
@@ -167,6 +200,34 @@
 	}}
 />
 
+<!-- CSV Import -->
+<CsvImportDialog
+	bind:open={showImportDialog}
+	title="仕入先CSVインポート"
+	onimport={async (file, mode) => {
+		const formData = new FormData();
+		formData.append('file', file);
+		formData.append('mode', mode);
+		try {
+			const res = await fetch('?/import', {
+				method: 'POST',
+				headers: { Accept: 'application/json' },
+				body: formData
+			});
+			const json = await res.json();
+			if (json.type === 'success') {
+				await invalidateAll();
+				importNotification = { type: 'success', message: `${json.data?.count ?? ''}件の商品データをインポートしました` };
+			} else {
+				importNotification = { type: 'error', message: json.data?.error || 'インポートに失敗しました' };
+			}
+		} catch {
+			importNotification = { type: 'error', message: 'インポートに失敗しました' };
+		}
+		setTimeout(() => { importNotification = null; }, 6000);
+	}}
+/>
+
 <style lang="scss">
 	.page {
 		display: flex;
@@ -239,5 +300,11 @@
 		gap: var(--space-sm);
 		padding-top: var(--space-lg);
 		border-top: 1px solid var(--color-border-light);
+	}
+	.filters {
+		display: flex;
+		align-items: center;
+		gap: var(--space-md);
+		flex-wrap: wrap;
 	}
 </style>

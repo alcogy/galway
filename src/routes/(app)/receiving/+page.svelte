@@ -75,7 +75,7 @@
 	<div class="page-header">
 		<h1 class="page-title">入荷管理</h1>
 		<div class="page-actions">
-			<Button onclick={openCreate}>
+			<Button size="sm" onclick={openCreate}>
 				<Plus size={16} />
 				新規登録
 			</Button>
