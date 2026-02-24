@@ -1,5 +1,4 @@
-import { fail } from '@sveltejs/kit';
-import type { Actions, PageServerLoad } from './$types';
+import type { PageServerLoad } from './$types';
 
 export interface ShippingSlip {
 	id: string;
@@ -44,15 +43,3 @@ export const load: PageServerLoad = async () => {
 		products: MOCK_PRODUCTS
 	};
 };
-
-export const actions = {
-	create: async () => {
-		return fail(501, { error: 'Not implemented' });
-	},
-	update: async () => {
-		return fail(501, { error: 'Not implemented' });
-	},
-	delete: async () => {
-		return fail(501, { error: 'Not implemented' });
-	}
-} satisfies Actions;

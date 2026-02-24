@@ -111,17 +111,21 @@ src/routes/(app)/
   suppliers/                          — Supplier list + create/edit/delete modal + CSV import/export
   products/                           — Product list + create/edit/delete modal + CSV import/export
   receiving/                          — Receiving slip list (row-click → detail)
+  receiving/new/                      — Receiving slip create page
   receiving/[id]/                     — Receiving slip detail (info card + line item table + edit/delete)
+  receiving/[id]/edit/                — Receiving slip edit page
   shipping/                           — Shipping slip list (row-click → detail)
+  shipping/new/                       — Shipping slip create page
   shipping/[id]/                      — Shipping slip detail (info card + line item table + edit/delete)
+  shipping/[id]/edit/                 — Shipping slip edit page
   inventory/                          — Inventory list + 棚卸登録 modal
 ```
 
 #### Key UI Patterns
 - **Row-click navigation**: Receiving and shipping lists use `onrowclick={(row) => goto('/receiving/${row.id}')}` — no action column
 - **Detail page layout**: back link → page header with actions → 伝票情報 Card (dl grid) → 明細 Card (Table, full-width via `:global(.card-body) { padding: 0 }`)
-- **Create modal on list page**: Line items serialized as JSON in a hidden input (`name="details"`)
-- **Edit on detail page**: Modal pre-filled by `openEdit()` setting state from `data.slip`
+- **Create/Edit as pages**: Receiving and shipping slips use dedicated pages (not modals). Line items serialized as JSON in a hidden input (`name="details"`). Edit pages use `$effect` to set initial state from data.
+- **Form page layout**: back link → page header → Card containing the form → form-actions at bottom inside card
 - **Pagination**: All lists paginated 20 items/page; `.table-with-pagination` wrapper removes bottom border-radius from Table so Pagination attaches seamlessly
 - **Client-side search**: Suppliers and Products filter with `$derived` + `$effect(() => { searchQuery; page = 1; })`
 - **`$state` init rule**: Never initialize `$state` from `data.*` directly — use empty string/null and set values in handler functions (autofixer flags this)

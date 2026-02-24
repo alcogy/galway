@@ -1,15 +1,6 @@
 import { error, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
-export interface ShippingDetail {
-	id: string;
-	product_id: string;
-	product_code: string;
-	product_name: string;
-	quantity: number;
-	unit: string;
-}
-
 const MOCK_SLIPS = [
 	{ id: '1', slip_number: 'SHP-2026-001', shipped_at: '2026-02-03', item_count: 2 },
 	{ id: '2', slip_number: 'SHP-2026-002', shipped_at: '2026-02-06', item_count: 4 },
@@ -20,7 +11,7 @@ const MOCK_SLIPS = [
 	{ id: '7', slip_number: 'SHP-2026-007', shipped_at: '2026-02-24', item_count: 2 },
 ];
 
-const MOCK_DETAILS: Record<string, ShippingDetail[]> = {
+const MOCK_DETAILS: Record<string, { id: string; product_id: string; product_code: string; product_name: string; quantity: number; unit: string }[]> = {
 	'1': [
 		{ id: '101', product_id: '1', product_code: 'PRD001', product_name: 'アルミフレーム A型',      quantity: 10,  unit: '本' },
 		{ id: '102', product_id: '3', product_code: 'PRD003', product_name: '鉄板 2.3mm厚',            quantity: 50,  unit: 'kg' },
@@ -40,13 +31,13 @@ const MOCK_DETAILS: Record<string, ShippingDetail[]> = {
 		{ id: '403', product_id: '8', product_code: 'PRD008', product_name: '防錆スプレー 500ml',      quantity: 6,   unit: '缶' },
 	],
 	'5': [
-		{ id: '501', product_id: '2', product_code: 'PRD002', product_name: 'ステンレスボルト M8×30',  quantity: 200, unit: '個' },
+		{ id: '501', product_id: '2',  product_code: 'PRD002', product_name: 'ステンレスボルト M8×30', quantity: 200, unit: '個' },
 		{ id: '502', product_id: '12', product_code: 'PRD012', product_name: 'ナット M8',              quantity: 200, unit: '個' },
 	],
 	'6': [
-		{ id: '601', product_id: '3', product_code: 'PRD003', product_name: '鉄板 2.3mm厚',            quantity: 100, unit: 'kg' },
-		{ id: '602', product_id: '7', product_code: 'PRD007', product_name: 'ゴムパッキン 30mm',       quantity: 50,  unit: '個' },
-		{ id: '603', product_id: '9', product_code: 'PRD009', product_name: 'ベアリング 6205',         quantity: 10,  unit: '個' },
+		{ id: '601', product_id: '3',  product_code: 'PRD003', product_name: '鉄板 2.3mm厚',           quantity: 100, unit: 'kg' },
+		{ id: '602', product_id: '7',  product_code: 'PRD007', product_name: 'ゴムパッキン 30mm',      quantity: 50,  unit: '個' },
+		{ id: '603', product_id: '9',  product_code: 'PRD009', product_name: 'ベアリング 6205',        quantity: 10,  unit: '個' },
 		{ id: '604', product_id: '10', product_code: 'PRD010', product_name: '絶縁テープ 19mm',        quantity: 20,  unit: 'ロール' },
 		{ id: '605', product_id: '11', product_code: 'PRD011', product_name: 'アングル材 40×40',       quantity: 30,  unit: 'm'  },
 	],
@@ -81,7 +72,7 @@ export const load: PageServerLoad = async ({ params }) => {
 };
 
 export const actions = {
-	delete: async () => {
-		redirect(303, '/shipping');
+	update: async ({ params }) => {
+		redirect(303, `/shipping/${params.id}`);
 	}
 } satisfies Actions;
