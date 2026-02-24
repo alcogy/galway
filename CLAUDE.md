@@ -81,6 +81,7 @@ This is a simple procurement management system (仕入管理システム).
 - Dark / Light / System theme switching is available, implemented in `/src/lib/theme.svelte.ts`.
 - Responsive design for PC, tablet, and smartphone.
 - UI components are located in `/src/lib/components/`. Add new components there as needed.
+- The project in ../aes-crm/ should be referenced for its UI layout, composition, and design concepts. For more detailed application, see the UI layout, configuration, and design concepts of the project in ../aes-crm/.
 
 ### Implementation Plan
 1. Set up local development environment for D1, package.json and configs.

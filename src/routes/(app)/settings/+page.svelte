@@ -11,7 +11,7 @@
 </script>
 
 <svelte:head>
-	<title>設定 — AES PROGRESS</title>
+	<title>設定 — AES SUPPLIER</title>
 </svelte:head>
 
 <div class="page">

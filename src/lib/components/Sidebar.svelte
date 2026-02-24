@@ -3,8 +3,11 @@
 	import { page } from '$app/state';
 	import {
 		LayoutDashboard,
-		ListTodo,
-		Sheet,
+		Building2,
+		Package,
+		PackageCheck,
+		Truck,
+		Boxes,
 		CircleUser,
 		Shield,
 		Settings,
@@ -37,8 +40,11 @@
 
 	const primaryNavItems: NavItem[] = [
 		{ href: '/', label: 'ダッシュボード', icon: LayoutDashboard },
-		{ href: '/wbs', label: 'WBS', icon: Sheet },
-		{ href: '/tasks', label: '作業一覧', icon: ListTodo },
+		{ href: '/suppliers', label: '仕入先管理', icon: Building2 },
+		{ href: '/products', label: '商品管理', icon: Package },
+		{ href: '/receiving', label: '入荷管理', icon: PackageCheck },
+		{ href: '/shipping', label: '出荷管理', icon: Truck },
+		{ href: '/inventory', label: '在庫管理', icon: Boxes },
 		{ href: '/settings', label: '設定', icon: Settings, adminOnly: true },
 		{ href: '/accounts', label: 'アカウント管理', icon: Shield, adminOnly: true }
 	];
@@ -85,7 +91,7 @@
 		{#if logo}
 			{@render logo()}
 		{:else}
-			<span class="logo-text">AES PROGRESS</span>
+			<span class="logo-text">AES SUPPLIER</span>
 		{/if}
 	</div>
 

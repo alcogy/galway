@@ -81,7 +81,7 @@
 </script>
 
 <svelte:head>
-	<title>アカウント管理 — AES PROGRESS</title>
+	<title>アカウント管理 — AES SUPPLIER</title>
 </svelte:head>
 
 <div class="page">

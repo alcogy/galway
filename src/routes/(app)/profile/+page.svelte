@@ -23,7 +23,7 @@
 </script>
 
 <svelte:head>
-	<title>プロフィール — AES PROGRESS</title>
+	<title>プロフィール — AES SUPPLIER</title>
 </svelte:head>
 
 <div class="page">

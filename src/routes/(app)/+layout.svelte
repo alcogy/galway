@@ -7,7 +7,7 @@
 </script>
 
 <div class="app-shell">
-	<Sidebar theme={getTheme()} onthemechange={setTheme} role={data.user?.role} />
+	<Sidebar theme={getTheme()} onthemechange={setTheme} role={data.user?.role as 'admin' | 'general' | undefined} />
 
 	<main class="main-content">
 		{@render children()}
