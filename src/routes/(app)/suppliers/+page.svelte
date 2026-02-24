@@ -127,11 +127,9 @@
 			<div class="row-actions">
 				<Button variant="ghost" size="sm" onclick={() => openEdit(row)}>
 					<Pencil size={14} />
-					編集
 				</Button>
 				<Button variant="ghost" size="sm" onclick={() => openDelete(row.id)}>
 					<Trash2 size={14} />
-					削除
 				</Button>
 			</div>
 		{/snippet}
@@ -277,7 +275,7 @@
 
 	.form-grid {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
+		grid-template-columns: 1fr;
 		gap: var(--space-lg);
 
 		@media (max-width: 480px) {

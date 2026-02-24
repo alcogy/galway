@@ -2,6 +2,7 @@
 	import { ArrowLeft, Pencil, Trash2, Plus } from '@lucide/svelte';
 	import { Button, Card, Label, Modal, ConfirmDialog, Table, Select } from '$lib/components';
 	import type { PageData } from './$types';
+	import { goto } from '$app/navigation';
 
 	let { data }: { data: PageData } = $props();
 
@@ -34,6 +35,18 @@
 		editDetails = editDetails.filter((_, i) => i !== index);
 	}
 
+	async function handleDeleteSlip() {
+		const formData = new FormData();
+		const response = await fetch('?/delete', {
+			method: 'POST',
+			body: formData
+		});
+
+		if (response.ok) {
+			goto('/receiving');
+		}
+	}
+
 	const columns = [
 		{ key: 'product_code', label: '商品コード', width: '160px' },
 		{ key: 'product_name', label: '商品名' },
@@ -60,11 +73,7 @@
 			<Button variant="secondary" size="sm" onclick={openEdit}>
 				<Pencil size={14} />
 				編集
-			</Button>
-			<Button variant="ghost" size="sm" onclick={() => (showDeleteDialog = true)}>
-				<Trash2 size={14} />
-				削除
-			</Button>
+			</Button>			
 		</div>
 	</div>
 
@@ -89,16 +98,44 @@
 		</dl>
 	</Card>
 
-	<div class="detail-table-card">
-		<Card title="明細">
+	<div class="section">
+		<div class="section-header">
+			<h2 class="section-title">明細</h2>
+		</div>
+		<div class="table-container">
 			<Table {columns} rows={data.details}>
 				{#snippet empty()}
 					<span>明細がありません</span>
 				{/snippet}
 			</Table>
-		</Card>
+		</div>
 	</div>
+
+	<!-- Danger Zone (Admin only) -->
+	<!--{#if data.user?.role === 'admin'}-->
+	<div class="section danger-section">
+		<div class="section-header">
+			<h2 class="section-title">入荷伝票削除</h2>
+		</div>
+		<div class="danger-zone-body">
+			<div class="danger-zone-item">
+				<div class="danger-zone-item-info">
+					<p class="danger-zone-item-label">この入荷伝票を削除する</p>
+					<p class="danger-zone-item-desc">
+						入荷伝票に紐づく全てのデータ（明細・在庫数）が完全に削除されます。この操作は取り消せません。
+					</p>
+				</div>
+				<Button variant="danger" size="sm" onclick={() => (showDeleteDialog = true)}>
+					<Trash2 size={14} />
+					入荷伝票を削除
+				</Button>
+			</div>
+		</div>
+	</div>
+	<!--{/if}-->
 </div>
+
+
 
 <!-- Edit Modal -->
 <Modal bind:open={showModal} title="入荷編集" size="lg">
@@ -196,13 +233,7 @@
 	message="この入荷伝票を削除しますか？在庫数も変更されます。"
 	confirmLabel="削除"
 	cancelLabel="キャンセル"
-	onconfirm={() => {
-		const form = document.createElement('form');
-		form.method = 'POST';
-		form.action = '?/delete';
-		document.body.appendChild(form);
-		form.submit();
-	}}
+	onconfirm={handleDeleteSlip}
 />
 
 <style lang="scss">
@@ -408,5 +439,68 @@
 		gap: var(--space-sm);
 		padding-top: var(--space-lg);
 		border-top: 1px solid var(--color-border-light);
+	}
+
+	.danger-section {
+		margin-top: var(--space-lg);
+		padding-top: var(--space-xl);
+		border-top: 1px solid var(--color-border-light);
+	}
+
+	.danger-zone-body {
+		padding: var(--space-xl);
+		background-color: var(--color-bg-elevated);
+		border: 1px solid var(--color-border-light);
+	}
+
+	.danger-zone-item {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-xl);
+	}
+
+	.danger-zone-item-info {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-xs);
+	}
+
+	.danger-zone-item-label {
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--color-text);
+	}
+
+	.danger-zone-item-desc {
+		font-size: 0.8125rem;
+		color: var(--color-text-secondary);
+	}
+
+	.section {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-md);
+	}
+
+	.section-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.section-title {
+		font-size: 1.125rem;
+		font-weight: 600;
+		display: flex;
+		align-items: center;
+		gap: var(--space-sm);
+	}
+
+	.table-container {
+		:global(.table-wrapper) {
+			border-bottom-left-radius: 0;
+			border-bottom-right-radius: 0;
+		}
 	}
 </style>
