@@ -1,110 +1,110 @@
 <script lang="ts">
-	import { Plus, Trash2 } from '@lucide/svelte';
-	import { Button, Label, Modal, Table, Select, Pagination } from '$lib/components';
-	import { goto } from '$app/navigation';
+	import { ArrowLeft, Pencil, Trash2, Plus } from '@lucide/svelte';
+	import { Button, Card, Label, Modal, ConfirmDialog, Table, Select } from '$lib/components';
 	import type { PageData } from './$types';
+
 	let { data }: { data: PageData } = $props();
 
 	let showModal = $state(false);
-	let page = $state(1);
-
-	const ITEMS_PER_PAGE = 20;
-	const pagedSlips = $derived(
-		data.slips.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
-	);
-
-	// Form state
-	let receivedAt = $state('');
-	let supplierId = $state('');
-	let details = $state<{ product_id: string; quantity: number }[]>([]);
-
-	const supplierOptions = $derived(
-		data.suppliers.map((s) => ({ value: s.id, label: s.name }))
-	);
+	let showDeleteDialog = $state(false);
+	let shippedAt = $state('');
+	let editDetails = $state<{ product_id: string; quantity: number }[]>([]);
 
 	const productOptions = $derived(
 		data.products.map((p) => ({ value: p.id, label: `${p.code} ${p.name}` }))
 	);
 
-	function openCreate() {
-		receivedAt = new Date().toISOString().slice(0, 10);
-		supplierId = '';
-		details = [{ product_id: '', quantity: 1 }];
+	function openEdit() {
+		shippedAt = data.slip.shipped_at;
+		editDetails = data.details.map((d) => ({ product_id: d.product_id, quantity: d.quantity }));
 		showModal = true;
 	}
 
 	function addDetail() {
-		details = [...details, { product_id: '', quantity: 1 }];
+		editDetails = [...editDetails, { product_id: '', quantity: 1 }];
 	}
 
 	function removeDetail(index: number) {
-		details = details.filter((_, i) => i !== index);
+		editDetails = editDetails.filter((_, i) => i !== index);
 	}
 
 	const columns = [
-		{ key: 'slip_number', label: '伝票番号', width: '180px' },		
-		{ key: 'supplier_name', label: '仕入先' },
-		{ key: 'received_at', label: '入荷日', width: '140px' },
-		{ key: 'item_count', label: '品目数', width: '80px' }
+		{ key: 'product_code', label: '商品コード', width: '160px' },
+		{ key: 'product_name', label: '商品名' },
+		{ key: 'quantity', label: '数量', width: '100px' },
+		{ key: 'unit', label: '単位', width: '80px' }
 	];
 </script>
 
 <svelte:head>
-	<title>入荷管理 — AES Supplier</title>
+	<title>{data.slip.slip_number} — AES Supplier</title>
 </svelte:head>
 
 <div class="page">
+	<div class="page-nav">
+		<a href="/shipping" class="back-link">
+			<ArrowLeft size={16} />
+			出荷管理へ戻る
+		</a>
+	</div>
+
 	<div class="page-header">
-		<h1 class="page-title">入荷管理</h1>
+		<h1 class="page-title">{data.slip.slip_number}</h1>
 		<div class="page-actions">
-			<Button size="sm" onclick={openCreate}>
-				<Plus size={16} />
-				新規登録
+			<Button variant="secondary" size="sm" onclick={openEdit}>
+				<Pencil size={14} />
+				編集
+			</Button>
+			<Button variant="ghost" size="sm" onclick={() => (showDeleteDialog = true)}>
+				<Trash2 size={14} />
+				削除
 			</Button>
 		</div>
 	</div>
 
-	<div class="table-with-pagination">
-	<Table {columns} rows={pagedSlips} onrowclick={(row) => goto(`/receiving/${row.id}`)}>
-		{#snippet empty()}
-			<span>入荷伝票が登録されていません</span>
-		{/snippet}
-	</Table>
-	<Pagination
-		totalItems={data.slips.length}
-		itemsPerPage={ITEMS_PER_PAGE}
-		currentPage={page}
-		onPageChange={(p) => (page = p)}
-	/>
+	<Card title="伝票情報">
+		<dl class="info-grid">
+			<div class="info-item">
+				<dt class="info-label">伝票番号</dt>
+				<dd class="info-value">{data.slip.slip_number}</dd>
+			</div>
+			<div class="info-item">
+				<dt class="info-label">出荷日</dt>
+				<dd class="info-value">{data.slip.shipped_at}</dd>
+			</div>
+			<div class="info-item">
+				<dt class="info-label">品目数</dt>
+				<dd class="info-value">{data.slip.item_count}</dd>
+			</div>
+		</dl>
+	</Card>
+
+	<div class="detail-table-card">
+		<Card title="明細">
+			<Table {columns} rows={data.details}>
+				{#snippet empty()}
+					<span>明細がありません</span>
+				{/snippet}
+			</Table>
+		</Card>
 	</div>
 </div>
 
-<!-- Create Modal -->
-<Modal bind:open={showModal} title="入荷登録" size="lg">
-	<form method="POST" action="?/create" class="form">
-		<input type="hidden" name="details" value={JSON.stringify(details)} />
+<!-- Edit Modal -->
+<Modal bind:open={showModal} title="出荷編集" size="lg">
+	<form method="POST" action="?/update" class="form">
+		<input type="hidden" name="id" value={data.slip.id} />
+		<input type="hidden" name="details" value={JSON.stringify(editDetails)} />
 
-		<div class="form-row">
-			<div class="field">
-				<Label required>入荷日</Label>
-				<input
-					class="date-input"
-					type="date"
-					name="received_at"
-					bind:value={receivedAt}
-					required
-				/>
-			</div>
-			<div class="field">
-				<Label required>仕入先</Label>
-				<Select
-					name="supplier_id"
-					options={supplierOptions}
-					placeholder="仕入先を選択"
-					bind:value={supplierId}
-					required
-				/>
-			</div>
+		<div class="field">
+			<Label required>出荷日</Label>
+			<input
+				class="date-input"
+				type="date"
+				name="shipped_at"
+				bind:value={shippedAt}
+				required
+			/>
 		</div>
 
 		<div class="details-section">
@@ -122,7 +122,7 @@
 					<span class="col-qty">数量</span>
 					<span class="col-del"></span>
 				</div>
-				{#each details as detail, i (i)}
+				{#each editDetails as detail, i (i)}
 					<div class="details-row">
 						<div class="col-product">
 							<Select
@@ -141,7 +141,7 @@
 							/>
 						</div>
 						<div class="col-del">
-							{#if details.length > 1}
+							{#if editDetails.length > 1}
 								<Button
 									type="button"
 									variant="ghost"
@@ -162,16 +162,49 @@
 			<Button type="button" variant="secondary" onclick={() => (showModal = false)}>
 				キャンセル
 			</Button>
-			<Button type="submit">登録</Button>
+			<Button type="submit">更新</Button>
 		</div>
 	</form>
 </Modal>
+
+<!-- Delete Confirm -->
+<ConfirmDialog
+	bind:open={showDeleteDialog}
+	title="出荷伝票の削除"
+	message="この出荷伝票を削除しますか？在庫数も変更されます。"
+	confirmLabel="削除"
+	cancelLabel="キャンセル"
+	onconfirm={() => {
+		const form = document.createElement('form');
+		form.method = 'POST';
+		form.action = '?/delete';
+		document.body.appendChild(form);
+		form.submit();
+	}}
+/>
 
 <style lang="scss">
 	.page {
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-xl);
+	}
+
+	.page-nav {
+		margin-bottom: calc(-1 * var(--space-sm));
+	}
+
+	.back-link {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-xs);
+		font-size: 0.8125rem;
+		color: var(--color-text-secondary);
+		text-decoration: none;
+
+		&:hover {
+			color: var(--color-text);
+		}
 	}
 
 	.page-header {
@@ -191,20 +224,51 @@
 		gap: var(--space-sm);
 	}
 
-	.form {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-lg);
-	}
-
-	.form-row {
+	.info-grid {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
+		grid-template-columns: repeat(2, 1fr);
 		gap: var(--space-lg);
+		margin: 0;
 
 		@media (max-width: 480px) {
 			grid-template-columns: 1fr;
 		}
+	}
+
+	.info-item {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-xs);
+	}
+
+	.info-label {
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: var(--color-text-secondary);
+	}
+
+	.info-value {
+		font-size: 0.9375rem;
+		color: var(--color-text);
+	}
+
+	.detail-table-card {
+		:global(.card-body) {
+			padding: 0;
+			overflow: hidden;
+			border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+		}
+
+		:global(.table-wrapper) {
+			border: none;
+			border-radius: 0;
+		}
+	}
+
+	.form {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-lg);
 	}
 
 	.field {
@@ -303,13 +367,6 @@
 			outline: none;
 			border-color: var(--color-border-focus);
 			box-shadow: 0 0 0 3px var(--color-primary-light);
-		}
-	}
-
-	.table-with-pagination {
-		:global(.table-wrapper) {
-			border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-			border-bottom: none;
 		}
 	}
 

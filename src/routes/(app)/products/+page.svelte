@@ -123,11 +123,9 @@
 			<div class="row-actions">
 				<Button variant="ghost" size="sm" onclick={() => openEdit(row)}>
 					<Pencil size={14} />
-					編集
 				</Button>
 				<Button variant="ghost" size="sm" onclick={() => openDelete(row.id)}>
 					<Trash2 size={14} />
-					削除
 				</Button>
 			</div>
 		{/snippet}

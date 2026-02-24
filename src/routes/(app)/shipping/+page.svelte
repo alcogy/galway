@@ -1,15 +1,11 @@
 <script lang="ts">
-	import { Plus, Pencil, Trash2 } from '@lucide/svelte';
-	import { Button, Label, Modal, ConfirmDialog, Table, Select, Pagination } from '$lib/components';
+	import { Plus, Trash2 } from '@lucide/svelte';
+	import { Button, Label, Modal, Table, Select, Pagination } from '$lib/components';
+	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
-	import type { ShippingSlip } from './+page.server';
-
 	let { data }: { data: PageData } = $props();
 
 	let showModal = $state(false);
-	let showDeleteDialog = $state(false);
-	let editing = $state<ShippingSlip | null>(null);
-	let deletingId = $state<string | null>(null);
 	let page = $state(1);
 
 	const ITEMS_PER_PAGE = 20;
@@ -26,22 +22,9 @@
 	);
 
 	function openCreate() {
-		editing = null;
 		shippedAt = new Date().toISOString().slice(0, 10);
 		details = [{ product_id: '', quantity: 1 }];
 		showModal = true;
-	}
-
-	function openEdit(slip: ShippingSlip) {
-		editing = slip;
-		shippedAt = slip.shipped_at;
-		details = [{ product_id: '', quantity: 1 }];
-		showModal = true;
-	}
-
-	function openDelete(id: string) {
-		deletingId = id;
-		showDeleteDialog = true;
 	}
 
 	function addDetail() {
@@ -75,19 +58,7 @@
 	</div>
 
 	<div class="table-with-pagination">
-	<Table {columns} rows={pagedSlips}>
-		{#snippet actions(row)}
-			<div class="row-actions">
-				<Button variant="ghost" size="sm" onclick={() => openEdit(row)}>
-					<Pencil size={14} />
-					編集
-				</Button>
-				<Button variant="ghost" size="sm" onclick={() => openDelete(row.id)}>
-					<Trash2 size={14} />
-					削除
-				</Button>
-			</div>
-		{/snippet}
+	<Table {columns} rows={pagedSlips} onrowclick={(row) => goto(`/shipping/${row.id}`)}>
 		{#snippet empty()}
 			<span>出荷伝票が登録されていません</span>
 		{/snippet}
@@ -102,11 +73,8 @@
 </div>
 
 <!-- Create / Edit Modal -->
-<Modal bind:open={showModal} title={editing ? '出荷編集' : '出荷登録'} size="lg">
-	<form method="POST" action={editing ? '?/update' : '?/create'} class="form">
-		{#if editing}
-			<input type="hidden" name="id" value={editing.id} />
-		{/if}
+<Modal bind:open={showModal} title="出荷登録" size="lg">
+	<form method="POST" action="?/create" class="form">
 		<input type="hidden" name="details" value={JSON.stringify(details)} />
 
 		<div class="field">
@@ -175,31 +143,10 @@
 			<Button type="button" variant="secondary" onclick={() => (showModal = false)}>
 				キャンセル
 			</Button>
-			<Button type="submit">{editing ? '更新' : '登録'}</Button>
+			<Button type="submit">登録</Button>
 		</div>
 	</form>
 </Modal>
-
-<!-- Delete Confirm -->
-<ConfirmDialog
-	bind:open={showDeleteDialog}
-	title="出荷伝票の削除"
-	message="この出荷伝票を削除しますか？在庫数も変更されます。"
-	confirmLabel="削除"
-	cancelLabel="キャンセル"
-	onconfirm={() => {
-		const form = document.createElement('form');
-		form.method = 'POST';
-		form.action = '?/delete';
-		const input = document.createElement('input');
-		input.type = 'hidden';
-		input.name = 'id';
-		input.value = deletingId ?? '';
-		form.appendChild(input);
-		document.body.appendChild(form);
-		form.submit();
-	}}
-/>
 
 <style lang="scss">
 	.page {
@@ -223,12 +170,6 @@
 	.page-actions {
 		display: flex;
 		gap: var(--space-sm);
-	}
-
-	.row-actions {
-		display: flex;
-		gap: var(--space-xs);
-		justify-content: flex-end;
 	}
 
 	.form {
