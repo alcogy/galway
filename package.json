@@ -13,18 +13,17 @@
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
 		"test:unit": "vitest",
-		"test": "npm run test:unit -- --run && npm run test:e2e",
+		"test": "bun run test:unit -- --run && bun run test:e2e",
 		"test:e2e": "playwright test",
 		"gen": "wrangler types",
-		"db:push": "drizzle-kit push",
 		"db:generate": "drizzle-kit generate",
-		"db:migrate": "drizzle-kit migrate",
-		"db:studio": "drizzle-kit studio"
+		"db:migrate:local": "wrangler d1 migrations apply aes-supplier-db --local",
+		"db:migrate:remote": "wrangler d1 migrations apply aes-supplier-db --remote",
+		"db:seed:local": "wrangler d1 execute aes-supplier-db --local --file=./drizzle/seed.sql"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^2.0.2",
 		"@eslint/js": "^9.39.2",
-		"@libsql/client": "^0.17.0",
 		"@lucide/svelte": "^0.575.0",
 		"@playwright/test": "^1.58.1",
 		"@sveltejs/adapter-cloudflare": "^7.2.6",

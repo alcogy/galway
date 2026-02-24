@@ -9,5 +9,13 @@
 		"directory": ".svelte-kit/cloudflare"
 	},
 	"workers_dev": true,
-	"preview_urls": true
+	"preview_urls": true,
+	"d1_databases": [
+		{
+			// Run `wrangler d1 create aes-supplier-db` to get the real database_id for remote deployment
+			"binding": "DB",
+			"database_name": "aes-supplier-db",
+			"database_id": "00000000-0000-0000-0000-000000000000"
+		}
+	]
 }

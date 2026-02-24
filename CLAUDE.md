@@ -48,3 +48,44 @@ After completing the code, ask the user if they want a playground link. Only cal
 - **D1 binding**: `binding: "DB"`, `database_name: "aes-supplier-db"`
 - **Migrations dir**: `./drizzle` (managed by drizzle-kit generate + wrangler d1 migrations apply)
 
+## System Overview
+
+This is a simple procurement management system (仕入管理システム).
+
+### Core Business Functions
+- **Master Management**: Manage suppliers and products
+- **Receiving Management (入荷管理)**: Record incoming stock; increases inventory relatively
+- **Shipping Management (出荷管理)**: Record outgoing stock; decreases inventory relatively
+- **Inventory Management (在庫管理)**: Physical inventory count (棚卸) — registers actual stock quantities per product and updates inventory records
+
+### Screens
+- 仕入先管理 (Supplier Management)
+- 商品管理 (Product Management)
+- 入荷管理 (Receiving Management)
+- 出荷管理 (Shipping Management)
+- 在庫管理 (Inventory Management)
+
+### Database Tables
+- 仕入先マスタ (Supplier Master)
+- 商品マスタ (Product Master)
+- 仕入先商品関係 (Supplier-Product Relationship)
+- 入荷伝票 (Receiving Slip)
+- 入荷伝票明細 (Receiving Slip Detail)
+- 出荷伝票 (Shipping Slip)
+- 出荷伝票明細 (Shipping Slip Detail)
+- 在庫テーブル (Inventory Table)
+
+### UI Guidelines
+- Design inspired by the Cloudflare dashboard — simple and clean.
+- Basic UI and layout are already implemented.
+- Dark / Light / System theme switching is available, implemented in `/src/lib/theme.svelte.ts`.
+- Responsive design for PC, tablet, and smartphone.
+- UI components are located in `/src/lib/components/`. Add new components there as needed.
+
+### Implementation Plan
+1. Set up local development environment for D1, package.json and configs.
+2. Implement screen UIs.
+3. Create DB table schemas and seed data, then run migrations.
+4. Connect each screen to the DB and implement server actions.
+5. Perform end-to-end verification and fix any issues found.
+

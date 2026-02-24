@@ -10,7 +10,15 @@ declare global {
 		}
 
 		// interface Error {}
-		// interface Locals {}
+		interface Locals {
+			user?: {
+				id: string;
+				name: string;
+				email: string;
+				role: string;
+				created_at: string;
+			};
+		}
 		// interface PageData {}
 		// interface PageState {}
 	}

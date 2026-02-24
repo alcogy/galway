@@ -6,7 +6,6 @@
       "devDependencies": {
         "@eslint/compat": "^2.0.2",
         "@eslint/js": "^9.39.2",
-        "@libsql/client": "^0.17.0",
         "@lucide/svelte": "^0.575.0",
         "@playwright/test": "^1.58.1",
         "@sveltejs/adapter-cloudflare": "^7.2.6",
