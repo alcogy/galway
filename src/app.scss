@@ -1,0 +1,311 @@
+/* ========================================
+   Global Styles — AES PROGRESS
+   Cloudflare Dashboard-inspired Design System
+   ======================================== */
+
+/* --- Reset & Base --- */
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+/* --- System Font Stack --- */
+:root {
+	--font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
+		'Helvetica Neue', Arial, sans-serif;
+	--font-mono: 'SF Mono', SFMono-Regular, ui-monospace, 'DejaVu Sans Mono', Menlo, Consolas,
+		monospace;
+
+	/* --- Spacing Scale --- */
+	--space-xs: 0.25rem;
+	--space-sm: 0.5rem;
+	--space-md: 0.75rem;
+	--space-lg: 1rem;
+	--space-xl: 1.5rem;
+	--space-2xl: 2rem;
+	--space-3xl: 3rem;
+
+	/* --- Radii --- */
+	--radius-sm: 4px;
+	--radius-md: 6px;
+	--radius-lg: 8px;
+	--radius-xl: 12px;
+	--radius-full: 9999px;
+
+	/* --- Shadows --- */
+	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+	--shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
+	--shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
+
+	/* --- Transitions --- */
+	--transition-fast: 120ms ease;
+	--transition-base: 200ms ease;
+
+	/* --- Sidebar --- */
+	--sidebar-width: 240px;
+	--sidebar-collapsed-width: 0px;
+	--header-height: 56px;
+
+	/* --- Z-index layers --- */
+	--z-sidebar: 100;
+	--z-header: 110;
+	--z-overlay: 200;
+	--z-modal: 300;
+
+	font-family: var(--font-sans);
+	line-height: 1.5;
+	font-size: 14px;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+/* ========================================
+   Light Theme (default)
+   ======================================== */
+:root,
+[data-theme='light'] {
+	color-scheme: light;
+
+	/* --- Brand --- */
+	--color-primary: #1a56db;
+	--color-primary-hover: #1648b8;
+	--color-primary-active: #123d9a;
+	--color-primary-light: #e8effc;
+	--color-primary-text: #ffffff;
+
+	/* --- Semantic --- */
+	--color-success: #0d7c3d;
+	--color-success-light: #e6f5ec;
+	--color-warning: #b45309;
+	--color-warning-light: #fef3e2;
+	--color-danger: #d1242f;
+	--color-danger-hover: #b51d26;
+	--color-danger-light: #fce8e8;
+	--color-info: #1a56db;
+	--color-info-light: #e8effc;
+
+	/* --- Surfaces --- */
+	--color-bg: #f8f9fa;
+	--color-bg-elevated: #ffffff;
+	--color-bg-sunken: #f0f2f5;
+	--color-bg-overlay: rgba(0, 0, 0, 0.5);
+	--color-bg-light: #6f9af2;
+
+	/* --- Borders --- */
+	--color-border: #d1d5db;
+	--color-border-light: #e5e7eb;
+	--color-border-focus: var(--color-primary);
+
+	/* --- Text --- */
+	--color-text: #1f2937;
+	--color-text-secondary: #6b7280;
+	--color-text-tertiary: #9ca3af;
+	--color-text-inverse: #ffffff;
+	--color-text-link: var(--color-primary);
+
+	/* --- Interactive --- */
+	--color-input-bg: #ffffff;
+	--color-input-border: #d1d5db;
+	--color-input-placeholder: #9ca3af;
+	--color-hover: rgba(0, 0, 0, 0.04);
+	--color-active: rgba(0, 0, 0, 0.08);
+
+	/* --- Sidebar --- */
+	--sidebar-bg: #ffffff;
+	--sidebar-text: #6b7280;
+	--sidebar-text-active: #1f2937;
+	--sidebar-hover: rgba(0, 0, 0, 0.04);
+	--sidebar-active: rgba(0, 0, 0, 0.06);
+	--sidebar-border: #e5e7eb;
+	--sidebar-switcher-bg: rgba(0, 0, 0, 0.04);
+	--sidebar-switcher-active: rgba(0, 0, 0, 0.08);
+}
+
+/* ========================================
+   Dark Theme
+   ======================================== */
+@mixin dark-theme {
+	color-scheme: dark;
+
+	--color-primary: #4b8af5;
+	--color-primary-hover: #6ba1f7;
+	--color-primary-active: #3a72d9;
+	--color-primary-light: #1c2d4f;
+	--color-primary-text: #ffffff;
+
+	--color-success: #3fb950;
+	--color-success-light: #1a3a25;
+	--color-warning: #d29922;
+	--color-warning-light: #3b2e10;
+	--color-danger: #f85149;
+	--color-danger-hover: #ff6b61;
+	--color-danger-light: #3d1518;
+	--color-info: #4b8af5;
+	--color-info-light: #1c2d4f;
+
+	--color-bg: #0d1117;
+	--color-bg-elevated: #20252c;
+	--color-bg-sunken: #090c10;
+	--color-bg-overlay: rgba(0, 0, 0, 0.7);
+	--color-bg-light: #1850a0;
+
+	--color-border: #30363d;
+	--color-border-light: #21262d;
+	--color-border-focus: var(--color-primary);
+
+	--color-text: #e6edf3;
+	--color-text-secondary: #8b949e;
+	--color-text-tertiary: #6e7681;
+	--color-text-inverse: #0d1117;
+	--color-text-link: var(--color-primary);
+
+	--color-input-bg: #0d1117;
+	--color-input-border: #30363d;
+	--color-input-placeholder: #6e7681;
+	--color-hover: rgba(255, 255, 255, 0.06);
+	--color-active: rgba(255, 255, 255, 0.1);
+
+	--sidebar-bg: #010409;
+	--sidebar-text: #8b949e;
+	--sidebar-text-active: #e6edf3;
+	--sidebar-hover: rgba(255, 255, 255, 0.06);
+	--sidebar-active: rgba(255, 255, 255, 0.1);
+	--sidebar-border: #21262d;
+	--sidebar-switcher-bg: rgba(255, 255, 255, 0.06);
+	--sidebar-switcher-active: rgba(255, 255, 255, 0.12);
+
+	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+	--shadow-md: 0 2px 8px rgba(0, 0, 0, 0.4);
+	--shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme='dark'] {
+	@include dark-theme;
+}
+
+@media (prefers-color-scheme: dark) {
+	[data-theme='system'] {
+		@include dark-theme;
+	}
+}
+
+/* ========================================
+   Base Elements
+   ======================================== */
+html {
+	height: 100%;
+}
+
+body {
+	min-height: 100%;
+	background-color: var(--color-bg);
+	color: var(--color-text);
+}
+
+a {
+	color: var(--color-text-link);
+	text-decoration: none;
+
+	&:hover {
+		text-decoration: underline;
+	}
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	line-height: 1.3;
+	font-weight: 600;
+}
+
+h1 {
+	font-size: 1.5rem;
+}
+h2 {
+	font-size: 1.25rem;
+}
+h3 {
+	font-size: 1.125rem;
+}
+
+code,
+pre {
+	font-family: var(--font-mono);
+	font-size: 0.875em;
+}
+
+/* --- Prevent iOS auto-zoom on input focus --- */
+input,
+textarea,
+select {
+	font-size: 16px;
+}
+
+/* --- Focus ring utility --- */
+:focus-visible {
+	outline: 2px solid var(--color-border-focus);
+	outline-offset: 2px;
+}
+
+/* --- Scrollbar (subtle) --- */
+::-webkit-scrollbar {
+	width: 6px;
+	height: 6px;
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+	background: var(--color-border);
+	border-radius: 3px;
+}
+
+/* --- Utility classes --- */
+.sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border-width: 0;
+}
+
+/* ========================================
+   Sidebar Icon Sizing
+   ======================================== */
+.sidebar {
+	.nav-item svg {
+		flex-shrink: 0;
+		width: 18px;
+		height: 18px;
+	}
+
+	.theme-btn svg {
+		flex-shrink: 0;
+		width: 14px;
+		height: 14px;
+	}
+
+	.collapse-btn svg {
+		flex-shrink: 0;
+		width: 16px;
+		height: 16px;
+	}
+
+	.mobile-toggle svg {
+		flex-shrink: 0;
+		width: 20px;
+		height: 20px;
+	}
+}
