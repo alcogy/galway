@@ -180,8 +180,12 @@ export const actions = {
 			await db.delete(schema.accounts).where(eq(schema.accounts.id, id));
 
 			return { success: true };
-		} catch (error) {
-			console.error('Failed to delete account:', error);
+		} catch (err: Error | unknown) {
+			console.error('Failed to delete account:', err);
+			const message = err instanceof Error ? String(err.cause) : String(err);
+			if (message.includes('FOREIGN KEY constraint failed')) {
+				return fail(400, { error: 'このアカウントは使用されているため削除できません' });
+			}
 			return fail(500, { error: 'アカウントの削除に失敗しました' });
 		}
 	}

@@ -2,6 +2,7 @@
 	import { Button, Table, SearchBar, AccountEditor, ConfirmDialog, Pagination } from '$lib/components';
 	import { Plus, Pencil, Trash2 } from '@lucide/svelte';
 	import { goto, invalidateAll } from '$app/navigation';
+	import { deserialize } from '$app/forms';
 	import { page } from '$app/stores';
 	import type { PageData } from './$types';
 
@@ -12,6 +13,7 @@
 	let editingAccount = $state<any>(null);
 	let showDeleteConfirm = $state(false);
 	let deleteTarget = $state<string | null>(null);
+	let deleteError = $state('');
 
 	const columns = [
 		{ key: 'name', label: '名前' },
@@ -72,11 +74,18 @@
 
 		const response = await fetch('?/delete', {
 			method: 'POST',
-			body: formData
+			body: formData,
+			headers: { 'x-sveltekit-action': 'true' }
 		});
 
-		if (response.ok) {
+		const result = deserialize(await response.text()) as any;
+
+		if (result.type === 'success') {
 			await invalidateAll();
+		} else if (result.type === 'failure') {
+			deleteError = result.data?.error || '削除に失敗しました';
+		} else {
+			deleteError = '削除に失敗しました';
 		}
 
 		deleteTarget = null;
@@ -97,6 +106,13 @@
 			</Button>
 		</div>
 	</div>
+
+	{#if deleteError}
+		<div class="error-notification" role="alert">
+			<span>{deleteError}</span>
+			<button type="button" onclick={() => (deleteError = '')} aria-label="閉じる">×</button>
+		</div>
+	{/if}
 
 	<SearchBar bind:value={search} placeholder="アカウントを検索..." onsubmit={handleSearch} />
 
@@ -170,6 +186,28 @@
 	.page-actions {
 		display: flex;
 		gap: var(--space-sm);
+	}
+
+	.error-notification {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: var(--space-md) var(--space-md);
+		background-color: var(--color-danger-bg);
+		color: var(--color-danger);
+		border: 1px solid var(--color-danger);
+		border-radius: var(--radius-md);
+		font-size: 0.8125rem;
+
+		button {
+			background: none;
+			border: none;
+			color: inherit;
+			cursor: pointer;
+			font-size: 1rem;
+			line-height: 1;
+			padding: 0 var(--space-xs);
+		}
 	}
 
 	.table-container {

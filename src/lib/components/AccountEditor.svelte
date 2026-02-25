@@ -22,6 +22,8 @@
 
 	const isEdit = $derived(!!account?.id);
 	const actionUrl = $derived(isEdit ? '?/update' : '?/create');
+
+	let errorMessage = $state('');
 </script>
 
 <Modal bind:open title={isEdit ? 'アカウント編集' : 'アカウント新規作成'}>
@@ -30,17 +32,24 @@
 		method="POST"
 		action={actionUrl}
 		use:enhance={() => {
+			errorMessage = '';
 			return async ({ result, update }) => {
 				if (result.type === 'success') {
 					open = false;
 					onsave?.();
+				} else if (result.type === 'failure') {
+					errorMessage = (result.data?.error as string) || 'エラーが発生しました';
 				}
-				await update();
+				await update({ reset: false });
 			};
 		}}
 	>
 		{#if isEdit && account?.id}
 			<input type="hidden" name="id" value={account.id} />
+		{/if}
+
+		{#if errorMessage}
+			<div class="error-banner" role="alert">{errorMessage}</div>
 		{/if}
 
 		<div class="field">
@@ -93,6 +102,15 @@
 </Modal>
 
 <style lang="scss">
+	.error-banner {
+		padding: var(--space-sm) var(--space-md);
+		background-color: var(--color-danger-bg);
+		color: var(--color-danger);
+		border: 1px solid var(--color-danger);
+		border-radius: var(--radius-md);
+		font-size: 0.8125rem;
+	}
+
 	.editor-form {
 		display: flex;
 		flex-direction: column;
