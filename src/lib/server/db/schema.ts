@@ -1,4 +1,18 @@
-import { real, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core';
+import { real, sqliteTable, text, unique, int } from 'drizzle-orm/sqlite-core';
+import { sql } from 'drizzle-orm';
+
+export const accounts = sqliteTable('accounts', {
+	id: text('id')
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+	email: text('email').notNull().unique(),
+	password_hash: text('password_hash').notNull(),
+	name: text('name').notNull(),
+	role: text('role', { enum: ['admin', 'general'] }).notNull().default('general'),
+	created_at: text('created_at')
+		.notNull()
+		.default(sql`(datetime('now'))`)
+});
 
 // -----------------------------------------------
 // 仕入先マスタ (Supplier Master)
@@ -7,9 +21,10 @@ export const suppliers = sqliteTable('suppliers', {
 	id: text('id')
 		.primaryKey()
 		.$defaultFn(() => crypto.randomUUID()),
-	code: text('code').notNull().unique(),
 	name: text('name').notNull(),
-	phone: text('phone'),
+	tel: text('tel'),
+	fax: text('fax'),
+	zipcode: text('zipcode'),
 	address: text('address'),
 	email: text('email'),
 	created_at: text('created_at')
@@ -70,7 +85,10 @@ export const receivingSlips = sqliteTable('receiving_slips', {
 	supplier_id: text('supplier_id')
 		.notNull()
 		.references(() => suppliers.id),
-	user_name: text('user_name').notNull(),
+	account_id: text('account_id')
+		.notNull()
+		.references(() => accounts.id),
+	note: text('note').notNull(),
 	created_at: text('created_at')
 		.notNull()
 		.$defaultFn(() => new Date().toISOString())
@@ -89,6 +107,7 @@ export const receivingSlipDetails = sqliteTable('receiving_slip_details', {
 	product_id: text('product_id')
 		.notNull()
 		.references(() => products.id),
+	line_no: int('line_no').notNull(),
 	quantity: real('quantity').notNull()
 });
 
@@ -101,7 +120,10 @@ export const shippingSlips = sqliteTable('shipping_slips', {
 		.$defaultFn(() => crypto.randomUUID()),
 	slip_number: text('slip_number').notNull().unique(),
 	shipped_at: text('shipped_at').notNull(), // YYYY-MM-DD
-	user_name: text('user_name').notNull(),
+	account_id: text('account_id')
+		.notNull()
+		.references(() => accounts.id),
+	note: text('note').notNull(),
 	created_at: text('created_at')
 		.notNull()
 		.$defaultFn(() => new Date().toISOString())
@@ -120,6 +142,7 @@ export const shippingSlipDetails = sqliteTable('shipping_slip_details', {
 	product_id: text('product_id')
 		.notNull()
 		.references(() => products.id),
+	line_no: int('line_no').notNull(),
 	quantity: real('quantity').notNull()
 });
 
