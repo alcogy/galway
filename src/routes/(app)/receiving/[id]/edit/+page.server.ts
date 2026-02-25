@@ -5,10 +5,10 @@ import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ params, platform }) => {
+export const load: PageServerLoad = async ({ params, platform, locals }) => {
 	const db = getDb(platform!.env.DB);
 
-	const [slipRows, details, suppliers, products] = await Promise.all([
+	const [slipRows, details, suppliers, products, accounts] = await Promise.all([
 		db
 			.select({
 				id: schema.receivingSlips.id,
@@ -59,15 +59,27 @@ export const load: PageServerLoad = async ({ params, platform }) => {
 			})
 			.from(schema.products)
 			.orderBy(asc(schema.products.code)),
+
+		db
+			.select({ id: schema.accounts.id, name: schema.accounts.name })
+			.from(schema.accounts)
+			.orderBy(asc(schema.accounts.name)),
 	]);
 
 	if (!slipRows[0]) error(404, '入荷伝票が見つかりません');
 
-	return { slip: slipRows[0], details, suppliers, products };
+	return {
+		slip: slipRows[0],
+		details,
+		suppliers,
+		products,
+		accounts,
+		isAdmin: locals.user?.role === 'admin',
+	};
 };
 
 export const actions = {
-	update: async ({ params, request, platform }) => {
+	update: async ({ params, request, platform, locals }) => {
 		const db = getDb(platform!.env.DB);
 		const data = await request.formData();
 
@@ -75,6 +87,8 @@ export const actions = {
 		const supplier_id = data.get('supplier_id')?.toString();
 		const detailsJson = data.get('details')?.toString();
 		const note = data.get('note')?.toString() ?? '';
+		const isAdmin = locals.user?.role === 'admin';
+		const account_id = isAdmin ? data.get('account_id')?.toString() : undefined;
 
 		if (!received_at) return fail(400, { error: '入荷日は必須です' });
 		if (!supplier_id) return fail(400, { error: '仕入先は必須です' });
@@ -100,10 +114,13 @@ export const actions = {
 			.from(schema.receivingSlipDetails)
 			.where(eq(schema.receivingSlipDetails.slip_id, params.id));
 
+		const updateFields: Record<string, unknown> = { received_at, supplier_id, note };
+		if (account_id) updateFields.account_id = account_id;
+
 		await db.batch([
 			db
 				.update(schema.receivingSlips)
-				.set({ received_at, supplier_id, note })
+				.set(updateFields)
 				.where(eq(schema.receivingSlips.id, params.id)),
 			db
 				.delete(schema.receivingSlipDetails)

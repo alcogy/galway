@@ -17,4 +17,6 @@ export { default as WBSForm } from './WBSForm.svelte';
 export { default as SelectChip } from './SelectChip.svelte';
 export { default as CsvImportDialog } from './CsvImportDialog.svelte';
 export { default as SlipCsvImportDialog } from './SlipCsvImportDialog.svelte';
+export { default as ReceivingSlipForm } from './ReceivingSlipForm.svelte';
+export { default as ShippingSlipForm } from './ShippingSlipForm.svelte';
 export type { WBSFormData } from './WBSForm.svelte';

@@ -5,10 +5,10 @@ import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ params, platform }) => {
+export const load: PageServerLoad = async ({ params, platform, locals }) => {
 	const db = getDb(platform!.env.DB);
 
-	const [slipRows, details, products] = await Promise.all([
+	const [slipRows, details, products, accounts] = await Promise.all([
 		db
 			.select({
 				id: schema.shippingSlips.id,
@@ -51,21 +51,34 @@ export const load: PageServerLoad = async ({ params, platform }) => {
 			})
 			.from(schema.products)
 			.orderBy(asc(schema.products.code)),
+
+		db
+			.select({ id: schema.accounts.id, name: schema.accounts.name })
+			.from(schema.accounts)
+			.orderBy(asc(schema.accounts.name)),
 	]);
 
 	if (!slipRows[0]) error(404, '出荷伝票が見つかりません');
 
-	return { slip: slipRows[0], details, products };
+	return {
+		slip: slipRows[0],
+		details,
+		products,
+		accounts,
+		isAdmin: locals.user?.role === 'admin',
+	};
 };
 
 export const actions = {
-	update: async ({ params, request, platform }) => {
+	update: async ({ params, request, platform, locals }) => {
 		const db = getDb(platform!.env.DB);
 		const data = await request.formData();
 
 		const shipped_at = data.get('shipped_at')?.toString();
 		const detailsJson = data.get('details')?.toString();
 		const note = data.get('note')?.toString() ?? '';
+		const isAdmin = locals.user?.role === 'admin';
+		const account_id = isAdmin ? data.get('account_id')?.toString() : undefined;
 
 		if (!shipped_at) return fail(400, { error: '出荷日は必須です' });
 		if (!detailsJson) return fail(400, { error: '明細が必要です' });
@@ -90,10 +103,13 @@ export const actions = {
 			.from(schema.shippingSlipDetails)
 			.where(eq(schema.shippingSlipDetails.slip_id, params.id));
 
+		const updateFields: Record<string, unknown> = { shipped_at, note };
+		if (account_id) updateFields.account_id = account_id;
+
 		await db.batch([
 			db
 				.update(schema.shippingSlips)
-				.set({ shipped_at, note })
+				.set(updateFields)
 				.where(eq(schema.shippingSlips.id, params.id)),
 			db
 				.delete(schema.shippingSlipDetails)
