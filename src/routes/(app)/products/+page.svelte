@@ -77,7 +77,7 @@
 		if (searchQuery) {
 			params.set('search', searchQuery);
 		}		
-		return `/supplier/export?${params.toString()}`;
+		return `/products/export?${params.toString()}`;
 	}
 
 	const columns = [
@@ -201,7 +201,7 @@
 <!-- CSV Import -->
 <CsvImportDialog
 	bind:open={showImportDialog}
-	title="仕入先CSVインポート"
+	title="商品CSVインポート"
 	onimport={async (file, mode) => {
 		const formData = new FormData();
 		formData.append('file', file);

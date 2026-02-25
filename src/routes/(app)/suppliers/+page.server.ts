@@ -44,6 +44,8 @@ export const actions = {
 			await db.insert(schema.suppliers).values({
 				name,
 				tel: data.get('tel')?.toString().trim() || null,
+				fax: data.get('fax')?.toString().trim() || null,
+				zipcode: data.get('zipcode')?.toString().trim() || null,
 				address: data.get('address')?.toString().trim() || null,
 				email: data.get('email')?.toString().trim() || null,
 			});
@@ -68,6 +70,8 @@ export const actions = {
 				.set({
 					name,
 					tel: data.get('tel')?.toString().trim() || null,
+					fax: data.get('fax')?.toString().trim() || null,
+					zipcode: data.get('zipcode')?.toString().trim() || null,
 					address: data.get('address')?.toString().trim() || null,
 					email: data.get('email')?.toString().trim() || null,
 					updated_at: new Date().toISOString(),

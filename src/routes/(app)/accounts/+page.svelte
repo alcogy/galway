@@ -20,9 +20,12 @@
 		{ key: 'created_at', label: '登録日', width: '180px' }
 	];
 
+	const roleLabels: Record<string, string> = { admin: '管理者', general: '一般' };
+
 	const rows = $derived(
 		data.accounts.map((account) => ({
 			...account,
+			role: roleLabels[account.role] ?? account.role,
 			created_at: new Date(account.created_at).toLocaleDateString('ja-JP')
 		}))
 	);

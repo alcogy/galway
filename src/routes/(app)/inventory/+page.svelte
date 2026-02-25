@@ -55,8 +55,19 @@
 		{ key: 'product_name', label: '商品名' },
 		{ key: 'quantity', label: '在庫数', width: '100px', numeric: true },
 		{ key: 'unit', label: '単位', width: '80px' },
-		{ key: 'updated_at', label: '最終更新日', width: '160px' }
+		{ key: 'updated_at', label: '最終更新日', width: '150px' }
 	];
+
+	function formatDate(iso: string | null): string {
+		if (!iso) return '—';
+		const d = new Date(iso);
+		const y = d.getFullYear();
+		const mo = String(d.getMonth() + 1).padStart(2, '0');
+		const day = String(d.getDate()).padStart(2, '0');
+		const h = String(d.getHours()).padStart(2, '0');
+		const min = String(d.getMinutes()).padStart(2, '0');
+		return `${y}/${mo}/${day} ${h}:${min}`;
+	}
 </script>
 
 <svelte:head>
@@ -94,6 +105,13 @@
 
 	<div class="table-with-pagination">
 	<Table {columns} rows={pagedInventory}>
+		{#snippet cell(col, value)}
+			{#if col.key === 'updated_at'}
+				{formatDate(value as string | null)}
+			{:else}
+				{value}
+			{/if}
+		{/snippet}
 		{#snippet empty()}
 			<span>在庫データがありません</span>
 		{/snippet}

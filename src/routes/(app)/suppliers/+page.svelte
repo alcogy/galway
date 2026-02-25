@@ -33,6 +33,8 @@
 	// Form state
 	let name = $state('');
 	let tel = $state('');
+	let fax = $state('');
+	let zipcode = $state('');
 	let address = $state('');
 	let email = $state('');
 
@@ -40,6 +42,8 @@
 		editing = null;
 		name = '';
 		tel = '';
+		fax = '';
+		zipcode = '';
 		address = '';
 		email = '';
 		showModal = true;
@@ -49,6 +53,8 @@
 		editing = supplier;
 		name = supplier.name;
 		tel = supplier.tel ?? '';
+		fax = supplier.fax ?? '';
+		zipcode = supplier.zipcode ?? '';
 		address = supplier.address ?? '';
 		email = supplier.email ?? '';
 		showModal = true;
@@ -79,6 +85,7 @@
 	const columns = [
 		{ key: 'name', label: '仕入先名' },
 		{ key: 'tel', label: '電話番号', width: '140px' },
+		{ key: 'zipcode', label: '郵便番号', width: '100px' },
 		{ key: 'address', label: '住所' },
 		{ key: 'email', label: 'メールアドレス', width: '200px' }
 	];
@@ -146,13 +153,21 @@
 		{/if}
 
 		<div class="form-grid">
-			<div class="field">
+			<div class="field full">
 				<Label required>仕入先名</Label>
 				<Input name="name" bind:value={name} placeholder="株式会社〇〇" required />
 			</div>
 			<div class="field">
 				<Label>電話番号</Label>
 				<Input name="tel" bind:value={tel} placeholder="03-0000-0000" type="tel" />
+			</div>
+			<div class="field">
+				<Label>FAX</Label>
+				<Input name="fax" bind:value={fax} placeholder="03-0000-0001" type="tel" />
+			</div>
+			<div class="field">
+				<Label>郵便番号</Label>
+				<Input name="zipcode" bind:value={zipcode} placeholder="000-0000" />
 			</div>
 			<div class="field">
 				<Label>メールアドレス</Label>
@@ -211,7 +226,7 @@
 			const json = await res.json();
 			if (json.type === 'success') {
 				await invalidateAll();
-				importNotification = { type: 'success', message: `${json.data?.count ?? ''}件の商品データをインポートしました` };
+				importNotification = { type: 'success', message: `${json.data?.count ?? ''}件の仕入先データをインポートしました` };
 			} else {
 				importNotification = { type: 'error', message: json.data?.error || 'インポートに失敗しました' };
 			}
@@ -263,7 +278,7 @@
 
 	.form-grid {
 		display: grid;
-		grid-template-columns: 1fr;
+		grid-template-columns: 1fr 1fr;
 		gap: var(--space-lg);
 
 		@media (max-width: 480px) {
