@@ -1,5 +1,5 @@
 import { fail } from '@sveltejs/kit';
-import { eq, asc } from 'drizzle-orm';
+import { eq, asc, like, or, count } from 'drizzle-orm';
 import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import { parseCSV } from '$lib/utils/csv';
@@ -14,10 +14,28 @@ export interface InventoryItem {
 	updated_at: string;
 }
 
-export const load: PageServerLoad = async ({ platform }) => {
+export const load: PageServerLoad = async ({ platform, url }) => {
 	const db = getDb(platform!.env.DB);
 
-	const [inventory, products] = await Promise.all([
+	const itemsPerPage = 20;
+	const searchQuery = url.searchParams.get('search') || '';
+	const currentPage = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
+
+	const whereClause = searchQuery
+		? or(
+				like(schema.products.code, `%${searchQuery}%`),
+				like(schema.products.name, `%${searchQuery}%`)
+			)
+		: undefined;
+	const offset = (currentPage - 1) * itemsPerPage;
+
+	const [countResult, inventoryRows, products] = await Promise.all([
+		db
+			.select({ count: count() })
+			.from(schema.products)
+			.leftJoin(schema.inventory, eq(schema.products.id, schema.inventory.product_id))
+			.where(whereClause),
+
 		db
 			.select({
 				product_id: schema.products.id,
@@ -29,7 +47,10 @@ export const load: PageServerLoad = async ({ platform }) => {
 			})
 			.from(schema.products)
 			.leftJoin(schema.inventory, eq(schema.products.id, schema.inventory.product_id))
-			.orderBy(asc(schema.products.code)),
+			.where(whereClause)
+			.orderBy(asc(schema.products.code))
+			.limit(itemsPerPage)
+			.offset(offset),
 
 		db
 			.select({
@@ -43,12 +64,16 @@ export const load: PageServerLoad = async ({ platform }) => {
 	]);
 
 	return {
-		inventory: inventory.map((item) => ({
+		inventory: inventoryRows.map((item) => ({
 			...item,
 			quantity: item.quantity ?? 0,
 			updated_at: item.updated_at ?? '',
 		})),
 		products,
+		totalItems: countResult[0]?.count ?? 0,
+		itemsPerPage,
+		currentPage,
+		searchQuery,
 	};
 };
 

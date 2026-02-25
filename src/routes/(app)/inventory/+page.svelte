@@ -2,6 +2,7 @@
 	import { ClipboardList, Upload, Download } from '@lucide/svelte';
 	import { Button, Label, Modal, Table, Select, SearchBar, Pagination, CsvImportDialog } from '$lib/components';
 	import { goto, invalidateAll } from '$app/navigation';
+	import { page } from '$app/state';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -11,25 +12,7 @@
 	let importNotification = $state<{ type: 'success' | 'error'; message: string } | null>(null);
 	let stocktakeProductId = $state('');
 	let stocktakeQuantity = $state(0);
-	let page = $state(1);
-	let searchQuery = $state('');
-
-	const ITEMS_PER_PAGE = 20;
-	const filteredInventory = $derived(
-		data.inventory.filter(
-			(i) =>
-				i.product_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-				i.product_name.toLowerCase().includes(searchQuery.toLowerCase())
-		)
-	);
-	const pagedInventory = $derived(
-		filteredInventory.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
-	);
-
-	$effect(() => {
-		searchQuery;
-		page = 1;
-	});
+	let searchQuery = $state(page.url.searchParams.get('search') || '');
 
 	const productOptions = $derived(
 		data.products.map((p) => ({ value: p.id, label: `${p.code} ${p.name}` }))
@@ -43,11 +26,22 @@
 
 	function handleSearch() {
 		const params = new URLSearchParams();
-		if (searchQuery) {
-			params.set('search', searchQuery);
-		}		
-		params.set('page', '1'); // Reset to first page when searching
+		if (searchQuery) params.set('search', searchQuery);
+		params.set('page', '1');
 		goto(`?${params.toString()}`, { keepFocus: true });
+	}
+
+	function handlePageChange(newPage: number) {
+		const params = new URLSearchParams();
+		if (searchQuery) params.set('search', searchQuery);
+		params.set('page', newPage.toString());
+		goto(`?${params.toString()}`, { keepFocus: true });
+	}
+
+	function getExportUrl() {
+		const params = new URLSearchParams();
+		if (searchQuery) params.set('search', searchQuery);
+		return `/inventory/export?${params.toString()}`;
 	}
 
 	const columns = [
@@ -78,7 +72,7 @@
 	<div class="page-header">
 		<h1 class="page-title">在庫管理</h1>
 		<div class="page-actions">
-			<a href="/inventory/export" class="btn-download" download>
+			<a href={getExportUrl()} class="btn-download" download>
 				<Download size={14} />
 				CSVダウンロード
 			</a>
@@ -92,7 +86,7 @@
 			</Button>
 		</div>
 	</div>
-	
+
 	{#if importNotification}
 		<div class="notification" class:is-error={importNotification.type === 'error'}>
 			{importNotification.message}
@@ -100,30 +94,30 @@
 	{/if}
 
 	<div class="filters">
-		<SearchBar bind:value={searchQuery} placeholder="商品名・コードで検索..." onsubmit={handleSearch} />		
+		<SearchBar bind:value={searchQuery} placeholder="商品名・コードで検索..." onsubmit={handleSearch} />
 	</div>
 
 	<div class="table-with-pagination">
-	<Table {columns} rows={pagedInventory}>
-		{#snippet cell(col, value)}
-			{#if col.key === 'updated_at'}
-				{formatDate(value as string | null)}
-			{:else if col.key === 'quantity'}
-				{(value as number).toLocaleString()}
-			{:else}
-				{value}
-			{/if}
-		{/snippet}
-		{#snippet empty()}
-			<span>在庫データがありません</span>
-		{/snippet}
-	</Table>
-	<Pagination
-		totalItems={data.inventory.length}
-		itemsPerPage={ITEMS_PER_PAGE}
-		currentPage={page}
-		onPageChange={(p) => (page = p)}
-	/>
+		<Table {columns} rows={data.inventory}>
+			{#snippet cell(col, value)}
+				{#if col.key === 'updated_at'}
+					{formatDate(value as string | null)}
+				{:else if col.key === 'quantity'}
+					{(value as number).toLocaleString()}
+				{:else}
+					{value}
+				{/if}
+			{/snippet}
+			{#snippet empty()}
+				<span>在庫データがありません</span>
+			{/snippet}
+		</Table>
+		<Pagination
+			totalItems={data.totalItems}
+			itemsPerPage={data.itemsPerPage}
+			currentPage={data.currentPage}
+			onPageChange={handlePageChange}
+		/>
 	</div>
 </div>
 
@@ -140,7 +134,7 @@
 				headers: { Accept: 'application/json' },
 				body: formData
 			});
-			const json = await res.json();
+			const json = await res.json() as any;
 			if (json.type === 'success') {
 				await invalidateAll();
 				importNotification = { type: 'success', message: `${json.data?.count ?? ''}件の在庫データをインポートしました` };
@@ -262,11 +256,6 @@
 			border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 			border-bottom: none;
 		}
-	}
-
-	.quantity {
-		font-weight: 600;
-		font-variant-numeric: tabular-nums;
 	}
 
 	.form {
