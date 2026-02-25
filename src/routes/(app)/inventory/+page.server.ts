@@ -1,5 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
+import { parseCSV } from '$lib/utils/csv';
 
 export interface InventoryItem {
 	product_id: string;
@@ -50,5 +51,27 @@ export const load: PageServerLoad = async () => {
 export const actions = {
 	stocktake: async () => {
 		return fail(501, { error: 'Not implemented' });
+	},
+	import: async ({ request }) => {
+		const formData = await request.formData();
+		const file = formData.get('file') as File | null;
+		const mode = formData.get('mode')?.toString();
+
+		if (!file) return fail(400, { error: 'ファイルが選択されていません' });
+		if (mode !== 'append' && mode !== 'replace') return fail(400, { error: 'インポート方法が不正です' });
+
+		const text = await file.text();
+		const rows = parseCSV(text);
+
+		if (rows.length < 2) return fail(400, { error: 'CSVにデータがありません（ヘッダー行 + 1件以上のデータが必要です）' });
+
+		// Expected columns: 商品コード, 数量
+		// (Implementation deferred to Plan 4)
+		try {
+			return { success: true, count: 0 };
+		} catch (error) {
+			console.error('Failed to import inventory:', error);
+			return fail(500, { error: '在庫データのインポートに失敗しました。' });
+		}
 	}
 } satisfies Actions;

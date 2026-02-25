@@ -1,11 +1,14 @@
 <script lang="ts">
-	import { ClipboardList } from '@lucide/svelte';
-	import { Button, Label, Modal, Table, Select, Pagination } from '$lib/components';
+	import { ClipboardList, Upload } from '@lucide/svelte';
+	import { Button, Label, Modal, Table, Select, Pagination, CsvImportDialog } from '$lib/components';
+	import { invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
 	let showModal = $state(false);
+	let showImportDialog = $state(false);
+	let importNotification = $state<{ type: 'success' | 'error'; message: string } | null>(null);
 	let stocktakeProductId = $state('');
 	let stocktakeQuantity = $state(0);
 	let page = $state(1);
@@ -42,12 +45,22 @@
 	<div class="page-header">
 		<h1 class="page-title">在庫管理</h1>
 		<div class="page-actions">
+			<Button variant="secondary" size="sm" onclick={() => (showImportDialog = true)}>
+				<Upload size={14} />
+				CSVインポート
+			</Button>
 			<Button size="sm" onclick={openStocktake}>
 				<ClipboardList size={16} />
 				棚卸登録
 			</Button>
 		</div>
 	</div>
+
+	{#if importNotification}
+		<div class="notification" class:is-error={importNotification.type === 'error'}>
+			{importNotification.message}
+		</div>
+	{/if}
 
 	<div class="table-with-pagination">
 	<Table {columns} rows={pagedInventory}>
@@ -63,6 +76,33 @@
 	/>
 	</div>
 </div>
+
+<CsvImportDialog
+	bind:open={showImportDialog}
+	title="在庫CSVインポート"
+	onimport={async (file, mode) => {
+		const formData = new FormData();
+		formData.append('file', file);
+		formData.append('mode', mode);
+		try {
+			const res = await fetch('?/import', {
+				method: 'POST',
+				headers: { Accept: 'application/json' },
+				body: formData
+			});
+			const json = await res.json();
+			if (json.type === 'success') {
+				await invalidateAll();
+				importNotification = { type: 'success', message: `${json.data?.count ?? ''}件の在庫データをインポートしました` };
+			} else {
+				importNotification = { type: 'error', message: json.data?.error || 'インポートに失敗しました' };
+			}
+		} catch {
+			importNotification = { type: 'error', message: 'インポートに失敗しました' };
+		}
+		setTimeout(() => { importNotification = null; }, 6000);
+	}}
+/>
 
 <!-- Stocktake Modal -->
 <Modal bind:open={showModal} title="棚卸登録" size="sm">
@@ -121,6 +161,21 @@
 	.page-actions {
 		display: flex;
 		gap: var(--space-sm);
+	}
+
+	.notification {
+		padding: var(--space-sm) var(--space-md);
+		border-radius: var(--radius-md);
+		font-size: 0.8125rem;
+		background-color: var(--color-success-bg, #ecfdf5);
+		color: var(--color-success, #059669);
+		border: 1px solid var(--color-success-border, #6ee7b7);
+
+		&.is-error {
+			background-color: var(--color-danger-bg);
+			color: var(--color-danger);
+			border-color: var(--color-danger);
+		}
 	}
 
 	.table-with-pagination {
