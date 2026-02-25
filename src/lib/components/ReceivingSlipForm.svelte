@@ -98,12 +98,11 @@
 	{#if isAdmin}
 		<div class="field">
 			<Label required>担当者</Label>
-			<Select
+			<SearchableSelect
 				name="account_id"
 				options={accountOptions}
 				placeholder="担当者を選択"
 				bind:value={accountId}
-				required
 			/>
 		</div>
 	{/if}

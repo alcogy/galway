@@ -2,7 +2,6 @@
 	import { Plus, Trash2 } from '@lucide/svelte';
 	import Button from './Button.svelte';
 	import Label from './Label.svelte';
-	import Select from './Select.svelte';
 	import SearchableSelect from './SearchableSelect.svelte';
 	import Textarea from './Textarea.svelte';
 
@@ -80,12 +79,11 @@
 	{#if isAdmin}
 		<div class="field">
 			<Label required>担当者</Label>
-			<Select
+			<SearchableSelect
 				name="account_id"
 				options={accountOptions}
 				placeholder="担当者を選択"
 				bind:value={accountId}
-				required
 			/>
 		</div>
 	{/if}
