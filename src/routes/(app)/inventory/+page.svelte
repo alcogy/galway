@@ -28,7 +28,7 @@
 	const columns = [
 		{ key: 'product_code', label: '商品コード', width: '160px' },
 		{ key: 'product_name', label: '商品名' },
-		{ key: 'quantity', label: '在庫数', width: '100px' },
+		{ key: 'quantity', label: '在庫数', width: '100px', numeric: true },
 		{ key: 'unit', label: '単位', width: '80px' },
 		{ key: 'updated_at', label: '最終更新日', width: '160px' }
 	];
@@ -51,13 +51,6 @@
 
 	<div class="table-with-pagination">
 	<Table {columns} rows={pagedInventory}>
-		{#snippet cell(col, value)}
-			{#if col.key === 'quantity'}
-				<span class="quantity">{value}</span>
-			{:else}
-				{value ?? ''}
-			{/if}
-		{/snippet}
 		{#snippet empty()}
 			<span>在庫データがありません</span>
 		{/snippet}

@@ -23,7 +23,7 @@
 	const columns = [
 		{ key: 'product_code', label: '商品コード', width: '160px' },
 		{ key: 'product_name', label: '商品名' },
-		{ key: 'quantity', label: '数量', width: '100px' },
+		{ key: 'quantity', label: '数量', width: '100px', numeric: true },
 		{ key: 'unit', label: '単位', width: '80px' }
 	];
 </script>

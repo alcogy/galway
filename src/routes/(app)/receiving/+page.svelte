@@ -18,7 +18,7 @@
 		{ key: 'slip_number', label: '伝票番号', width: '180px' },
 		{ key: 'supplier_name', label: '仕入先' },
 		{ key: 'received_at', label: '入荷日', width: '120px' },
-		{ key: 'item_count', label: '品目数', width: '80px' },
+		{ key: 'item_count', label: '品目数', width: '80px', numeric: true },
 		{ key: 'user_name', label: '担当者', width: '120px' }
 	];
 </script>

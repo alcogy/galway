@@ -5,6 +5,7 @@
 		key: string;
 		label: string;
 		width?: string;
+		numeric?: boolean;
 	}
 
 	interface Props {
@@ -18,6 +19,13 @@
 	}
 
 	let { columns, rows, row, cell, empty, onrowclick, actions }: Props = $props();
+
+	function formatValue(col: Column, val: unknown): string {
+		if (col.numeric) {
+			return Number(val).toLocaleString('ja-JP');
+		}		
+		return String(val ?? '');
+	}
 </script>
 
 <div class="table-wrapper">
@@ -25,7 +33,7 @@
 		<thead>
 			<tr>
 				{#each columns as col (col.key)}
-					<th style:width={col.width}>{col.label}</th>
+					<th style:width={col.width} style:text-align={col.numeric ? 'right' : undefined}>{col.label}</th>
 				{/each}
 				{#if actions}
 					<th class="actions-header" style:width="100px">操作</th>
@@ -55,14 +63,14 @@
 							tabindex={(!actions && onrowclick) ? 0 : undefined}
 						>
 							{#each columns as col (col.key)}
-							<td>
-								{#if cell}
-									{@render cell(col, (item as Record<string, unknown>)[col.key])}
-								{:else}
-									{(item as Record<string, unknown>)[col.key] ?? ''}
-								{/if}
-							</td>
-						{/each}
+								<td style:text-align={col.numeric ? 'right' : undefined}>
+									{#if cell}
+										{@render cell(col, (item as Record<string, unknown>)[col.key])}
+									{:else}
+										{formatValue(col, (item as Record<string, unknown>)[col.key])}
+									{/if}
+								</td>
+							{/each}
 							{#if actions}
 								<td class="actions-cell">
 									{@render actions(item)}
