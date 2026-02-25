@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ArrowLeft, Pencil, Trash2 } from '@lucide/svelte';
+	import { ArrowLeft, Pencil, Trash2, Download } from '@lucide/svelte';
 	import { Button, Card, ConfirmDialog, Table } from '$lib/components';
 	import type { PageData } from './$types';
 	import { goto } from '$app/navigation';
@@ -43,6 +43,10 @@
 	<div class="page-header">
 		<h1 class="page-title">{data.slip.slip_number}</h1>
 		<div class="page-actions">
+			<a href="/shipping/{data.slip.id}/export" class="btn-download">
+				<Download size={14} />
+				CSVダウンロード
+			</a>
 			<Button variant="secondary" size="sm" onclick={() => goto(`/shipping/${data.slip.id}/edit`)}>
 				<Pencil size={14} />
 				編集
@@ -189,6 +193,34 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
+	}
+
+	.btn-download {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-sm);
+		height: 28px;
+		padding: 0 var(--space-md);
+		font-size: 0.75rem;
+		font-weight: 500;
+		font-family: inherit;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+		background-color: var(--color-bg-elevated);
+		color: var(--color-text);
+		text-decoration: none;
+		white-space: nowrap;
+		transition:
+			background-color var(--transition-fast),
+			border-color var(--transition-fast);
+
+		&:hover {
+			background-color: var(--color-hover);
+		}
+
+		&:active {
+			background-color: var(--color-active);
+		}
 	}
 
 	.section-title {
