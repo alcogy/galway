@@ -16,4 +16,5 @@ export { default as AccountEditor } from './AccountEditor.svelte';
 export { default as WBSForm } from './WBSForm.svelte';
 export { default as SelectChip } from './SelectChip.svelte';
 export { default as CsvImportDialog } from './CsvImportDialog.svelte';
+export { default as SlipCsvImportDialog } from './SlipCsvImportDialog.svelte';
 export type { WBSFormData } from './WBSForm.svelte';

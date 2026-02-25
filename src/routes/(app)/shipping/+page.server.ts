@@ -1,4 +1,6 @@
-import type { PageServerLoad } from './$types';
+import { fail } from '@sveltejs/kit';
+import type { Actions, PageServerLoad } from './$types';
+import { parseCSV } from '$lib/utils/csv';
 
 export interface ShippingSlip {
 	id: string;
@@ -43,3 +45,28 @@ export const load: PageServerLoad = async () => {
 		products: MOCK_PRODUCTS
 	};
 };
+
+export const actions = {
+	import: async ({ request }) => {
+		const formData = await request.formData();
+		const file = formData.get('file') as File | null;
+		const date = formData.get('date')?.toString();
+
+		if (!file) return fail(400, { error: 'ファイルが選択されていません' });
+		if (!date) return fail(400, { error: '出荷日を選択してください' });
+
+		const text = await file.text();
+		const rows = parseCSV(text);
+
+		if (rows.length < 2) return fail(400, { error: 'CSVにデータがありません（ヘッダー行 + 1件以上のデータが必要です）' });
+
+		// Expected columns: 商品コード, 商品名, 数量
+		// (Implementation deferred to Plan 4)
+		try {
+			return { success: true, count: 0 };
+		} catch (error) {
+			console.error('Failed to import shipping slips:', error);
+			return fail(500, { error: '出荷伝票のインポートに失敗しました。' });
+		}
+	}
+} satisfies Actions;
