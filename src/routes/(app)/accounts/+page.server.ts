@@ -14,10 +14,7 @@ export const load: PageServerLoad = async ({ platform, locals, url }) => {
 	const db = drizzle(platform!.env.DB, { schema });
 
 	// Get pagination setting
-	const pageSetting = await db.query.settings.findFirst({
-		where: eq(schema.settings.key, 'page_num')
-	});
-	const itemsPerPage = pageSetting ? parseInt(pageSetting.value) : 30;
+	const itemsPerPage = 30;
 
 	const searchQuery = url.searchParams.get('search') || '';
 	const currentPage = parseInt(url.searchParams.get('page') || '1');

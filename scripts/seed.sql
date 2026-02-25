@@ -9,8 +9,9 @@
 -- -----------------------------------------------
 -- アカウント (Accounts)
 -- -----------------------------------------------
+-- password 'admin123' hashed with PBKDF2-SHA256 (100,000 iterations)
 INSERT INTO accounts (id, email, password_hash, name, role, created_at) VALUES
-  ('acc-1', 'tanaka@example.com', 'PLACEHOLDER', '田中 太郎', 'admin',   '2026-01-10T09:00:00.000Z'),
+  ('3ec44910-4c53-4c9d-b027-78dcef250625', 'admin@example.com', '350b7b381cbebbe9d474d6ae2174274c:f1862ee85f71d7e84ea46b4e26e31eee1f732acee6d621c3af7502c3ad1fad6a', '管理者', 'admin', '2026-01-10T09:00:00.000Z'),
   ('acc-2', 'suzuki@example.com', 'PLACEHOLDER', '鈴木 花子', 'general', '2026-01-10T09:00:00.000Z'),
   ('acc-3', 'sato@example.com',   'PLACEHOLDER', '佐藤 次郎', 'general', '2026-01-10T09:00:00.000Z');
 

@@ -17,7 +17,7 @@
 		title = 'Confirm',
 		message,
 		confirmLabel = 'OK',
-		cancelLabel = 'Cancel',
+		cancelLabel = 'キャンセル',
 		onconfirm,
 		oncancel
 	}: Props = $props();

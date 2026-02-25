@@ -46,7 +46,7 @@ export const actions = {
 			where: eq(schema.accounts.email, email)
 		});
 		if (existing && existing.id !== locals.user!.id) {
-			return fail(400, { error: 'そのメールアドレスはすでに使用されています' });
+			return fail(400, { error: 'Email already exists' });
 		}
 
 		const updateData: Record<string, string> = { name, email };
@@ -58,7 +58,7 @@ export const actions = {
 			}
 
 			const account = await db.query.accounts.findFirst({
-				where: eq(schema.accounts.id, locals.user!.id)
+				where: eq(schema.accounts.id, locals.user?.id ?? 'acc-1')
 			});
 			if (!account) {
 				return fail(404, { error: 'アカウントが見つかりません' });

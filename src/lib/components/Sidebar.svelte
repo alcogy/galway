@@ -45,7 +45,6 @@
 		{ href: '/receiving', label: '入荷管理', icon: PackageCheck },
 		{ href: '/shipping', label: '出荷管理', icon: Truck },
 		{ href: '/inventory', label: '在庫管理', icon: Boxes },
-		{ href: '/settings', label: '設定', icon: Settings, adminOnly: true },
 		{ href: '/accounts', label: 'アカウント管理', icon: Shield, adminOnly: true }
 	];
 

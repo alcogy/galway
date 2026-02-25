@@ -71,10 +71,9 @@ export async function getSession(event: RequestEvent) {
 	}
 
 	const db = drizzle(event.platform!.env.DB, { schema });
-	//const account = await db.query.accounts.findFirst({
-	//	where: eq(schema.accounts.id, sessionId)
-	//});
+	const account = await db.query.accounts.findFirst({
+		where: eq(schema.accounts.id, sessionId)
+	});
 
-	//return account ?? null;
-	return null;
+	return account ?? null;
 }
