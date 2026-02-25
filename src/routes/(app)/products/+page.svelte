@@ -96,16 +96,16 @@
 	<div class="page-header">
 		<h1 class="page-title">商品管理</h1>
 		<div class="page-actions">
-			<Button variant="secondary" size="sm" onclick={() => (showImportDialog = true)}>
-				<Upload size={14} />
-				CSVインポート
-			</Button>
 			<a href={getExportUrl()} download>
 				<Button variant="secondary" size="sm">
 					<Download size={14} />
 					CSVダウンロード
 				</Button>
 			</a>
+			<Button variant="secondary" size="sm" onclick={() => (showImportDialog = true)}>
+				<Upload size={14} />
+				CSVインポート
+			</Button>
 			<Button size="sm" onclick={openCreate}>
 				<Plus size={16} />
 				新規登録

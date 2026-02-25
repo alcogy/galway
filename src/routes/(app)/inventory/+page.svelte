@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ClipboardList, Upload } from '@lucide/svelte';
+	import { ClipboardList, Upload, Download } from '@lucide/svelte';
 	import { Button, Label, Modal, Table, Select, Pagination, CsvImportDialog } from '$lib/components';
 	import { invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
@@ -45,6 +45,10 @@
 	<div class="page-header">
 		<h1 class="page-title">在庫管理</h1>
 		<div class="page-actions">
+			<a href="/inventory/export" class="btn-download" download>
+				<Download size={14} />
+				CSVダウンロード
+			</a>
 			<Button variant="secondary" size="sm" onclick={() => (showImportDialog = true)}>
 				<Upload size={14} />
 				CSVインポート
@@ -161,6 +165,35 @@
 	.page-actions {
 		display: flex;
 		gap: var(--space-sm);
+	}
+
+	.btn-download {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-sm);
+		height: 28px;
+		padding: 0 var(--space-md);
+		font-size: 0.75rem;
+		font-weight: 500;
+		font-family: inherit;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+		background-color: var(--color-bg-elevated);
+		color: var(--color-text);
+		text-decoration: none;
+		white-space: nowrap;
+		cursor: pointer;
+		transition:
+			background-color var(--transition-fast),
+			border-color var(--transition-fast);
+
+		&:hover {
+			background-color: var(--color-hover);
+		}
+
+		&:active {
+			background-color: var(--color-active);
+		}
 	}
 
 	.notification {
