@@ -1,74 +1,77 @@
 import { fail } from '@sveltejs/kit';
-import type { Actions, PageServerLoad } from './$types';
+import { eq, desc, count, like, asc } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
+import { getDb } from '$lib/server/db';
+import * as schema from '$lib/server/db/schema';
 import { parseCSV } from '$lib/utils/csv';
+import type { Actions, PageServerLoad } from './$types';
 
 export interface ReceivingSlip {
 	id: string;
 	slip_number: string;
 	received_at: string;
 	supplier_id: string;
-	supplier_name: string;
+	supplier_name: string | null;
 	item_count: number;
-	user_name: string;
+	user_name: string | null;
 }
 
 export interface ReceivingDetail {
 	id: string;
 	product_id: string;
-	product_code: string;
-	product_name: string;
+	product_code: string | null;
+	product_name: string | null;
 	quantity: number;
-	unit: string;
+	unit: string | null;
 }
 
-const MOCK_SLIPS: ReceivingSlip[] = [
-	{ id: '1', slip_number: 'RCV-2026-001', received_at: '2026-02-01', supplier_id: '1', supplier_name: '株式会社山田製作所', item_count: 3, user_name: '田中 太郎' },
-	{ id: '2', slip_number: 'RCV-2026-002', received_at: '2026-02-03', supplier_id: '2', supplier_name: '田中商事株式会社', item_count: 2, user_name: '鈴木 花子' },
-	{ id: '3', slip_number: 'RCV-2026-003', received_at: '2026-02-05', supplier_id: '3', supplier_name: '鈴木部品工業', item_count: 5, user_name: '田中 太郎' },
-	{ id: '4', slip_number: 'RCV-2026-004', received_at: '2026-02-07', supplier_id: '1', supplier_name: '株式会社山田製作所', item_count: 1, user_name: '佐藤 次郎' },
-	{ id: '5', slip_number: 'RCV-2026-005', received_at: '2026-02-10', supplier_id: '4', supplier_name: '佐藤金属株式会社', item_count: 4, user_name: '鈴木 花子' },
-	{ id: '6', slip_number: 'RCV-2026-006', received_at: '2026-02-12', supplier_id: '2', supplier_name: '田中商事株式会社', item_count: 2, user_name: '田中 太郎' },
-	{ id: '7', slip_number: 'RCV-2026-007', received_at: '2026-02-14', supplier_id: '5', supplier_name: '高橋電機工業株式会社', item_count: 3, user_name: '佐藤 次郎' },
-	{ id: '8', slip_number: 'RCV-2026-008', received_at: '2026-02-17', supplier_id: '3', supplier_name: '鈴木部品工業', item_count: 2, user_name: '鈴木 花子' },
-	{ id: '9', slip_number: 'RCV-2026-009', received_at: '2026-02-19', supplier_id: '6', supplier_name: '伊藤素材株式会社', item_count: 6, user_name: '田中 太郎' },
-	{ id: '10', slip_number: 'RCV-2026-010', received_at: '2026-02-21', supplier_id: '1', supplier_name: '株式会社山田製作所', item_count: 2, user_name: '佐藤 次郎' },
-	{ id: '11', slip_number: 'RCV-2026-011', received_at: '2026-02-22', supplier_id: '7', supplier_name: '渡辺化学品工業', item_count: 3, user_name: '鈴木 花子' },
-	{ id: '12', slip_number: 'RCV-2026-012', received_at: '2026-02-24', supplier_id: '2', supplier_name: '田中商事株式会社', item_count: 1, user_name: '田中 太郎' },
-	{ id: '13', slip_number: 'RCV-2026-013', received_at: '2026-02-24', supplier_id: '8', supplier_name: '中村精密機械株式会社', item_count: 4, user_name: '佐藤 次郎' },
-];
+export const load: PageServerLoad = async ({ platform }) => {
+	const db = getDb(platform!.env.DB);
 
-const MOCK_SUPPLIERS = [
-	{ id: '1', name: '株式会社山田製作所' },
-	{ id: '2', name: '田中商事株式会社' },
-	{ id: '3', name: '鈴木部品工業' },
-	{ id: '4', name: '佐藤金属株式会社' },
-	{ id: '5', name: '高橋電機工業株式会社' },
-	{ id: '6', name: '伊藤素材株式会社' },
-	{ id: '7', name: '渡辺化学品工業' },
-	{ id: '8', name: '中村精密機械株式会社' },
-];
+	const [slips, suppliers, products] = await Promise.all([
+		db
+			.select({
+				id: schema.receivingSlips.id,
+				slip_number: schema.receivingSlips.slip_number,
+				received_at: schema.receivingSlips.received_at,
+				supplier_id: schema.receivingSlips.supplier_id,
+				supplier_name: schema.suppliers.name,
+				item_count: count(schema.receivingSlipDetails.id),
+				user_name: schema.accounts.name,
+			})
+			.from(schema.receivingSlips)
+			.leftJoin(schema.suppliers, eq(schema.receivingSlips.supplier_id, schema.suppliers.id))
+			.leftJoin(schema.accounts, eq(schema.receivingSlips.account_id, schema.accounts.id))
+			.leftJoin(
+				schema.receivingSlipDetails,
+				eq(schema.receivingSlips.id, schema.receivingSlipDetails.slip_id)
+			)
+			.groupBy(schema.receivingSlips.id)
+			.orderBy(desc(schema.receivingSlips.received_at)),
 
-const MOCK_PRODUCTS = [
-	{ id: '1', code: 'PRD001', name: 'アルミフレーム A型', unit: '本' },
-	{ id: '2', code: 'PRD002', name: 'ステンレスボルト M8×30', unit: '個' },
-	{ id: '3', code: 'PRD003', name: '鉄板 2.3mm厚', unit: 'kg' },
-	{ id: '4', code: 'PRD004', name: '銅パイプ 15A', unit: 'm' },
-	{ id: '5', code: 'PRD005', name: 'プラスチックケース 小', unit: '個' },
-	{ id: '6', code: 'PRD006', name: '電子基板 A基板', unit: '枚' },
-	{ id: '7', code: 'PRD007', name: 'ゴムパッキン 30mm', unit: '個' },
-	{ id: '8', code: 'PRD008', name: '防錆スプレー 500ml', unit: '缶' },
-];
+		db
+			.select({ id: schema.suppliers.id, name: schema.suppliers.name })
+			.from(schema.suppliers)
+			.orderBy(asc(schema.suppliers.name)),
 
-export const load: PageServerLoad = async () => {
-	return {
-		slips: MOCK_SLIPS,
-		suppliers: MOCK_SUPPLIERS,
-		products: MOCK_PRODUCTS
-	};
+		db
+			.select({
+				id: schema.products.id,
+				code: schema.products.code,
+				name: schema.products.name,
+				unit: schema.products.unit,
+			})
+			.from(schema.products)
+			.orderBy(asc(schema.products.code)),
+	]);
+
+	return { slips, suppliers, products };
 };
 
 export const actions = {
-	import: async ({ request }) => {
+	import: async ({ request, platform, locals }) => {
+		const db = getDb(platform!.env.DB);
+		const account_id = locals.user?.id ?? 'acc-1';
 		const formData = await request.formData();
 		const file = formData.get('file') as File | null;
 		const date = formData.get('date')?.toString();
@@ -80,16 +83,77 @@ export const actions = {
 
 		const text = await file.text();
 		const rows = parseCSV(text);
-
 		if (rows.length < 2) return fail(400, { error: 'CSVにデータがありません（ヘッダー行 + 1件以上のデータが必要です）' });
 
-		// Expected columns: 商品コード, 商品名, 数量
-		// (Implementation deferred to Plan 4)
+		const [header, ...dataRows] = rows;
+		const codeIdx = header.findIndex((h) => h.trim() === '商品コード');
+		const qtyIdx = header.findIndex((h) => h.trim() === '数量');
+
+		if (codeIdx === -1) return fail(400, { error: 'CSVに「商品コード」列が必要です' });
+		if (qtyIdx === -1) return fail(400, { error: 'CSVに「数量」列が必要です' });
+
+		const allProducts = await db
+			.select({ id: schema.products.id, code: schema.products.code })
+			.from(schema.products);
+		const productMap = new Map(allProducts.map((p) => [p.code, p.id]));
+
+		const detailRecords: { product_id: string; quantity: number }[] = [];
+		for (const row of dataRows) {
+			const code = row[codeIdx]?.trim();
+			const qty = parseFloat(row[qtyIdx]?.trim() ?? '');
+			if (!code || isNaN(qty) || qty <= 0) continue;
+			const productId = productMap.get(code);
+			if (!productId) continue;
+			detailRecords.push({ product_id: productId, quantity: qty });
+		}
+
+		if (detailRecords.length === 0) return fail(400, { error: '有効なデータがありません' });
+
 		try {
-			return { success: true, count: 0 };
-		} catch (error) {
-			console.error('Failed to import receiving slips:', error);
+			const year = new Date(date).getFullYear();
+			const [last] = await db
+				.select({ n: schema.receivingSlips.slip_number })
+				.from(schema.receivingSlips)
+				.where(like(schema.receivingSlips.slip_number, `RCV-${year}-%`))
+				.orderBy(desc(schema.receivingSlips.slip_number))
+				.limit(1);
+			const lastNum = last ? parseInt(last.n.split('-')[2], 10) : 0;
+			const slip_number = `RCV-${year}-${String(lastNum + 1).padStart(3, '0')}`;
+
+			const now = new Date().toISOString();
+
+			const [slip] = await db
+				.insert(schema.receivingSlips)
+				.values({ slip_number, received_at: date, supplier_id: supplierId, account_id, note: '' })
+				.returning({ id: schema.receivingSlips.id });
+
+			await db.batch([
+				...detailRecords.map((d, i) =>
+					db.insert(schema.receivingSlipDetails).values({
+						slip_id: slip.id,
+						product_id: d.product_id,
+						line_no: i + 1,
+						quantity: d.quantity,
+					})
+				),
+				...detailRecords.map((d) =>
+					db
+						.insert(schema.inventory)
+						.values({ product_id: d.product_id, quantity: d.quantity, updated_at: now })
+						.onConflictDoUpdate({
+							target: schema.inventory.product_id,
+							set: {
+								quantity: sql`${schema.inventory.quantity} + ${d.quantity}`,
+								updated_at: now,
+							},
+						})
+				),
+			] as any);
+
+			return { success: true, count: detailRecords.length };
+		} catch (err) {
+			console.error('Failed to import receiving slips:', err);
 			return fail(500, { error: '入荷伝票のインポートに失敗しました。' });
 		}
-	}
+	},
 } satisfies Actions;

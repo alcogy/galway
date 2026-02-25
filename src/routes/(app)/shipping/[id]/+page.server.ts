@@ -1,87 +1,99 @@
 import { error, redirect } from '@sveltejs/kit';
+import { eq, count, asc } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
+import { getDb } from '$lib/server/db';
+import * as schema from '$lib/server/db/schema';
 import type { Actions, PageServerLoad } from './$types';
 
 export interface ShippingDetail {
 	id: string;
 	product_id: string;
-	product_code: string;
-	product_name: string;
+	product_code: string | null;
+	product_name: string | null;
 	quantity: number;
-	unit: string;
+	unit: string | null;
 }
 
-const MOCK_SLIPS = [
-	{ id: '1', slip_number: 'SHP-2026-001', shipped_at: '2026-02-03', item_count: 2, user_name: '田中 太郎' },
-	{ id: '2', slip_number: 'SHP-2026-002', shipped_at: '2026-02-06', item_count: 4, user_name: '鈴木 花子' },
-	{ id: '3', slip_number: 'SHP-2026-003', shipped_at: '2026-02-10', item_count: 1, user_name: '佐藤 次郎' },
-	{ id: '4', slip_number: 'SHP-2026-004', shipped_at: '2026-02-13', item_count: 3, user_name: '田中 太郎' },
-	{ id: '5', slip_number: 'SHP-2026-005', shipped_at: '2026-02-17', item_count: 2, user_name: '鈴木 花子' },
-	{ id: '6', slip_number: 'SHP-2026-006', shipped_at: '2026-02-20', item_count: 5, user_name: '佐藤 次郎' },
-	{ id: '7', slip_number: 'SHP-2026-007', shipped_at: '2026-02-24', item_count: 2, user_name: '田中 太郎' },
-];
+export const load: PageServerLoad = async ({ params, platform }) => {
+	const db = getDb(platform!.env.DB);
 
-const MOCK_DETAILS: Record<string, ShippingDetail[]> = {
-	'1': [
-		{ id: '101', product_id: '1', product_code: 'PRD001', product_name: 'アルミフレーム A型',      quantity: 10,  unit: '本' },
-		{ id: '102', product_id: '3', product_code: 'PRD003', product_name: '鉄板 2.3mm厚',            quantity: 50,  unit: 'kg' },
-	],
-	'2': [
-		{ id: '201', product_id: '2', product_code: 'PRD002', product_name: 'ステンレスボルト M8×30',  quantity: 100, unit: '個' },
-		{ id: '202', product_id: '5', product_code: 'PRD005', product_name: 'プラスチックケース 小',   quantity: 30,  unit: '個' },
-		{ id: '203', product_id: '7', product_code: 'PRD007', product_name: 'ゴムパッキン 30mm',       quantity: 80,  unit: '個' },
-		{ id: '204', product_id: '9', product_code: 'PRD009', product_name: 'ベアリング 6205',         quantity: 20,  unit: '個' },
-	],
-	'3': [
-		{ id: '301', product_id: '6', product_code: 'PRD006', product_name: '電子基板 A基板',          quantity: 5,   unit: '枚' },
-	],
-	'4': [
-		{ id: '401', product_id: '1', product_code: 'PRD001', product_name: 'アルミフレーム A型',      quantity: 25,  unit: '本' },
-		{ id: '402', product_id: '4', product_code: 'PRD004', product_name: '銅パイプ 15A',            quantity: 15,  unit: 'm'  },
-		{ id: '403', product_id: '8', product_code: 'PRD008', product_name: '防錆スプレー 500ml',      quantity: 6,   unit: '缶' },
-	],
-	'5': [
-		{ id: '501', product_id: '2', product_code: 'PRD002', product_name: 'ステンレスボルト M8×30',  quantity: 200, unit: '個' },
-		{ id: '502', product_id: '12', product_code: 'PRD012', product_name: 'ナット M8',              quantity: 200, unit: '個' },
-	],
-	'6': [
-		{ id: '601', product_id: '3', product_code: 'PRD003', product_name: '鉄板 2.3mm厚',            quantity: 100, unit: 'kg' },
-		{ id: '602', product_id: '7', product_code: 'PRD007', product_name: 'ゴムパッキン 30mm',       quantity: 50,  unit: '個' },
-		{ id: '603', product_id: '9', product_code: 'PRD009', product_name: 'ベアリング 6205',         quantity: 10,  unit: '個' },
-		{ id: '604', product_id: '10', product_code: 'PRD010', product_name: '絶縁テープ 19mm',        quantity: 20,  unit: 'ロール' },
-		{ id: '605', product_id: '11', product_code: 'PRD011', product_name: 'アングル材 40×40',       quantity: 30,  unit: 'm'  },
-	],
-	'7': [
-		{ id: '701', product_id: '5', product_code: 'PRD005', product_name: 'プラスチックケース 小',   quantity: 40,  unit: '個' },
-		{ id: '702', product_id: '6', product_code: 'PRD006', product_name: '電子基板 A基板',          quantity: 8,   unit: '枚' },
-	],
-};
+	const [slipRows, details, products] = await Promise.all([
+		db
+			.select({
+				id: schema.shippingSlips.id,
+				slip_number: schema.shippingSlips.slip_number,
+				shipped_at: schema.shippingSlips.shipped_at,
+				account_id: schema.shippingSlips.account_id,
+				user_name: schema.accounts.name,
+				note: schema.shippingSlips.note,
+				created_at: schema.shippingSlips.created_at,
+				item_count: count(schema.shippingSlipDetails.id),
+			})
+			.from(schema.shippingSlips)
+			.leftJoin(schema.accounts, eq(schema.shippingSlips.account_id, schema.accounts.id))
+			.leftJoin(
+				schema.shippingSlipDetails,
+				eq(schema.shippingSlips.id, schema.shippingSlipDetails.slip_id)
+			)
+			.where(eq(schema.shippingSlips.id, params.id))
+			.groupBy(schema.shippingSlips.id),
 
-const MOCK_PRODUCTS = [
-	{ id: '1',  code: 'PRD001', name: 'アルミフレーム A型',     unit: '本'    },
-	{ id: '2',  code: 'PRD002', name: 'ステンレスボルト M8×30', unit: '個'    },
-	{ id: '3',  code: 'PRD003', name: '鉄板 2.3mm厚',           unit: 'kg'    },
-	{ id: '4',  code: 'PRD004', name: '銅パイプ 15A',           unit: 'm'     },
-	{ id: '5',  code: 'PRD005', name: 'プラスチックケース 小',   unit: '個'    },
-	{ id: '6',  code: 'PRD006', name: '電子基板 A基板',         unit: '枚'    },
-	{ id: '7',  code: 'PRD007', name: 'ゴムパッキン 30mm',      unit: '個'    },
-	{ id: '8',  code: 'PRD008', name: '防錆スプレー 500ml',     unit: '缶'    },
-	{ id: '9',  code: 'PRD009', name: 'ベアリング 6205',        unit: '個'    },
-	{ id: '10', code: 'PRD010', name: '絶縁テープ 19mm',        unit: 'ロール' },
-	{ id: '11', code: 'PRD011', name: 'アングル材 40×40',       unit: 'm'     },
-	{ id: '12', code: 'PRD012', name: 'ナット M8',              unit: '個'    },
-];
+		db
+			.select({
+				id: schema.shippingSlipDetails.id,
+				product_id: schema.shippingSlipDetails.product_id,
+				product_code: schema.products.code,
+				product_name: schema.products.name,
+				quantity: schema.shippingSlipDetails.quantity,
+				unit: schema.products.unit,
+			})
+			.from(schema.shippingSlipDetails)
+			.leftJoin(schema.products, eq(schema.shippingSlipDetails.product_id, schema.products.id))
+			.where(eq(schema.shippingSlipDetails.slip_id, params.id))
+			.orderBy(schema.shippingSlipDetails.line_no),
 
-export const load: PageServerLoad = async ({ params }) => {
-	const slip = MOCK_SLIPS.find((s) => s.id === params.id);
-	if (!slip) error(404, '出荷伝票が見つかりません');
+		db
+			.select({
+				id: schema.products.id,
+				code: schema.products.code,
+				name: schema.products.name,
+				unit: schema.products.unit,
+			})
+			.from(schema.products)
+			.orderBy(asc(schema.products.code)),
+	]);
 
-	const details = MOCK_DETAILS[params.id] ?? [];
+	if (!slipRows[0]) error(404, '出荷伝票が見つかりません');
 
-	return { slip, details, products: MOCK_PRODUCTS };
+	return { slip: slipRows[0], details, products };
 };
 
 export const actions = {
-	delete: async () => {
+	delete: async ({ params, platform }) => {
+		const db = getDb(platform!.env.DB);
+		const now = new Date().toISOString();
+
+		const oldDetails = await db
+			.select({
+				product_id: schema.shippingSlipDetails.product_id,
+				quantity: schema.shippingSlipDetails.quantity,
+			})
+			.from(schema.shippingSlipDetails)
+			.where(eq(schema.shippingSlipDetails.slip_id, params.id));
+
+		await db.batch([
+			db.delete(schema.shippingSlips).where(eq(schema.shippingSlips.id, params.id)),
+			...oldDetails.map((d) =>
+				db
+					.update(schema.inventory)
+					.set({
+						quantity: sql`${schema.inventory.quantity} + ${d.quantity}`,
+						updated_at: now,
+					})
+					.where(eq(schema.inventory.product_id, d.product_id))
+			),
+		] as any);
+
 		redirect(303, '/shipping');
-	}
+	},
 } satisfies Actions;

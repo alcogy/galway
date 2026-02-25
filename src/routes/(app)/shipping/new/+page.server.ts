@@ -1,27 +1,86 @@
-import { redirect } from '@sveltejs/kit';
+import { redirect, fail } from '@sveltejs/kit';
+import { like, desc, asc, eq } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
+import { getDb } from '$lib/server/db';
+import * as schema from '$lib/server/db/schema';
 import type { Actions, PageServerLoad } from './$types';
 
-const MOCK_PRODUCTS = [
-	{ id: '1',  code: 'PRD001', name: 'アルミフレーム A型',     unit: '本'    },
-	{ id: '2',  code: 'PRD002', name: 'ステンレスボルト M8×30', unit: '個'    },
-	{ id: '3',  code: 'PRD003', name: '鉄板 2.3mm厚',           unit: 'kg'    },
-	{ id: '4',  code: 'PRD004', name: '銅パイプ 15A',           unit: 'm'     },
-	{ id: '5',  code: 'PRD005', name: 'プラスチックケース 小',   unit: '個'    },
-	{ id: '6',  code: 'PRD006', name: '電子基板 A基板',         unit: '枚'    },
-	{ id: '7',  code: 'PRD007', name: 'ゴムパッキン 30mm',      unit: '個'    },
-	{ id: '8',  code: 'PRD008', name: '防錆スプレー 500ml',     unit: '缶'    },
-	{ id: '9',  code: 'PRD009', name: 'ベアリング 6205',        unit: '個'    },
-	{ id: '10', code: 'PRD010', name: '絶縁テープ 19mm',        unit: 'ロール' },
-	{ id: '11', code: 'PRD011', name: 'アングル材 40×40',       unit: 'm'     },
-	{ id: '12', code: 'PRD012', name: 'ナット M8',              unit: '個'    },
-];
+export const load: PageServerLoad = async ({ platform }) => {
+	const db = getDb(platform!.env.DB);
 
-export const load: PageServerLoad = async () => {
-	return { products: MOCK_PRODUCTS };
+	const products = await db
+		.select({
+			id: schema.products.id,
+			code: schema.products.code,
+			name: schema.products.name,
+			unit: schema.products.unit,
+		})
+		.from(schema.products)
+		.orderBy(asc(schema.products.code));
+
+	return { products };
 };
 
 export const actions = {
-	create: async () => {
+	create: async ({ request, platform, locals }) => {
+		const db = getDb(platform!.env.DB);
+		const account_id = locals.user?.id ?? 'acc-1';
+		const data = await request.formData();
+
+		const shipped_at = data.get('shipped_at')?.toString();
+		const detailsJson = data.get('details')?.toString();
+		const note = data.get('note')?.toString() ?? '';
+
+		if (!shipped_at) return fail(400, { error: '出荷日は必須です' });
+		if (!detailsJson) return fail(400, { error: '明細が必要です' });
+
+		let details: { product_id: string; quantity: number }[];
+		try {
+			details = JSON.parse(detailsJson);
+		} catch {
+			return fail(400, { error: '明細データが不正です' });
+		}
+
+		const validDetails = details.filter((d) => d.product_id && d.quantity > 0);
+		if (validDetails.length === 0) return fail(400, { error: '有効な明細が必要です' });
+
+		const year = new Date(shipped_at).getFullYear();
+		const [last] = await db
+			.select({ n: schema.shippingSlips.slip_number })
+			.from(schema.shippingSlips)
+			.where(like(schema.shippingSlips.slip_number, `SHP-${year}-%`))
+			.orderBy(desc(schema.shippingSlips.slip_number))
+			.limit(1);
+		const lastNum = last ? parseInt(last.n.split('-')[2], 10) : 0;
+		const slip_number = `SHP-${year}-${String(lastNum + 1).padStart(3, '0')}`;
+
+		const now = new Date().toISOString();
+
+		const [slip] = await db
+			.insert(schema.shippingSlips)
+			.values({ slip_number, shipped_at, account_id, note })
+			.returning({ id: schema.shippingSlips.id });
+
+		await db.batch([
+			...validDetails.map((d, i) =>
+				db.insert(schema.shippingSlipDetails).values({
+					slip_id: slip.id,
+					product_id: d.product_id,
+					line_no: i + 1,
+					quantity: d.quantity,
+				})
+			),
+			...validDetails.map((d) =>
+				db
+					.update(schema.inventory)
+					.set({
+						quantity: sql`${schema.inventory.quantity} - ${d.quantity}`,
+						updated_at: now,
+					})
+					.where(eq(schema.inventory.product_id, d.product_id))
+			),
+		] as any);
+
 		redirect(303, '/shipping');
-	}
+	},
 } satisfies Actions;

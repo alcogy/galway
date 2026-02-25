@@ -1,43 +1,97 @@
 import { fail } from '@sveltejs/kit';
-import type { Actions, PageServerLoad } from './$types';
+import { eq, asc } from 'drizzle-orm';
 import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import { parseCSV } from '$lib/utils/csv';
+import type { Actions, PageServerLoad } from './$types';
+
 export interface Supplier {
 	id: string;
-	code: string;
 	name: string;
-	phone: string | null;
+	tel: string | null;
+	fax: string | null;
+	zipcode: string | null;
 	address: string | null;
 	email: string | null;
 }
 
-const MOCK_SUPPLIERS: Supplier[] = [
-	{ id: '1', code: 'SUP001', name: '株式会社山田製作所', phone: '03-1234-5678', address: '東京都千代田区丸の内1-1-1', email: 'info@yamada-mfg.co.jp' },
-	{ id: '2', code: 'SUP002', name: '田中商事株式会社', phone: '06-9876-5432', address: '大阪府大阪市中央区本町2-3-4', email: 'contact@tanaka-shoji.co.jp' },
-	{ id: '3', code: 'SUP003', name: '鈴木部品工業', phone: '052-111-2222', address: '愛知県名古屋市中区栄3-5-6', email: 'suzuki@buhin.jp' },
-	{ id: '4', code: 'SUP004', name: '佐藤金属株式会社', phone: '011-333-4444', address: '北海道札幌市中央区北1条西7-1', email: 'sato@kinzoku.co.jp' },
-	{ id: '5', code: 'SUP005', name: '高橋電機工業株式会社', phone: '092-555-6666', address: '福岡県福岡市博多区博多駅前4-1-2', email: 'info@takahashi-elec.jp' },
-	{ id: '6', code: 'SUP006', name: '伊藤素材株式会社', phone: '045-777-8888', address: '神奈川県横浜市西区みなとみらい2-2-1', email: 'ito@sozai.co.jp' },
-	{ id: '7', code: 'SUP007', name: '渡辺化学品工業', phone: '022-999-0000', address: '宮城県仙台市青葉区一番町1-2-3', email: 'watanabe@kagaku.jp' },
-	{ id: '8', code: 'SUP008', name: '中村精密機械株式会社', phone: '076-123-4567', address: '石川県金沢市香林坊1-1-1', email: 'nakamura@seimitu.co.jp' },
-];
+export const load: PageServerLoad = async ({ platform }) => {
+	const db = getDb(platform!.env.DB);
+	const suppliers: Supplier[] = await db
+		.select({
+			id: schema.suppliers.id,
+			name: schema.suppliers.name,
+			tel: schema.suppliers.tel,
+			fax: schema.suppliers.fax,
+			zipcode: schema.suppliers.zipcode,
+			address: schema.suppliers.address,
+			email: schema.suppliers.email,
+		})
+		.from(schema.suppliers)
+		.orderBy(asc(schema.suppliers.name));
 
-export const load: PageServerLoad = async () => {
-	return { suppliers: MOCK_SUPPLIERS };
+	return { suppliers };
 };
 
 export const actions = {
-	create: async () => {
-		return fail(501, { error: 'Not implemented' });
+	create: async ({ request, platform }) => {
+		const db = getDb(platform!.env.DB);
+		const data = await request.formData();
+		const name = data.get('name')?.toString().trim();
+		if (!name) return fail(400, { error: '仕入先名は必須です' });
+
+		try {
+			await db.insert(schema.suppliers).values({
+				name,
+				tel: data.get('tel')?.toString().trim() || null,
+				address: data.get('address')?.toString().trim() || null,
+				email: data.get('email')?.toString().trim() || null,
+			});
+			return { success: true };
+		} catch (error) {
+			console.error('Failed to create supplier:', error);
+			return fail(500, { error: '仕入先の登録に失敗しました。' });
+		}
 	},
-	update: async () => {
-		return fail(501, { error: 'Not implemented' });
+
+	update: async ({ request, platform }) => {
+		const db = getDb(platform!.env.DB);
+		const data = await request.formData();
+		const id = data.get('id')?.toString();
+		const name = data.get('name')?.toString().trim();
+		if (!id) return fail(400, { error: 'IDが必要です' });
+		if (!name) return fail(400, { error: '仕入先名は必須です' });
+
+		try {
+			await db
+				.update(schema.suppliers)
+				.set({
+					name,
+					tel: data.get('tel')?.toString().trim() || null,
+					address: data.get('address')?.toString().trim() || null,
+					email: data.get('email')?.toString().trim() || null,
+					updated_at: new Date().toISOString(),
+				})
+				.where(eq(schema.suppliers.id, id));
+			return { success: true };
+		} catch (error) {
+			console.error('Failed to update supplier:', error);
+			return fail(500, { error: '仕入先の更新に失敗しました。' });
+		}
 	},
-	delete: async () => {
-		return fail(501, { error: 'Not implemented' });
+
+	delete: async ({ request, platform }) => {
+		const db = getDb(platform!.env.DB);
+		const data = await request.formData();
+		const id = data.get('id')?.toString();
+		if (!id) return fail(400, { error: 'IDが必要です' });
+
+		await db.delete(schema.suppliers).where(eq(schema.suppliers.id, id));
+		return { success: true };
 	},
-	import: async ({ request }) => {
+
+	import: async ({ request, platform }) => {
+		const db = getDb(platform!.env.DB);
 		const data = await request.formData();
 		const file = data.get('file') as File | null;
 		const mode = data.get('mode')?.toString();
@@ -51,49 +105,37 @@ export const actions = {
 		if (rows.length < 2) return fail(400, { error: 'CSVにデータがありません（ヘッダー行 + 1件以上のデータが必要です）' });
 
 		const [header, ...dataRows] = rows;
+		const nameIdx = header.findIndex((h) => h.trim() === '仕入先名');
+		if (nameIdx === -1) return fail(400, { error: 'CSVに「仕入先名」列が必要です' });
 
-		//const nameIdx = header.indexOf('商品名');
-		//const unitPriceIdx = header.indexOf('単価');
-		//const unitIdx = header.indexOf('単位');
-		//const categoryIdIdx = header.indexOf('カテゴリID');
+		const telIdx = header.findIndex((h) => h.trim() === '電話番号');
+		const faxIdx = header.findIndex((h) => h.trim() === 'FAX');
+		const zipcodeIdx = header.findIndex((h) => h.trim() === '郵便番号');
+		const addressIdx = header.findIndex((h) => h.trim() === '住所');
+		const emailIdx = header.findIndex((h) => h.trim() === 'メールアドレス');
 
-		//if (nameIdx === -1) {
-		//	return fail(400, { error: 'CSVに「商品名」列が必要です' });
-		//}
+		const records = dataRows
+			.filter((row) => row[nameIdx]?.trim())
+			.map((row) => ({
+				name: row[nameIdx].trim(),
+				tel: telIdx >= 0 ? row[telIdx]?.trim() || null : null,
+				fax: faxIdx >= 0 ? row[faxIdx]?.trim() || null : null,
+				zipcode: zipcodeIdx >= 0 ? row[zipcodeIdx]?.trim() || null : null,
+				address: addressIdx >= 0 ? row[addressIdx]?.trim() || null : null,
+				email: emailIdx >= 0 ? row[emailIdx]?.trim() || null : null,
+			}));
 
-		//const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-		//const records = dataRows.map((row) => {
-		//	const rawPrice = unitPriceIdx >= 0 ? row[unitPriceIdx]?.trim() : '';
-		//	const unit_price = rawPrice ? parseInt(rawPrice.replace(/[^0-9-]/g, ''), 10) || 0 : 0;
-		//	const rawCategoryId = categoryIdIdx >= 0 ? row[categoryIdIdx]?.trim() : '';
-		//	const category_id = rawCategoryId && UUID_RE.test(rawCategoryId) ? rawCategoryId : null;
-		//	return {
-		//		name: row[nameIdx]?.trim() ?? '',
-		//		unit_price,
-		//		unit: unitIdx >= 0 ? (row[unitIdx]?.trim() || '') : '',
-		//		category_id
-		//	};
-		//});
-
-		//const invalid = records.filter((r) => !r.name);
-		//if (invalid.length > 0) {
-		//	return fail(400, { error: `${invalid.length}行に「商品名」がありません` });
-		//}
-
-		//const db = getDb('');
+		if (records.length === 0) return fail(400, { error: '有効なデータがありません' });
 
 		try {
-			//if (mode === 'replace') {
-			//	await db.delete(schema.products);
-			//}
-			//if (records.length > 0) {
-			//	await db.insert(schema.products).values(records);
-			//}
-			return { success: true, count: 0 };
+			if (mode === 'replace') {
+				await db.delete(schema.suppliers);
+			}
+			await db.insert(schema.suppliers).values(records);
+			return { success: true, count: records.length };
 		} catch (error) {
 			console.error('Failed to import suppliers:', error);
 			return fail(500, { error: '仕入先のインポートに失敗しました。' });
 		}
-	}
+	},
 } satisfies Actions;

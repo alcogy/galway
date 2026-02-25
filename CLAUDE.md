@@ -88,7 +88,7 @@ This is a simple procurement management system (仕入管理システム).
 1. ✅ Set up local development environment for D1, package.json and configs.
 2. ✅ Implement screen UIs.
 3. ✅ Create DB table schemas and seed data, then run migrations.
-4. Connect each screen to the DB and implement server actions.
+4. ✅ Connect each screen to the DB and implement server actions.
 5. Perform end-to-end verification and fix any issues found.
 
 ## Implementation Status
@@ -149,9 +149,11 @@ src/routes/(app)/
 - `SlipCsvImportDialog.svelte`: Used in receiving and shipping list pages; append-only; Props — `open=$bindable()`, `title`, `dateLabel='入荷日'`, `suppliers?: {id,name}[]` (omit for shipping), `onimport?: (file, date, supplierId?) => void`; expected CSV columns: 商品コード, 商品名, 数量
 - `Pagination.svelte`: Props — `totalItems`, `itemsPerPage`, `currentPage`, `onPageChange`
 
-#### Known Pre-existing Type Errors (deferred to Plan 4)
-- `suppliers/export/+server.ts`, `products/export/+server.ts` — `csv` undefined (CSV export stub)
+#### Known Pre-existing Type Errors
 - `Module '"$lib/components"' has no exported member 'SearchableSelect'` — SearchableSelect is exported in index.ts; likely a TS server cache issue
+- `json is of type 'unknown'` in CSV import handlers across list pages (suppliers, products, receiving, shipping, inventory) — needs `as any` cast or type assertion on the fetch response JSON
+- `auth.test.ts`, `hooks.test.ts`, `page.svelte.spec.ts` — pre-existing test type errors
+- `accounts/+page.server.ts`, `settings/+page.server.ts` — reference `schema.settings` which does not exist yet
 
 ### Plan 3 — Completed
 - **Schema** (`src/lib/server/db/schema.ts`): 9 tables defined with Drizzle ORM
@@ -177,6 +179,46 @@ src/routes/(app)/
 - `updated_at` on `suppliers` and `products` must be set explicitly in UPDATE queries (no DB trigger)
 - `account_id` in slips links to the logged-in account; `user_name` for display is resolved by joining `accounts`
 
-### Plan 4 — Next
-Connect each screen to the DB and implement server actions.
+### Plan 4 — Completed
+All `+page.server.ts` and `+server.ts` files connected to the DB. Mock data removed.
 
+#### DB Access Pattern
+```typescript
+import { getDb } from '$lib/server/db';
+import * as schema from '$lib/server/db/schema';
+const db = getDb(platform!.env.DB);
+const account_id = locals.user?.id ?? 'acc-1'; // temp until auth implemented
+```
+
+#### Inventory Logic
+- **Receiving create**: UPSERT inventory with `quantity + delta` (`onConflictDoUpdate`)
+- **Receiving delete**: subtract old quantities from inventory
+- **Receiving update**: reverse old (subtract) → delete old details → insert new details → apply new (UPSERT add)
+- **Shipping create**: UPDATE inventory `quantity - delta`
+- **Shipping delete**: add back quantities to inventory
+- **Shipping update**: add back old (reverse) → delete old details → insert new details → subtract new
+- **Stocktake**: UPSERT inventory setting quantity directly to submitted value
+- All multi-table mutations use `db.batch([...] as any)` for atomicity
+
+#### Slip Number Generation
+```typescript
+const year = new Date(date_field).getFullYear();
+const [last] = await db.select({ n: schema.receivingSlips.slip_number })
+  .from(schema.receivingSlips)
+  .where(like(schema.receivingSlips.slip_number, `RCV-${year}-%`))
+  .orderBy(desc(schema.receivingSlips.slip_number)).limit(1);
+const lastNum = last ? parseInt(last.n.split('-')[2], 10) : 0;
+const slip_number = `RCV-${year}-${String(lastNum + 1).padStart(3, '0')}`;
+// SHP-YYYY-NNN for shipping
+```
+
+#### Product Create → Auto-create Inventory Row
+When a product is created (UI or CSV import), an inventory row is inserted with `quantity: 0` via `.onConflictDoNothing()`.
+
+#### suppliers/+page.svelte Updated
+- Removed `code` field (schema has no supplier code)
+- Renamed `phone` → `tel` in form, state, and columns
+- Fixed export URL bug: `/supplier/export` → `/suppliers/export`
+
+### Plan 5 — Next
+Perform end-to-end verification and fix any issues found.

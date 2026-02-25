@@ -19,11 +19,7 @@
 	const ITEMS_PER_PAGE = 20;
 
 	const filteredSuppliers = $derived(
-		data.suppliers.filter(
-			(s) =>
-				s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-				s.code.toLowerCase().includes(searchQuery.toLowerCase())
-		)
+		data.suppliers.filter((s) => s.name.toLowerCase().includes(searchQuery.toLowerCase()))
 	);
 	const pagedSuppliers = $derived(
 		filteredSuppliers.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
@@ -35,17 +31,15 @@
 	});
 
 	// Form state
-	let code = $state('');
 	let name = $state('');
-	let phone = $state('');
+	let tel = $state('');
 	let address = $state('');
 	let email = $state('');
 
 	function openCreate() {
 		editing = null;
-		code = '';
 		name = '';
-		phone = '';
+		tel = '';
 		address = '';
 		email = '';
 		showModal = true;
@@ -53,9 +47,8 @@
 
 	function openEdit(supplier: Supplier) {
 		editing = supplier;
-		code = supplier.code;
 		name = supplier.name;
-		phone = supplier.phone ?? '';
+		tel = supplier.tel ?? '';
 		address = supplier.address ?? '';
 		email = supplier.email ?? '';
 		showModal = true;
@@ -80,13 +73,12 @@
 		if (searchQuery) {
 			params.set('search', searchQuery);
 		}		
-		return `/supplier/export?${params.toString()}`;
+		return `/suppliers/export?${params.toString()}`;
 	}
 
 	const columns = [
-		{ key: 'code', label: '仕入先コード', width: '160px' },
 		{ key: 'name', label: '仕入先名' },
-		{ key: 'phone', label: '電話番号', width: '140px' },
+		{ key: 'tel', label: '電話番号', width: '140px' },
 		{ key: 'address', label: '住所' },
 		{ key: 'email', label: 'メールアドレス', width: '200px' }
 	];
@@ -118,7 +110,7 @@
 	</div>
 
 	<div class="filters">
-		<SearchBar bind:value={searchQuery} placeholder="仕入先名・コードで検索..." onsubmit={handleSearch} />		
+		<SearchBar bind:value={searchQuery} placeholder="仕入先名で検索..." onsubmit={handleSearch} />		
 	</div>
 
 	<div class="table-with-pagination">
@@ -155,16 +147,12 @@
 
 		<div class="form-grid">
 			<div class="field">
-				<Label required>仕入先コード</Label>
-				<Input name="code" bind:value={code} placeholder="SUP001" required />
-			</div>
-			<div class="field">
 				<Label required>仕入先名</Label>
 				<Input name="name" bind:value={name} placeholder="株式会社〇〇" required />
 			</div>
 			<div class="field">
 				<Label>電話番号</Label>
-				<Input name="phone" bind:value={phone} placeholder="03-0000-0000" type="tel" />
+				<Input name="tel" bind:value={tel} placeholder="03-0000-0000" type="tel" />
 			</div>
 			<div class="field">
 				<Label>メールアドレス</Label>
