@@ -3,11 +3,13 @@
 	import { Button, Card, Label, Select, SearchableSelect } from '$lib/components';
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
+	import Textarea from '$lib/components/Textarea.svelte';
 
 	let { data }: { data: PageData } = $props();
 
 	let receivedAt = $state(new Date().toISOString().slice(0, 10));
 	let supplierId = $state('');
+	let note = $state('');
 	let details = $state<{ product_id: string; quantity: number }[]>([{ product_id: '', quantity: 1 }]);
 
 	const supplierOptions = $derived(
@@ -68,6 +70,15 @@
 						required
 					/>
 				</div>
+			</div>
+			<div class="note-field">
+				<Label>備考</Label>
+				<Textarea
+					name="note"
+					placeholder="備考欄"
+					bind:value={note}
+					required
+				/>
 			</div>
 
 			<div class="details-section">

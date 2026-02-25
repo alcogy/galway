@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { ArrowLeft, Plus, Trash2 } from '@lucide/svelte';
-	import { Button, Card, Label, SearchableSelect } from '$lib/components';
+	import { Button, Card, Label, SearchableSelect, Textarea } from '$lib/components';
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
 	let shippedAt = $state(new Date().toISOString().slice(0, 10));
+	let note = $state('');
 	let details = $state<{ product_id: string; quantity: number }[]>([{ product_id: '', quantity: 1 }]);
 
 	const productOptions = $derived(
@@ -49,6 +50,16 @@
 					type="date"
 					name="shipped_at"
 					bind:value={shippedAt}
+					required
+				/>
+			</div>
+
+			<div class="field">
+				<Label>備考</Label>
+				<Textarea
+					name="note"
+					placeholder="備考欄"
+					bind:value={note}
 					required
 				/>
 			</div>

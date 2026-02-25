@@ -72,6 +72,10 @@
 				<dt class="info-label">担当者</dt>
 				<dd class="info-value">{data.slip.user_name}</dd>
 			</div>
+			<div class="info-item">
+				<dt class="info-label">備考</dt>
+				<dd class="info-value">{data.slip.note || '-'}</dd>
+			</div>
 		</dl>
 	</Card>
 

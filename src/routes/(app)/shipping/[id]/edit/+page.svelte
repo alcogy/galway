@@ -1,16 +1,18 @@
 <script lang="ts">
 	import { ArrowLeft, Plus, Trash2 } from '@lucide/svelte';
-	import { Button, Card, Label, SearchableSelect } from '$lib/components';
+	import { Button, Card, Label, SearchableSelect, Textarea } from '$lib/components';
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
 	let shippedAt = $state('');
+	let note = $state('');
 	let editDetails = $state<{ product_id: string; quantity: number }[]>([]);
 
 	$effect(() => {
 		shippedAt = data.slip.shipped_at;
+		note = data.slip.note;
 		editDetails = data.details.map((d) => ({ product_id: d.product_id, quantity: d.quantity }));
 	});
 
@@ -55,6 +57,16 @@
 					type="date"
 					name="shipped_at"
 					bind:value={shippedAt}
+					required
+				/>
+			</div>
+
+			<div class="field">
+				<Label>備考</Label>
+				<Textarea
+					name="note"
+					placeholder="備考欄"
+					bind:value={note}
 					required
 				/>
 			</div>
