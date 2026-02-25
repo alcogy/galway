@@ -110,34 +110,36 @@ export const actions = {
 		if (detailRecords.length === 0) return fail(400, { error: '有効なデータがありません' });
 
 		try {
-			const year = new Date(date).getFullYear();
-			const [last] = await db
-				.select({ n: schema.receivingSlips.slip_number })
-				.from(schema.receivingSlips)
-				.where(like(schema.receivingSlips.slip_number, `RCV-${year}-%`))
-				.orderBy(desc(schema.receivingSlips.slip_number))
-				.limit(1);
-			const lastNum = last ? parseInt(last.n.split('-')[2], 10) : 0;
-			const slip_number = `RCV-${year}-${String(lastNum + 1).padStart(3, '0')}`;
+			await db.transaction(async (tx) => {
+				const year = new Date(date).getFullYear();
+				const [last] = await tx
+					.select({ n: schema.receivingSlips.slip_number })
+					.from(schema.receivingSlips)
+					.where(like(schema.receivingSlips.slip_number, `RCV-${year}-%`))
+					.orderBy(desc(schema.receivingSlips.slip_number))
+					.limit(1);
+				const lastNum = last ? parseInt(last.n.split('-')[2], 10) : 0;
+				const slip_number = `RCV-${year}-${String(lastNum + 1).padStart(3, '0')}`;
 
-			const now = new Date().toISOString();
+				const now = new Date().toISOString();
 
-			const [slip] = await db
-				.insert(schema.receivingSlips)
-				.values({ slip_number, received_at: date, supplier_id: supplierId, account_id, note: '' })
-				.returning({ id: schema.receivingSlips.id });
+				const [slip] = await tx
+					.insert(schema.receivingSlips)
+					.values({ slip_number, received_at: date, supplier_id: supplierId, account_id, note: '' })
+					.returning({ id: schema.receivingSlips.id });
 
-			await db.batch([
-				...detailRecords.map((d, i) =>
-					db.insert(schema.receivingSlipDetails).values({
+				for (let i = 0; i < detailRecords.length; i++) {
+					const d = detailRecords[i];
+					await tx.insert(schema.receivingSlipDetails).values({
 						slip_id: slip.id,
 						product_id: d.product_id,
 						line_no: i + 1,
 						quantity: d.quantity,
-					})
-				),
-				...detailRecords.map((d) =>
-					db
+					});
+				}
+
+				for (const d of detailRecords) {
+					await tx
 						.insert(schema.inventory)
 						.values({ product_id: d.product_id, quantity: d.quantity, updated_at: now })
 						.onConflictDoUpdate({
@@ -146,12 +148,16 @@ export const actions = {
 								quantity: sql`${schema.inventory.quantity} + ${d.quantity}`,
 								updated_at: now,
 							},
-						})
-				),
-			] as any);
+						});
+				}
+			});
 
 			return { success: true, count: detailRecords.length };
 		} catch (err) {
+			const message = String(err);
+			if (message.includes('UNIQUE constraint failed') && message.includes('slip_number')) {
+				return fail(409, { error: '伝票番号が競合しました。再度お試しください。' });
+			}
 			console.error('Failed to import receiving slips:', err);
 			return fail(500, { error: '入荷伝票のインポートに失敗しました。' });
 		}

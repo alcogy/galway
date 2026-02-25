@@ -1,5 +1,5 @@
 import { redirect, fail } from '@sveltejs/kit';
-import { like, desc, asc, eq } from 'drizzle-orm';
+import { like, desc, asc } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
@@ -52,45 +52,55 @@ export const actions = {
 		const validDetails = details.filter((d) => d.product_id && d.quantity > 0);
 		if (validDetails.length === 0) return fail(400, { error: '有効な明細が必要です' });
 
-		const year = new Date(received_at).getFullYear();
-		const [last] = await db
-			.select({ n: schema.receivingSlips.slip_number })
-			.from(schema.receivingSlips)
-			.where(like(schema.receivingSlips.slip_number, `RCV-${year}-%`))
-			.orderBy(desc(schema.receivingSlips.slip_number))
-			.limit(1);
-		const lastNum = last ? parseInt(last.n.split('-')[2], 10) : 0;
-		const slip_number = `RCV-${year}-${String(lastNum + 1).padStart(3, '0')}`;
+		try {
+			await db.transaction(async (tx) => {
+				const year = new Date(received_at).getFullYear();
+				const [last] = await tx
+					.select({ n: schema.receivingSlips.slip_number })
+					.from(schema.receivingSlips)
+					.where(like(schema.receivingSlips.slip_number, `RCV-${year}-%`))
+					.orderBy(desc(schema.receivingSlips.slip_number))
+					.limit(1);
+				const lastNum = last ? parseInt(last.n.split('-')[2], 10) : 0;
+				const slip_number = `RCV-${year}-${String(lastNum + 1).padStart(3, '0')}`;
 
-		const now = new Date().toISOString();
+				const now = new Date().toISOString();
 
-		const [slip] = await db
-			.insert(schema.receivingSlips)
-			.values({ slip_number, received_at, supplier_id, account_id, note })
-			.returning({ id: schema.receivingSlips.id });
+				const [slip] = await tx
+					.insert(schema.receivingSlips)
+					.values({ slip_number, received_at, supplier_id, account_id, note })
+					.returning({ id: schema.receivingSlips.id });
 
-		await db.batch([
-			...validDetails.map((d, i) =>
-				db.insert(schema.receivingSlipDetails).values({
-					slip_id: slip.id,
-					product_id: d.product_id,
-					line_no: i + 1,
-					quantity: d.quantity,
-				})
-			),
-			...validDetails.map((d) =>
-				db
-					.insert(schema.inventory)
-					.values({ product_id: d.product_id, quantity: d.quantity, updated_at: now })
-					.onConflictDoUpdate({
-						target: schema.inventory.product_id,
-						set: {
-							quantity: sql`${schema.inventory.quantity} + ${d.quantity}`,
-							updated_at: now,
-						},
-					})
-			),
-		] as any);
+				for (let i = 0; i < validDetails.length; i++) {
+					const d = validDetails[i];
+					await tx.insert(schema.receivingSlipDetails).values({
+						slip_id: slip.id,
+						product_id: d.product_id,
+						line_no: i + 1,
+						quantity: d.quantity,
+					});
+				}
+
+				for (const d of validDetails) {
+					await tx
+						.insert(schema.inventory)
+						.values({ product_id: d.product_id, quantity: d.quantity, updated_at: now })
+						.onConflictDoUpdate({
+							target: schema.inventory.product_id,
+							set: {
+								quantity: sql`${schema.inventory.quantity} + ${d.quantity}`,
+								updated_at: now,
+							},
+						});
+				}
+			});
+		} catch (err) {
+			const message = String(err);
+			if (message.includes('UNIQUE constraint failed') && message.includes('slip_number')) {
+				return fail(409, { error: '伝票番号が競合しました。再度お試しください。' });
+			}
+			throw err;
+		}
 
 		redirect(303, '/receiving');
 	},

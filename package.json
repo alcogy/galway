@@ -16,6 +16,7 @@
 		"test": "bun run test:unit -- --run && bun run test:e2e",
 		"test:e2e": "playwright test",
 		"gen": "wrangler types",
+		"db:studio": "drizzle-kit studio",
 		"db:generate": "drizzle-kit generate",
 		"db:migrate:local": "wrangler d1 migrations apply aes-supplier-db --local",
 		"db:migrate:remote": "wrangler d1 migrations apply aes-supplier-db --remote",
