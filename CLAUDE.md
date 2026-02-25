@@ -133,7 +133,7 @@ src/routes/(app)/
 - **Form page layout**: back link → page header → Card containing the form → form-actions at bottom inside card
 - **担当者 (person in charge)**: Displayed on slip detail pages. On create: set automatically from the logged-in account. On edit: admins can change it via a `SearchableSelect` field; non-admins cannot (field hidden, server ignores submitted value).
 - **Numeric columns**: `Table.svelte` `Column` interface has `numeric?: boolean`. When true: right-aligns the cell and formats via `Number(val).toLocaleString('ja-JP')`.
-- **CSV import on list pages**: Receiving and shipping lists have a CSVインポート button (Upload icon) that opens `SlipCsvImportDialog`. Inventory list uses `CsvImportDialog`. On success, calls `invalidateAll()` and shows an `importNotification` banner (auto-dismisses after 6 s). Import actions are currently stubs returning `{ success: true, count: 0 }`.
+- **CSV import on list pages**: Receiving and shipping lists have a CSVインポート button (Upload icon) that opens `SlipCsvImportDialog`. Inventory list uses `CsvImportDialog`. On success, calls `invalidateAll()` and shows an `importNotification` banner (auto-dismisses after 6 s). All import actions are fully implemented.
 - **CSV download endpoints**: `+server.ts` GET routes returning `text/csv; charset=utf-8` with UTF-8 BOM (`\uFEFF`). Japanese filenames use RFC 5987 encoding: `filename*=UTF-8''${encodeURIComponent(filename)}`.
 - **Pagination**: All lists paginated 20 items/page; `.table-with-pagination` wrapper removes bottom border-radius from Table so Pagination attaches seamlessly
 - **Client-side search**: Suppliers and Products filter with `$derived` + `$effect(() => { searchQuery; page = 1; })`
@@ -189,7 +189,7 @@ All `+page.server.ts` and `+server.ts` files connected to the DB. Mock data remo
 import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 const db = getDb(platform!.env.DB);
-const account_id = locals.user?.id ?? 'acc-1'; // temp until auth implemented
+const account_id = locals.user!.id; // guaranteed by (app)/+layout.server.ts auth guard
 ```
 
 #### Inventory Logic
@@ -226,10 +226,26 @@ When a product is created (UI or CSV import), an inventory row is inserted with 
 Performing end-to-end verification and fixing issues found.
 
 #### Completed in Plan 5
+- **Authentication**:
+  - Login/logout flow fully implemented: `src/routes/login/`, `src/routes/logout/+server.ts`
+  - Session stored as account UUID in `session` cookie (PBKDF2-SHA256, 100k iterations)
+  - `src/hooks.server.ts` loads user from session cookie into `event.locals.user`
+  - `src/routes/(app)/+layout.server.ts` redirects unauthenticated users to `/login`
+  - All seed accounts now have real password hashes (generated with `scripts/gen-password-hash.ts`)
+  - Login credentials: `admin@example.com` / `admin123`, `suzuki@example.com` / `general123`, `sato@example.com` / `general123`
+  - Old residual account `acc-1` (tanaka@example.com) in local DB also has `admin123`
+- **CSV Import**: All import actions fully implemented (was incorrectly noted as stubs)
+  - `suppliers`: append/replace mode, columns: 仕入先名, 電話番号, FAX, 郵便番号, 住所, メールアドレス
+  - `products`: append/replace mode, columns: 商品コード, 商品名, 単位, 説明
+  - `receiving`: creates a new slip + details + inventory UPSERT; columns: 商品コード, 数量
+  - `shipping`: creates a new slip + details + inventory UPDATE; columns: 商品コード, 数量
+  - `inventory`: append/replace mode (UPSERT); columns: 商品コード, 数量 (or 在庫数)
+  - CSV parsing via `$lib/utils/csv.ts`
 - **Account CRUD error handling**:
   - `AccountEditor.svelte`: Added error banner inside modal for create/update `fail()` responses (via `use:enhance` `result.type === 'failure'`)
   - `accounts/+page.svelte`: Added error notification banner for delete failures; uses `fetch` with `x-sveltekit-action: 'true'` header + `deserialize` to parse action result
   - `accounts/+page.server.ts` delete action: Detects `FOREIGN KEY constraint failed` error and returns "このアカウントは使用されているため削除できません"
+- **Removed `acc-1` fallback**: All `locals.user?.id ?? 'acc-1'` replaced with `locals.user!.id` (5 files); auth guard in layout.server.ts guarantees `locals.user` is set
 - **Shared slip form components**:
   - Created `ReceivingSlipForm.svelte` and `ShippingSlipForm.svelte` in `$lib/components`
   - Replaced all 4 pages (`receiving/new`, `receiving/[id]/edit`, `shipping/new`, `shipping/[id]/edit`) to use shared components — pages reduced from ~300 lines to ~55 lines each
@@ -238,7 +254,5 @@ Performing end-to-end verification and fixing issues found.
   - `ReceivingSlipForm` and `ShippingSlipForm`: show `SearchableSelect` for 担当者 when `isAdmin=true`
 
 #### Remaining in Plan 5
-- Implement authentication (login/logout, session management) — `password_hash` is currently `'PLACEHOLDER'` in seed data
-- Implement CSV import actions (currently stubs returning `{ success: true, count: 0 }`) for receiving, shipping, suppliers, products, inventory
-- Fix or stub out settings page (`accounts/+page.server.ts`, `settings/+page.server.ts` reference `schema.settings` which does not exist)
+- Fix or stub out settings page (`settings/+page.server.ts` references `schema.settings` which does not exist)
 - End-to-end verification of all CRUD screens

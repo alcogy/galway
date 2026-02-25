@@ -58,7 +58,7 @@ export const actions = {
 			}
 
 			const account = await db.query.accounts.findFirst({
-				where: eq(schema.accounts.id, locals.user?.id ?? 'acc-1')
+				where: eq(schema.accounts.id, locals.user!.id)
 			});
 			if (!account) {
 				return fail(404, { error: 'アカウントが見つかりません' });

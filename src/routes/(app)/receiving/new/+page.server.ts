@@ -30,7 +30,7 @@ export const load: PageServerLoad = async ({ platform }) => {
 export const actions = {
 	create: async ({ request, platform, locals }) => {
 		const db = getDb(platform!.env.DB);
-		const account_id = locals.user?.id ?? 'acc-1';
+		const account_id = locals.user!.id;
 		const data = await request.formData();
 
 		const received_at = data.get('received_at')?.toString();

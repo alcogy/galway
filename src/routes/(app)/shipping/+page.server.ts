@@ -61,7 +61,7 @@ export const load: PageServerLoad = async ({ platform }) => {
 export const actions = {
 	import: async ({ request, platform, locals }) => {
 		const db = getDb(platform!.env.DB);
-		const account_id = locals.user?.id ?? 'acc-1';
+		const account_id = locals.user!.id;
 		const formData = await request.formData();
 		const file = formData.get('file') as File | null;
 		const date = formData.get('date')?.toString();
