@@ -1,15 +1,24 @@
 import type { RequestHandler } from './$types';
 import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
-import { asc } from 'drizzle-orm';
+import { asc, like, or } from 'drizzle-orm';
 import { generateCSV } from '$lib/utils/csv';
 
-export const GET: RequestHandler = async ({ platform }) => {
+export const GET: RequestHandler = async ({ platform, url }) => {
 	const db = getDb(platform!.env.DB);
+
+	const searchQuery = url.searchParams.get('search') || '';
+	const whereClause = searchQuery
+		? or(
+				like(schema.products.code, `%${searchQuery}%`),
+				like(schema.products.name, `%${searchQuery}%`)
+			)
+		: undefined;
 
 	const products = await db
 		.select()
 		.from(schema.products)
+		.where(whereClause)
 		.orderBy(asc(schema.products.code));
 
 	const headers = ['商品コード', '商品名', '単位', '説明'];

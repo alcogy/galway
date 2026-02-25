@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Plus, Pencil, Trash2, Download, Upload } from '@lucide/svelte';
 	import { goto, invalidateAll } from '$app/navigation';
+	import { page } from '$app/state';
 	import { Button, Input, Label, Modal, ConfirmDialog, Table, SearchBar, Textarea, Pagination, CsvImportDialog } from '$lib/components';
 	import type { PageData } from './$types';
 	import type { Product } from './+page.server';
@@ -12,27 +13,28 @@
 	let showImportDialog = $state(false);
 	let editing = $state<Product | null>(null);
 	let deletingId = $state<string | null>(null);
-	let searchQuery = $state('');
-	let page = $state(1);
+	let searchQuery = $state(page.url.searchParams.get('search') || '');
 	let importNotification = $state<{ type: 'success' | 'error'; message: string } | null>(null);
 
-	const ITEMS_PER_PAGE = 20;
+	function handleSearch() {
+		const params = new URLSearchParams();
+		if (searchQuery) params.set('search', searchQuery);
+		params.set('page', '1');
+		goto(`?${params.toString()}`, { keepFocus: true });
+	}
 
-	const filteredProducts = $derived(
-		data.products.filter(
-			(p) =>
-				p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-				p.code.toLowerCase().includes(searchQuery.toLowerCase())
-		)
-	);
-	const pagedProducts = $derived(
-		filteredProducts.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
-	);
+	function handlePageChange(newPage: number) {
+		const params = new URLSearchParams();
+		if (searchQuery) params.set('search', searchQuery);
+		params.set('page', newPage.toString());
+		goto(`?${params.toString()}`, { keepFocus: true });
+	}
 
-	$effect(() => {
-		searchQuery;
-		page = 1;
-	});
+	function getExportUrl() {
+		const params = new URLSearchParams();
+		if (searchQuery) params.set('search', searchQuery);
+		return `/products/export?${params.toString()}`;
+	}
 
 	// Form state
 	let code = $state('');
@@ -61,23 +63,6 @@
 	function openDelete(id: string) {
 		deletingId = id;
 		showDeleteDialog = true;
-	}
-
-	function handleSearch() {
-		const params = new URLSearchParams();
-		if (searchQuery) {
-			params.set('search', searchQuery);
-		}		
-		params.set('page', '1'); // Reset to first page when searching
-		goto(`?${params.toString()}`, { keepFocus: true });
-	}
-
-	function getExportUrl() {
-		const params = new URLSearchParams();
-		if (searchQuery) {
-			params.set('search', searchQuery);
-		}		
-		return `/products/export?${params.toString()}`;
 	}
 
 	const columns = [
@@ -114,31 +99,31 @@
 	</div>
 
 	<div class="filters">
-		<SearchBar bind:value={searchQuery} placeholder="商品名・コードで検索..." onsubmit={handleSearch} />		
+		<SearchBar bind:value={searchQuery} placeholder="商品名・コードで検索..." onsubmit={handleSearch} />
 	</div>
 
 	<div class="table-with-pagination">
-	<Table {columns} rows={pagedProducts}>
-		{#snippet actions(row)}
-			<div class="row-actions">
-				<Button variant="ghost" size="sm" onclick={() => openEdit(row)}>
-					<Pencil size={14} />
-				</Button>
-				<Button variant="ghost" size="sm" onclick={() => openDelete(row.id)}>
-					<Trash2 size={14} />
-				</Button>
-			</div>
-		{/snippet}
-		{#snippet empty()}
-			<span>商品が登録されていません</span>
-		{/snippet}
-	</Table>
-	<Pagination
-		totalItems={filteredProducts.length}
-		itemsPerPage={ITEMS_PER_PAGE}
-		currentPage={page}
-		onPageChange={(p) => (page = p)}
-	/>
+		<Table {columns} rows={data.products}>
+			{#snippet actions(row)}
+				<div class="row-actions">
+					<Button variant="ghost" size="sm" onclick={() => openEdit(row)}>
+						<Pencil size={14} />
+					</Button>
+					<Button variant="ghost" size="sm" onclick={() => openDelete(row.id)}>
+						<Trash2 size={14} />
+					</Button>
+				</div>
+			{/snippet}
+			{#snippet empty()}
+				<span>商品が登録されていません</span>
+			{/snippet}
+		</Table>
+		<Pagination
+			totalItems={data.totalItems}
+			itemsPerPage={data.itemsPerPage}
+			currentPage={data.currentPage}
+			onPageChange={handlePageChange}
+		/>
 	</div>
 </div>
 
@@ -212,7 +197,7 @@
 				headers: { Accept: 'application/json' },
 				body: formData
 			});
-			const json = await res.json();
+			const json = await res.json() as any;
 			if (json.type === 'success') {
 				await invalidateAll();
 				importNotification = { type: 'success', message: `${json.data?.count ?? ''}件の商品データをインポートしました` };
@@ -299,6 +284,7 @@
 		padding-top: var(--space-lg);
 		border-top: 1px solid var(--color-border-light);
 	}
+
 	.filters {
 		display: flex;
 		align-items: center;

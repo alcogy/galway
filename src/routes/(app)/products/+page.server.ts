@@ -1,5 +1,5 @@
 import { fail } from '@sveltejs/kit';
-import { eq, asc } from 'drizzle-orm';
+import { eq, asc, like, or, count } from 'drizzle-orm';
 import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import { parseCSV } from '$lib/utils/csv';
@@ -13,20 +13,45 @@ export interface Product {
 	description: string | null;
 }
 
-export const load: PageServerLoad = async ({ platform }) => {
+export const load: PageServerLoad = async ({ platform, url }) => {
 	const db = getDb(platform!.env.DB);
-	const products: Product[] = await db
-		.select({
-			id: schema.products.id,
-			code: schema.products.code,
-			name: schema.products.name,
-			unit: schema.products.unit,
-			description: schema.products.description,
-		})
-		.from(schema.products)
-		.orderBy(asc(schema.products.code));
 
-	return { products };
+	const itemsPerPage = 20;
+	const searchQuery = url.searchParams.get('search') || '';
+	const currentPage = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
+
+	const whereClause = searchQuery
+		? or(
+				like(schema.products.code, `%${searchQuery}%`),
+				like(schema.products.name, `%${searchQuery}%`)
+			)
+		: undefined;
+	const offset = (currentPage - 1) * itemsPerPage;
+
+	const [countResult, products] = await Promise.all([
+		db.select({ count: count() }).from(schema.products).where(whereClause),
+		db
+			.select({
+				id: schema.products.id,
+				code: schema.products.code,
+				name: schema.products.name,
+				unit: schema.products.unit,
+				description: schema.products.description,
+			})
+			.from(schema.products)
+			.where(whereClause)
+			.orderBy(asc(schema.products.code))
+			.limit(itemsPerPage)
+			.offset(offset),
+	]);
+
+	return {
+		products,
+		totalItems: countResult[0]?.count ?? 0,
+		itemsPerPage,
+		currentPage,
+		searchQuery,
+	};
 };
 
 export const actions = {

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Plus, Pencil, Trash2, Download, Upload } from '@lucide/svelte';
 	import { goto, invalidateAll } from '$app/navigation';
+	import { page } from '$app/state';
 	import { Button, Input, Label, Modal, ConfirmDialog, Table, SearchBar, Pagination, CsvImportDialog } from '$lib/components';
 	import type { PageData } from './$types';
 	import type { Supplier } from './+page.server';
@@ -12,23 +13,28 @@
 	let showImportDialog = $state(false);
 	let editing = $state<Supplier | null>(null);
 	let deletingId = $state<string | null>(null);
-	let searchQuery = $state('');
-	let page = $state(1);
+	let searchQuery = $state(page.url.searchParams.get('search') || '');
 	let importNotification = $state<{ type: 'success' | 'error'; message: string } | null>(null);
 
-	const ITEMS_PER_PAGE = 20;
+	function handleSearch() {
+		const params = new URLSearchParams();
+		if (searchQuery) params.set('search', searchQuery);
+		params.set('page', '1');
+		goto(`?${params.toString()}`, { keepFocus: true });
+	}
 
-	const filteredSuppliers = $derived(
-		data.suppliers.filter((s) => s.name.toLowerCase().includes(searchQuery.toLowerCase()))
-	);
-	const pagedSuppliers = $derived(
-		filteredSuppliers.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
-	);
+	function handlePageChange(newPage: number) {
+		const params = new URLSearchParams();
+		if (searchQuery) params.set('search', searchQuery);
+		params.set('page', newPage.toString());
+		goto(`?${params.toString()}`, { keepFocus: true });
+	}
 
-	$effect(() => {
-		searchQuery;
-		page = 1;
-	});
+	function getExportUrl() {
+		const params = new URLSearchParams();
+		if (searchQuery) params.set('search', searchQuery);
+		return `/suppliers/export?${params.toString()}`;
+	}
 
 	// Form state
 	let name = $state('');
@@ -65,23 +71,6 @@
 		showDeleteDialog = true;
 	}
 
-	function handleSearch() {
-		const params = new URLSearchParams();
-		if (searchQuery) {
-			params.set('search', searchQuery);
-		}		
-		params.set('page', '1'); // Reset to first page when searching
-		goto(`?${params.toString()}`, { keepFocus: true });
-	}
-
-	function getExportUrl() {
-		const params = new URLSearchParams();
-		if (searchQuery) {
-			params.set('search', searchQuery);
-		}		
-		return `/suppliers/export?${params.toString()}`;
-	}
-
 	const columns = [
 		{ key: 'name', label: '仕入先名' },
 		{ key: 'tel', label: '電話番号', width: '140px' },
@@ -108,7 +97,7 @@
 			<Button variant="secondary" size="sm" onclick={() => (showImportDialog = true)}>
 				<Upload size={14} />
 				CSVインポート
-			</Button>			
+			</Button>
 			<Button size="sm" onclick={openCreate}>
 				<Plus size={16} />
 				新規登録
@@ -117,31 +106,31 @@
 	</div>
 
 	<div class="filters">
-		<SearchBar bind:value={searchQuery} placeholder="仕入先名で検索..." onsubmit={handleSearch} />		
+		<SearchBar bind:value={searchQuery} placeholder="仕入先名で検索..." onsubmit={handleSearch} />
 	</div>
 
 	<div class="table-with-pagination">
-	<Table {columns} rows={pagedSuppliers}>
-		{#snippet actions(row)}
-			<div class="row-actions">
-				<Button variant="ghost" size="sm" onclick={() => openEdit(row)}>
-					<Pencil size={14} />
-				</Button>
-				<Button variant="ghost" size="sm" onclick={() => openDelete(row.id)}>
-					<Trash2 size={14} />
-				</Button>
-			</div>
-		{/snippet}
-		{#snippet empty()}
-			<span>仕入先が登録されていません</span>
-		{/snippet}
-	</Table>
-	<Pagination
-		totalItems={filteredSuppliers.length}
-		itemsPerPage={ITEMS_PER_PAGE}
-		currentPage={page}
-		onPageChange={(p) => (page = p)}
-	/>
+		<Table {columns} rows={data.suppliers}>
+			{#snippet actions(row)}
+				<div class="row-actions">
+					<Button variant="ghost" size="sm" onclick={() => openEdit(row)}>
+						<Pencil size={14} />
+					</Button>
+					<Button variant="ghost" size="sm" onclick={() => openDelete(row.id)}>
+						<Trash2 size={14} />
+					</Button>
+				</div>
+			{/snippet}
+			{#snippet empty()}
+				<span>仕入先が登録されていません</span>
+			{/snippet}
+		</Table>
+		<Pagination
+			totalItems={data.totalItems}
+			itemsPerPage={data.itemsPerPage}
+			currentPage={data.currentPage}
+			onPageChange={handlePageChange}
+		/>
 	</div>
 </div>
 
@@ -223,7 +212,7 @@
 				headers: { Accept: 'application/json' },
 				body: formData
 			});
-			const json = await res.json();
+			const json = await res.json() as any;
 			if (json.type === 'success') {
 				await invalidateAll();
 				importNotification = { type: 'success', message: `${json.data?.count ?? ''}件の仕入先データをインポートしました` };

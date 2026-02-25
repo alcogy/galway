@@ -1,5 +1,5 @@
 import { fail } from '@sveltejs/kit';
-import { eq, asc } from 'drizzle-orm';
+import { eq, asc, like, count } from 'drizzle-orm';
 import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import { parseCSV } from '$lib/utils/csv';
@@ -15,22 +15,42 @@ export interface Supplier {
 	email: string | null;
 }
 
-export const load: PageServerLoad = async ({ platform }) => {
+export const load: PageServerLoad = async ({ platform, url }) => {
 	const db = getDb(platform!.env.DB);
-	const suppliers: Supplier[] = await db
-		.select({
-			id: schema.suppliers.id,
-			name: schema.suppliers.name,
-			tel: schema.suppliers.tel,
-			fax: schema.suppliers.fax,
-			zipcode: schema.suppliers.zipcode,
-			address: schema.suppliers.address,
-			email: schema.suppliers.email,
-		})
-		.from(schema.suppliers)
-		.orderBy(asc(schema.suppliers.name));
 
-	return { suppliers };
+	const itemsPerPage = 20;
+	const searchQuery = url.searchParams.get('search') || '';
+	const currentPage = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
+
+	const whereClause = searchQuery ? like(schema.suppliers.name, `%${searchQuery}%`) : undefined;
+	const offset = (currentPage - 1) * itemsPerPage;
+
+	const [countResult, suppliers] = await Promise.all([
+		db.select({ count: count() }).from(schema.suppliers).where(whereClause),
+		db
+			.select({
+				id: schema.suppliers.id,
+				name: schema.suppliers.name,
+				tel: schema.suppliers.tel,
+				fax: schema.suppliers.fax,
+				zipcode: schema.suppliers.zipcode,
+				address: schema.suppliers.address,
+				email: schema.suppliers.email,
+			})
+			.from(schema.suppliers)
+			.where(whereClause)
+			.orderBy(asc(schema.suppliers.name))
+			.limit(itemsPerPage)
+			.offset(offset),
+	]);
+
+	return {
+		suppliers,
+		totalItems: countResult[0]?.count ?? 0,
+		itemsPerPage,
+		currentPage,
+		searchQuery,
+	};
 };
 
 export const actions = {
