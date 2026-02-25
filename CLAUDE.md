@@ -126,15 +126,19 @@ src/routes/(app)/
 - **Detail page layout**: back link → page header with actions → 伝票情報 Card (dl grid) → 明細 Card (Table, full-width via `:global(.card-body) { padding: 0 }`)
 - **Create/Edit as pages**: Receiving and shipping slips use dedicated pages (not modals). Line items serialized as JSON in a hidden input (`name="details"`). Edit pages use `$effect` to set initial state from data.
 - **Form page layout**: back link → page header → Card containing the form → form-actions at bottom inside card
+- **CSV import on list pages**: Receiving and shipping lists have a CSVインポート button (Upload icon) that opens `SlipCsvImportDialog`. On success, calls `invalidateAll()` and shows an `importNotification` banner (auto-dismisses after 6 s). Import action is currently a stub returning `{ success: true, count: 0 }`.
 - **Pagination**: All lists paginated 20 items/page; `.table-with-pagination` wrapper removes bottom border-radius from Table so Pagination attaches seamlessly
 - **Client-side search**: Suppliers and Products filter with `$derived` + `$effect(() => { searchQuery; page = 1; })`
-- **`$state` init rule**: Never initialize `$state` from `data.*` directly — use empty string/null and set values in handler functions (autofixer flags this)
+- **`$state` init rule**: Never initialize `$state` from `data.*` directly — use empty string/null and set values in `$effect` or handler functions (autofixer flags this)
+- **Slip list columns**: Receiving list shows 伝票番号, 仕入先, 入荷日, 品目数, 担当者. Shipping list shows 伝票番号, 出荷日, 品目数, 担当者. 担当者 = name of the user who registered the slip (`user_name` field).
 
 #### Components (`src/lib/components/`)
 - `Select.svelte`: Styled `<select>` wrapper; value must be `$bindable()`
+- `SearchableSelect.svelte`: Searchable dropdown; `position: fixed` panel positioned via `getBoundingClientRect()` on click event to escape `overflow: hidden` parents; hidden `<input type="hidden">` for form submission; `{@attach (node) => { node.focus(); }}` for search input auto-focus; Props — `options`, `placeholder`, `value=$bindable('')`, `name`, `disabled`, `error`
 - `Table.svelte`: Accepts `columns`, `rows`, `onrowclick`, `actions` snippet, `cell` snippet, `empty` snippet
 - `Card.svelte`: Accepts `title` and `children`; `card-body` has `padding: var(--space-xl)` — override with `:global(.card-body)` for full-width content
-- `CsvImportDialog.svelte`: Used in suppliers and products pages
+- `CsvImportDialog.svelte`: Used in suppliers and products pages (append/replace mode + file drop zone)
+- `SlipCsvImportDialog.svelte`: Used in receiving and shipping list pages; append-only; Props — `open=$bindable()`, `title`, `dateLabel='入荷日'`, `suppliers?: {id,name}[]` (omit for shipping), `onimport?: (file, date, supplierId?) => void`; expected CSV columns: 商品コード, 商品名, 数量
 - `Pagination.svelte`: Props — `totalItems`, `itemsPerPage`, `currentPage`, `onPageChange`
 
 #### Known Pre-existing Type Errors (deferred to Plan 3/4)
