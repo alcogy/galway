@@ -11,13 +11,13 @@ export interface ShippingDetail {
 }
 
 const MOCK_SLIPS = [
-	{ id: '1', slip_number: 'SHP-2026-001', shipped_at: '2026-02-03', item_count: 2 },
-	{ id: '2', slip_number: 'SHP-2026-002', shipped_at: '2026-02-06', item_count: 4 },
-	{ id: '3', slip_number: 'SHP-2026-003', shipped_at: '2026-02-10', item_count: 1 },
-	{ id: '4', slip_number: 'SHP-2026-004', shipped_at: '2026-02-13', item_count: 3 },
-	{ id: '5', slip_number: 'SHP-2026-005', shipped_at: '2026-02-17', item_count: 2 },
-	{ id: '6', slip_number: 'SHP-2026-006', shipped_at: '2026-02-20', item_count: 5 },
-	{ id: '7', slip_number: 'SHP-2026-007', shipped_at: '2026-02-24', item_count: 2 },
+	{ id: '1', slip_number: 'SHP-2026-001', shipped_at: '2026-02-03', item_count: 2, user_name: '田中 太郎' },
+	{ id: '2', slip_number: 'SHP-2026-002', shipped_at: '2026-02-06', item_count: 4, user_name: '鈴木 花子' },
+	{ id: '3', slip_number: 'SHP-2026-003', shipped_at: '2026-02-10', item_count: 1, user_name: '佐藤 次郎' },
+	{ id: '4', slip_number: 'SHP-2026-004', shipped_at: '2026-02-13', item_count: 3, user_name: '田中 太郎' },
+	{ id: '5', slip_number: 'SHP-2026-005', shipped_at: '2026-02-17', item_count: 2, user_name: '鈴木 花子' },
+	{ id: '6', slip_number: 'SHP-2026-006', shipped_at: '2026-02-20', item_count: 5, user_name: '佐藤 次郎' },
+	{ id: '7', slip_number: 'SHP-2026-007', shipped_at: '2026-02-24', item_count: 2, user_name: '田中 太郎' },
 ];
 
 const MOCK_DETAILS: Record<string, ShippingDetail[]> = {

@@ -72,6 +72,10 @@
 				<dt class="info-label">品目数</dt>
 				<dd class="info-value">{data.slip.item_count}</dd>
 			</div>
+			<div class="info-item">
+				<dt class="info-label">担当者</dt>
+				<dd class="info-value">{data.slip.user_name}</dd>
+			</div>
 		</dl>
 	</Card>
 
