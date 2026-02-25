@@ -108,6 +108,8 @@
 		{#snippet cell(col, value)}
 			{#if col.key === 'updated_at'}
 				{formatDate(value as string | null)}
+			{:else if col.key === 'quantity'}
+				{(value as number).toLocaleString()}
 			{:else}
 				{value}
 			{/if}
