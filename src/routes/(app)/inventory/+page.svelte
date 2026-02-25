@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { ClipboardList, Upload, Download } from '@lucide/svelte';
-	import { Button, Label, Modal, Table, Select, Pagination, CsvImportDialog } from '$lib/components';
-	import { invalidateAll } from '$app/navigation';
+	import { Button, Label, Modal, Table, Select, SearchBar, Pagination, CsvImportDialog } from '$lib/components';
+	import { goto, invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -12,11 +12,24 @@
 	let stocktakeProductId = $state('');
 	let stocktakeQuantity = $state(0);
 	let page = $state(1);
+	let searchQuery = $state('');
 
 	const ITEMS_PER_PAGE = 20;
-	const pagedInventory = $derived(
-		data.inventory.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
+	const filteredInventory = $derived(
+		data.inventory.filter(
+			(i) =>
+				i.product_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+				i.product_name.toLowerCase().includes(searchQuery.toLowerCase())
+		)
 	);
+	const pagedInventory = $derived(
+		filteredInventory.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
+	);
+
+	$effect(() => {
+		searchQuery;
+		page = 1;
+	});
 
 	const productOptions = $derived(
 		data.products.map((p) => ({ value: p.id, label: `${p.code} ${p.name}` }))
@@ -26,6 +39,15 @@
 		stocktakeProductId = '';
 		stocktakeQuantity = 0;
 		showModal = true;
+	}
+
+	function handleSearch() {
+		const params = new URLSearchParams();
+		if (searchQuery) {
+			params.set('search', searchQuery);
+		}		
+		params.set('page', '1'); // Reset to first page when searching
+		goto(`?${params.toString()}`, { keepFocus: true });
 	}
 
 	const columns = [
@@ -59,12 +81,16 @@
 			</Button>
 		</div>
 	</div>
-
+	
 	{#if importNotification}
 		<div class="notification" class:is-error={importNotification.type === 'error'}>
 			{importNotification.message}
 		</div>
 	{/if}
+
+	<div class="filters">
+		<SearchBar bind:value={searchQuery} placeholder="商品名・コードで検索..." onsubmit={handleSearch} />		
+	</div>
 
 	<div class="table-with-pagination">
 	<Table {columns} rows={pagedInventory}>
