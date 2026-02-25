@@ -19,7 +19,7 @@
 		"db:generate": "drizzle-kit generate",
 		"db:migrate:local": "wrangler d1 migrations apply aes-supplier-db --local",
 		"db:migrate:remote": "wrangler d1 migrations apply aes-supplier-db --remote",
-		"db:seed:local": "wrangler d1 execute aes-supplier-db --local --file=./drizzle/seed.sql"
+		"db:seed:local": "wrangler d1 execute aes-supplier-db --local --file=./scripts/seed.sql"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^2.0.2",
