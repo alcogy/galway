@@ -9,6 +9,7 @@ export interface ReceivingSlip {
 	supplier_id: string;
 	supplier_name: string;
 	item_count: number;
+	user_name: string;
 }
 
 export interface ReceivingDetail {
@@ -21,19 +22,19 @@ export interface ReceivingDetail {
 }
 
 const MOCK_SLIPS: ReceivingSlip[] = [
-	{ id: '1', slip_number: 'RCV-2026-001', received_at: '2026-02-01', supplier_id: '1', supplier_name: '株式会社山田製作所', item_count: 3 },
-	{ id: '2', slip_number: 'RCV-2026-002', received_at: '2026-02-03', supplier_id: '2', supplier_name: '田中商事株式会社', item_count: 2 },
-	{ id: '3', slip_number: 'RCV-2026-003', received_at: '2026-02-05', supplier_id: '3', supplier_name: '鈴木部品工業', item_count: 5 },
-	{ id: '4', slip_number: 'RCV-2026-004', received_at: '2026-02-07', supplier_id: '1', supplier_name: '株式会社山田製作所', item_count: 1 },
-	{ id: '5', slip_number: 'RCV-2026-005', received_at: '2026-02-10', supplier_id: '4', supplier_name: '佐藤金属株式会社', item_count: 4 },
-	{ id: '6', slip_number: 'RCV-2026-006', received_at: '2026-02-12', supplier_id: '2', supplier_name: '田中商事株式会社', item_count: 2 },
-	{ id: '7', slip_number: 'RCV-2026-007', received_at: '2026-02-14', supplier_id: '5', supplier_name: '高橋電機工業株式会社', item_count: 3 },
-	{ id: '8', slip_number: 'RCV-2026-008', received_at: '2026-02-17', supplier_id: '3', supplier_name: '鈴木部品工業', item_count: 2 },
-	{ id: '9', slip_number: 'RCV-2026-009', received_at: '2026-02-19', supplier_id: '6', supplier_name: '伊藤素材株式会社', item_count: 6 },
-	{ id: '10', slip_number: 'RCV-2026-010', received_at: '2026-02-21', supplier_id: '1', supplier_name: '株式会社山田製作所', item_count: 2 },
-	{ id: '11', slip_number: 'RCV-2026-011', received_at: '2026-02-22', supplier_id: '7', supplier_name: '渡辺化学品工業', item_count: 3 },
-	{ id: '12', slip_number: 'RCV-2026-012', received_at: '2026-02-24', supplier_id: '2', supplier_name: '田中商事株式会社', item_count: 1 },
-	{ id: '13', slip_number: 'RCV-2026-013', received_at: '2026-02-24', supplier_id: '8', supplier_name: '中村精密機械株式会社', item_count: 4 },
+	{ id: '1', slip_number: 'RCV-2026-001', received_at: '2026-02-01', supplier_id: '1', supplier_name: '株式会社山田製作所', item_count: 3, user_name: '田中 太郎' },
+	{ id: '2', slip_number: 'RCV-2026-002', received_at: '2026-02-03', supplier_id: '2', supplier_name: '田中商事株式会社', item_count: 2, user_name: '鈴木 花子' },
+	{ id: '3', slip_number: 'RCV-2026-003', received_at: '2026-02-05', supplier_id: '3', supplier_name: '鈴木部品工業', item_count: 5, user_name: '田中 太郎' },
+	{ id: '4', slip_number: 'RCV-2026-004', received_at: '2026-02-07', supplier_id: '1', supplier_name: '株式会社山田製作所', item_count: 1, user_name: '佐藤 次郎' },
+	{ id: '5', slip_number: 'RCV-2026-005', received_at: '2026-02-10', supplier_id: '4', supplier_name: '佐藤金属株式会社', item_count: 4, user_name: '鈴木 花子' },
+	{ id: '6', slip_number: 'RCV-2026-006', received_at: '2026-02-12', supplier_id: '2', supplier_name: '田中商事株式会社', item_count: 2, user_name: '田中 太郎' },
+	{ id: '7', slip_number: 'RCV-2026-007', received_at: '2026-02-14', supplier_id: '5', supplier_name: '高橋電機工業株式会社', item_count: 3, user_name: '佐藤 次郎' },
+	{ id: '8', slip_number: 'RCV-2026-008', received_at: '2026-02-17', supplier_id: '3', supplier_name: '鈴木部品工業', item_count: 2, user_name: '鈴木 花子' },
+	{ id: '9', slip_number: 'RCV-2026-009', received_at: '2026-02-19', supplier_id: '6', supplier_name: '伊藤素材株式会社', item_count: 6, user_name: '田中 太郎' },
+	{ id: '10', slip_number: 'RCV-2026-010', received_at: '2026-02-21', supplier_id: '1', supplier_name: '株式会社山田製作所', item_count: 2, user_name: '佐藤 次郎' },
+	{ id: '11', slip_number: 'RCV-2026-011', received_at: '2026-02-22', supplier_id: '7', supplier_name: '渡辺化学品工業', item_count: 3, user_name: '鈴木 花子' },
+	{ id: '12', slip_number: 'RCV-2026-012', received_at: '2026-02-24', supplier_id: '2', supplier_name: '田中商事株式会社', item_count: 1, user_name: '田中 太郎' },
+	{ id: '13', slip_number: 'RCV-2026-013', received_at: '2026-02-24', supplier_id: '8', supplier_name: '中村精密機械株式会社', item_count: 4, user_name: '佐藤 次郎' },
 ];
 
 const MOCK_SUPPLIERS = [
