@@ -1,4 +1,4 @@
-import { error, redirect } from '@sveltejs/kit';
+import { error, redirect, fail } from '@sveltejs/kit';
 import { eq, count, asc } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 import { getDb } from '$lib/server/db';
@@ -81,26 +81,32 @@ export const actions = {
 		const db = getDb(platform!.env.DB);
 		const now = new Date().toISOString();
 
-		const oldDetails = await db
-			.select({
-				product_id: schema.receivingSlipDetails.product_id,
-				quantity: schema.receivingSlipDetails.quantity,
-			})
-			.from(schema.receivingSlipDetails)
-			.where(eq(schema.receivingSlipDetails.slip_id, params.id));
-
-		await db.batch([
-			db.delete(schema.receivingSlips).where(eq(schema.receivingSlips.id, params.id)),
-			...oldDetails.map((d) =>
-				db
-					.update(schema.inventory)
-					.set({
-						quantity: sql`${schema.inventory.quantity} - ${d.quantity}`,
-						updated_at: now,
+		try {
+			await db.transaction(async (tx) => {
+				const oldDetails = await tx
+					.select({
+						product_id: schema.receivingSlipDetails.product_id,
+						quantity: schema.receivingSlipDetails.quantity,
 					})
-					.where(eq(schema.inventory.product_id, d.product_id))
-			),
-		] as any);
+					.from(schema.receivingSlipDetails)
+					.where(eq(schema.receivingSlipDetails.slip_id, params.id));
+
+				await tx.delete(schema.receivingSlips).where(eq(schema.receivingSlips.id, params.id));
+
+				for (const d of oldDetails) {
+					await tx
+						.update(schema.inventory)
+						.set({
+							quantity: sql`${schema.inventory.quantity} - ${d.quantity}`,
+							updated_at: now,
+						})
+						.where(eq(schema.inventory.product_id, d.product_id));
+				}
+			});
+		} catch (err) {
+			console.error('Failed to delete receiving slip:', err);
+			return fail(500, { error: '入荷伝票の削除に失敗しました。' });
+		}
 
 		redirect(303, '/receiving');
 	},

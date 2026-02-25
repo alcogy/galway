@@ -48,6 +48,12 @@ After completing the code, ask the user if they want a playground link. Only cal
 - **D1 binding**: `binding: "DB"`, `database_name: "aes-supplier-db"`
 - **Migrations dir**: `./drizzle` (managed by drizzle-kit generate + wrangler d1 migrations apply)
 
+### DB Mutation Rules (enforced across all +page.server.ts / +server.ts)
+1. **Always wrap INSERT / UPDATE / DELETE in try/catch.** Return `fail(500, { error: '...' })` on unexpected errors.
+2. **Use `db.transaction(async (tx) => { ... })` whenever two or more related tables are mutated together.** Use `tx` instead of `db` for all operations inside. Do NOT use `db.batch()` — use sequential `await tx.operation()` calls instead.
+3. **Slip number conflict handling:** Catch `UNIQUE constraint failed` on `slip_number` and return `fail(409, { error: '伝票番号が競合しました。再度お試しください。' })`.
+4. **Redirect after mutation** must be placed *outside* the try/catch block so the SvelteKit redirect is not swallowed.
+
 ## System Overview
 
 This is a simple procurement management system (仕入管理システム).

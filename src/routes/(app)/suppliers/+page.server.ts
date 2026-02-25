@@ -90,8 +90,13 @@ export const actions = {
 		const id = data.get('id')?.toString();
 		if (!id) return fail(400, { error: 'IDが必要です' });
 
-		await db.delete(schema.suppliers).where(eq(schema.suppliers.id, id));
-		return { success: true };
+		try {
+			await db.delete(schema.suppliers).where(eq(schema.suppliers.id, id));
+			return { success: true };
+		} catch (error) {
+			console.error('Failed to delete supplier:', error);
+			return fail(500, { error: '仕入先の削除に失敗しました。' });
+		}
 	},
 
 	import: async ({ request, platform }) => {
@@ -132,10 +137,12 @@ export const actions = {
 		if (records.length === 0) return fail(400, { error: '有効なデータがありません' });
 
 		try {
-			if (mode === 'replace') {
-				await db.delete(schema.suppliers);
-			}
-			await db.insert(schema.suppliers).values(records);
+			await db.transaction(async (tx) => {
+				if (mode === 'replace') {
+					await tx.delete(schema.suppliers);
+				}
+				await tx.insert(schema.suppliers).values(records);
+			});
 			return { success: true, count: records.length };
 		} catch (error) {
 			console.error('Failed to import suppliers:', error);

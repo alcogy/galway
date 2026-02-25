@@ -1,5 +1,5 @@
 import { error, redirect, fail } from '@sveltejs/kit';
-import { eq, like, desc, asc, count } from 'drizzle-orm';
+import { eq, asc, count } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
@@ -94,55 +94,64 @@ export const actions = {
 		if (validDetails.length === 0) return fail(400, { error: '有効な明細が必要です' });
 
 		const now = new Date().toISOString();
-
-		const oldDetails = await db
-			.select({
-				product_id: schema.shippingSlipDetails.product_id,
-				quantity: schema.shippingSlipDetails.quantity,
-			})
-			.from(schema.shippingSlipDetails)
-			.where(eq(schema.shippingSlipDetails.slip_id, params.id));
-
 		const updateFields: Record<string, unknown> = { shipped_at, note };
 		if (account_id) updateFields.account_id = account_id;
 
-		await db.batch([
-			db
-				.update(schema.shippingSlips)
-				.set(updateFields)
-				.where(eq(schema.shippingSlips.id, params.id)),
-			db
-				.delete(schema.shippingSlipDetails)
-				.where(eq(schema.shippingSlipDetails.slip_id, params.id)),
-			// Add back old quantities (reverse shipping effect)
-			...oldDetails.map((d) =>
-				db
-					.update(schema.inventory)
-					.set({
-						quantity: sql`${schema.inventory.quantity} + ${d.quantity}`,
-						updated_at: now,
+		try {
+			await db.transaction(async (tx) => {
+				const oldDetails = await tx
+					.select({
+						product_id: schema.shippingSlipDetails.product_id,
+						quantity: schema.shippingSlipDetails.quantity,
 					})
-					.where(eq(schema.inventory.product_id, d.product_id))
-			),
-			...validDetails.map((d, i) =>
-				db.insert(schema.shippingSlipDetails).values({
-					slip_id: params.id,
-					product_id: d.product_id,
-					line_no: i + 1,
-					quantity: d.quantity,
-				})
-			),
-			// Subtract new quantities
-			...validDetails.map((d) =>
-				db
-					.update(schema.inventory)
-					.set({
-						quantity: sql`${schema.inventory.quantity} - ${d.quantity}`,
-						updated_at: now,
-					})
-					.where(eq(schema.inventory.product_id, d.product_id))
-			),
-		] as any);
+					.from(schema.shippingSlipDetails)
+					.where(eq(schema.shippingSlipDetails.slip_id, params.id));
+
+				await tx
+					.update(schema.shippingSlips)
+					.set(updateFields)
+					.where(eq(schema.shippingSlips.id, params.id));
+
+				await tx
+					.delete(schema.shippingSlipDetails)
+					.where(eq(schema.shippingSlipDetails.slip_id, params.id));
+
+				// Add back old quantities (reverse shipping effect)
+				for (const d of oldDetails) {
+					await tx
+						.update(schema.inventory)
+						.set({
+							quantity: sql`${schema.inventory.quantity} + ${d.quantity}`,
+							updated_at: now,
+						})
+						.where(eq(schema.inventory.product_id, d.product_id));
+				}
+
+				// Insert new details and subtract new quantities
+				for (let i = 0; i < validDetails.length; i++) {
+					const d = validDetails[i];
+					await tx.insert(schema.shippingSlipDetails).values({
+						slip_id: params.id,
+						product_id: d.product_id,
+						line_no: i + 1,
+						quantity: d.quantity,
+					});
+				}
+
+				for (const d of validDetails) {
+					await tx
+						.update(schema.inventory)
+						.set({
+							quantity: sql`${schema.inventory.quantity} - ${d.quantity}`,
+							updated_at: now,
+						})
+						.where(eq(schema.inventory.product_id, d.product_id));
+				}
+			});
+		} catch (err) {
+			console.error('Failed to update shipping slip:', err);
+			return fail(500, { error: '出荷伝票の更新に失敗しました。' });
+		}
 
 		redirect(303, `/shipping/${params.id}`);
 	},

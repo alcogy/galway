@@ -67,15 +67,20 @@ export const actions = {
 
 		const now = new Date().toISOString();
 
-		await db
-			.insert(schema.inventory)
-			.values({ product_id, quantity, updated_at: now })
-			.onConflictDoUpdate({
-				target: schema.inventory.product_id,
-				set: { quantity, updated_at: now },
-			});
+		try {
+			await db
+				.insert(schema.inventory)
+				.values({ product_id, quantity, updated_at: now })
+				.onConflictDoUpdate({
+					target: schema.inventory.product_id,
+					set: { quantity, updated_at: now },
+				});
 
-		return { success: true };
+			return { success: true };
+		} catch (err) {
+			console.error('Failed to update inventory:', err);
+			return fail(500, { error: '在庫の更新に失敗しました。' });
+		}
 	},
 
 	import: async ({ request, platform }) => {
@@ -119,20 +124,20 @@ export const actions = {
 		const now = new Date().toISOString();
 
 		try {
-			if (mode === 'replace') {
-				await db.delete(schema.inventory);
-			}
-			await db.batch(
-				records.map((r) =>
-					db
+			await db.transaction(async (tx) => {
+				if (mode === 'replace') {
+					await tx.delete(schema.inventory);
+				}
+				for (const r of records) {
+					await tx
 						.insert(schema.inventory)
 						.values({ product_id: r.product_id, quantity: r.quantity, updated_at: now })
 						.onConflictDoUpdate({
 							target: schema.inventory.product_id,
 							set: { quantity: r.quantity, updated_at: now },
-						})
-				) as any
-			);
+						});
+				}
+			});
 			return { success: true, count: records.length };
 		} catch (err) {
 			console.error('Failed to import inventory:', err);

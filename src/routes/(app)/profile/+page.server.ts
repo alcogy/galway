@@ -72,11 +72,16 @@ export const actions = {
 			updateData.password_hash = await hashPassword(newPassword);
 		}
 
-		await db
-			.update(schema.accounts)
-			.set(updateData)
-			.where(eq(schema.accounts.id, locals.user!.id));
+		try {
+			await db
+				.update(schema.accounts)
+				.set(updateData)
+				.where(eq(schema.accounts.id, locals.user!.id));
 
-		return { success: true };
+			return { success: true };
+		} catch (err) {
+			console.error('Failed to update profile:', err);
+			return fail(500, { error: 'プロフィールの更新に失敗しました。' });
+		}
 	}
 } satisfies Actions;

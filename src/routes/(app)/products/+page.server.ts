@@ -44,20 +44,22 @@ export const actions = {
 		const now = new Date().toISOString();
 
 		try {
-			const [product] = await db
-				.insert(schema.products)
-				.values({
-					code,
-					name,
-					unit,
-					description: data.get('description')?.toString().trim() || null,
-				})
-				.returning({ id: schema.products.id });
+			await db.transaction(async (tx) => {
+				const [product] = await tx
+					.insert(schema.products)
+					.values({
+						code,
+						name,
+						unit,
+						description: data.get('description')?.toString().trim() || null,
+					})
+					.returning({ id: schema.products.id });
 
-			await db
-				.insert(schema.inventory)
-				.values({ product_id: product.id, quantity: 0, updated_at: now })
-				.onConflictDoNothing();
+				await tx
+					.insert(schema.inventory)
+					.values({ product_id: product.id, quantity: 0, updated_at: now })
+					.onConflictDoNothing();
+			});
 
 			return { success: true };
 		} catch (error: any) {
@@ -110,8 +112,13 @@ export const actions = {
 		const id = data.get('id')?.toString();
 		if (!id) return fail(400, { error: 'IDが必要です' });
 
-		await db.delete(schema.products).where(eq(schema.products.id, id));
-		return { success: true };
+		try {
+			await db.delete(schema.products).where(eq(schema.products.id, id));
+			return { success: true };
+		} catch (error) {
+			console.error('Failed to delete product:', error);
+			return fail(500, { error: '商品の削除に失敗しました。' });
+		}
 	},
 
 	import: async ({ request, platform }) => {
@@ -152,20 +159,24 @@ export const actions = {
 		const now = new Date().toISOString();
 
 		try {
-			if (mode === 'replace') {
-				await db.delete(schema.products);
-			}
-			const inserted = await db
-				.insert(schema.products)
-				.values(records)
-				.returning({ id: schema.products.id });
+			await db.transaction(async (tx) => {
+				if (mode === 'replace') {
+					await tx.delete(schema.products);
+				}
+				const inserted = await tx
+					.insert(schema.products)
+					.values(records)
+					.returning({ id: schema.products.id });
 
-			if (inserted.length > 0) {
-				await db
-					.insert(schema.inventory)
-					.values(inserted.map((p) => ({ product_id: p.id, quantity: 0, updated_at: now })))
-					.onConflictDoNothing();
-			}
+				if (inserted.length > 0) {
+					for (const p of inserted) {
+						await tx
+							.insert(schema.inventory)
+							.values({ product_id: p.id, quantity: 0, updated_at: now })
+							.onConflictDoNothing();
+					}
+				}
+			});
 
 			return { success: true, count: records.length };
 		} catch (error: any) {

@@ -43,12 +43,17 @@ export const actions = {
 		const db = drizzle(platform!.env.DB, { schema });
 		const key = `holiday:${date}`;
 
-		await db
-			.insert(schema.settings)
-			.values({ key, value: name })
-			.onConflictDoUpdate({ target: schema.settings.key, set: { value: name } });
+		try {
+			await db
+				.insert(schema.settings)
+				.values({ key, value: name })
+				.onConflictDoUpdate({ target: schema.settings.key, set: { value: name } });
 
-		return { success: true };
+			return { success: true };
+		} catch (err) {
+			console.error('Failed to add holiday:', err);
+			return fail(500, { error: '祝日の登録に失敗しました。' });
+		}
 	},
 
 	delete: async ({ request, platform, locals }) => {
@@ -64,8 +69,13 @@ export const actions = {
 		}
 
 		const db = drizzle(platform!.env.DB, { schema });
-		await db.delete(schema.settings).where(eq(schema.settings.id, id));
 
-		return { success: true };
+		try {
+			await db.delete(schema.settings).where(eq(schema.settings.id, id));
+			return { success: true };
+		} catch (err) {
+			console.error('Failed to delete holiday:', err);
+			return fail(500, { error: '祝日の削除に失敗しました。' });
+		}
 	}
 } satisfies Actions;

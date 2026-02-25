@@ -1,5 +1,5 @@
 import { error, redirect, fail } from '@sveltejs/kit';
-import { eq, like, desc, asc, count } from 'drizzle-orm';
+import { eq, asc, count } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
@@ -105,56 +105,67 @@ export const actions = {
 		if (validDetails.length === 0) return fail(400, { error: '有効な明細が必要です' });
 
 		const now = new Date().toISOString();
-
-		const oldDetails = await db
-			.select({
-				product_id: schema.receivingSlipDetails.product_id,
-				quantity: schema.receivingSlipDetails.quantity,
-			})
-			.from(schema.receivingSlipDetails)
-			.where(eq(schema.receivingSlipDetails.slip_id, params.id));
-
 		const updateFields: Record<string, unknown> = { received_at, supplier_id, note };
 		if (account_id) updateFields.account_id = account_id;
 
-		await db.batch([
-			db
-				.update(schema.receivingSlips)
-				.set(updateFields)
-				.where(eq(schema.receivingSlips.id, params.id)),
-			db
-				.delete(schema.receivingSlipDetails)
-				.where(eq(schema.receivingSlipDetails.slip_id, params.id)),
-			...oldDetails.map((d) =>
-				db
-					.update(schema.inventory)
-					.set({
-						quantity: sql`${schema.inventory.quantity} - ${d.quantity}`,
-						updated_at: now,
+		try {
+			await db.transaction(async (tx) => {
+				const oldDetails = await tx
+					.select({
+						product_id: schema.receivingSlipDetails.product_id,
+						quantity: schema.receivingSlipDetails.quantity,
 					})
-					.where(eq(schema.inventory.product_id, d.product_id))
-			),
-			...validDetails.map((d, i) =>
-				db.insert(schema.receivingSlipDetails).values({
-					slip_id: params.id,
-					product_id: d.product_id,
-					line_no: i + 1,
-					quantity: d.quantity,
-				})
-			),
-			...validDetails.map((d) =>
-				db
-					.insert(schema.inventory)
-					.values({ product_id: d.product_id, quantity: d.quantity, updated_at: now })
-					.onConflictDoUpdate({
-						target: schema.inventory.product_id,
-						set: {
-							quantity: sql`${schema.inventory.quantity} + ${d.quantity}`,
+					.from(schema.receivingSlipDetails)
+					.where(eq(schema.receivingSlipDetails.slip_id, params.id));
+
+				await tx
+					.update(schema.receivingSlips)
+					.set(updateFields)
+					.where(eq(schema.receivingSlips.id, params.id));
+
+				await tx
+					.delete(schema.receivingSlipDetails)
+					.where(eq(schema.receivingSlipDetails.slip_id, params.id));
+
+				// Reverse old inventory additions
+				for (const d of oldDetails) {
+					await tx
+						.update(schema.inventory)
+						.set({
+							quantity: sql`${schema.inventory.quantity} - ${d.quantity}`,
 							updated_at: now,
-						},
-					})
-			),
-		] as any);
+						})
+						.where(eq(schema.inventory.product_id, d.product_id));
+				}
+
+				// Insert new details and apply new inventory additions
+				for (let i = 0; i < validDetails.length; i++) {
+					const d = validDetails[i];
+					await tx.insert(schema.receivingSlipDetails).values({
+						slip_id: params.id,
+						product_id: d.product_id,
+						line_no: i + 1,
+						quantity: d.quantity,
+					});
+				}
+
+				for (const d of validDetails) {
+					await tx
+						.insert(schema.inventory)
+						.values({ product_id: d.product_id, quantity: d.quantity, updated_at: now })
+						.onConflictDoUpdate({
+							target: schema.inventory.product_id,
+							set: {
+								quantity: sql`${schema.inventory.quantity} + ${d.quantity}`,
+								updated_at: now,
+							},
+						});
+				}
+			});
+		} catch (err) {
+			console.error('Failed to update receiving slip:', err);
+			return fail(500, { error: '入荷伝票の更新に失敗しました。' });
+		}
 
 		redirect(303, `/receiving/${params.id}`);
 	},
