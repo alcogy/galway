@@ -131,7 +131,7 @@ src/routes/(app)/
 - **Detail page layout**: back link → page header with actions (CSV download, 編集 button) → 伝票情報 Card (dl grid) → 明細 Table section → 削除 danger zone
 - **Create/Edit as pages**: Receiving and shipping slips use dedicated pages (not modals). Line items serialized as JSON in a hidden input (`name="details"`). Edit pages use `$effect` to set initial state from data.
 - **Form page layout**: back link → page header → Card containing the form → form-actions at bottom inside card
-- **担当者 (person in charge)**: Displayed on slip detail pages (`user_name` field from mock data). NOT an input on create/edit forms — set automatically from the logged-in account in Plan 4.
+- **担当者 (person in charge)**: Displayed on slip detail pages. On create: set automatically from the logged-in account. On edit: admins can change it via a `SearchableSelect` field; non-admins cannot (field hidden, server ignores submitted value).
 - **Numeric columns**: `Table.svelte` `Column` interface has `numeric?: boolean`. When true: right-aligns the cell and formats via `Number(val).toLocaleString('ja-JP')`.
 - **CSV import on list pages**: Receiving and shipping lists have a CSVインポート button (Upload icon) that opens `SlipCsvImportDialog`. Inventory list uses `CsvImportDialog`. On success, calls `invalidateAll()` and shows an `importNotification` banner (auto-dismisses after 6 s). Import actions are currently stubs returning `{ success: true, count: 0 }`.
 - **CSV download endpoints**: `+server.ts` GET routes returning `text/csv; charset=utf-8` with UTF-8 BOM (`\uFEFF`). Japanese filenames use RFC 5987 encoding: `filename*=UTF-8''${encodeURIComponent(filename)}`.
@@ -148,6 +148,8 @@ src/routes/(app)/
 - `CsvImportDialog.svelte`: Used in suppliers and products pages (append/replace mode + file drop zone)
 - `SlipCsvImportDialog.svelte`: Used in receiving and shipping list pages; append-only; Props — `open=$bindable()`, `title`, `dateLabel='入荷日'`, `suppliers?: {id,name}[]` (omit for shipping), `onimport?: (file, date, supplierId?) => void`; expected CSV columns: 商品コード, 商品名, 数量
 - `Pagination.svelte`: Props — `totalItems`, `itemsPerPage`, `currentPage`, `onPageChange`
+- `ReceivingSlipForm.svelte`: Shared form for receiving slip create/edit. Props — `suppliers`, `products`, `accounts?`, `isAdmin?=false`, `initialData?` (undefined = create mode), `oncancel?`. Derives `action` (`?/create`|`?/update`) and `submitLabel` (登録|更新) from `initialData`. Uses `$effect` to initialize mutable state from `initialData`. Shows 担当者 `SearchableSelect` when `isAdmin=true`.
+- `ShippingSlipForm.svelte`: Same as ReceivingSlipForm but without supplier field; uses `shipped_at` instead of `received_at`.
 
 #### Known Pre-existing Type Errors
 - `Module '"$lib/components"' has no exported member 'SearchableSelect'` — SearchableSelect is exported in index.ts; likely a TS server cache issue
@@ -220,5 +222,23 @@ When a product is created (UI or CSV import), an inventory row is inserted with 
 - Renamed `phone` → `tel` in form, state, and columns
 - Fixed export URL bug: `/supplier/export` → `/suppliers/export`
 
-### Plan 5 — Next
-Perform end-to-end verification and fix any issues found.
+### Plan 5 — In Progress
+Performing end-to-end verification and fixing issues found.
+
+#### Completed in Plan 5
+- **Account CRUD error handling**:
+  - `AccountEditor.svelte`: Added error banner inside modal for create/update `fail()` responses (via `use:enhance` `result.type === 'failure'`)
+  - `accounts/+page.svelte`: Added error notification banner for delete failures; uses `fetch` with `x-sveltekit-action: 'true'` header + `deserialize` to parse action result
+  - `accounts/+page.server.ts` delete action: Detects `FOREIGN KEY constraint failed` error and returns "このアカウントは使用されているため削除できません"
+- **Shared slip form components**:
+  - Created `ReceivingSlipForm.svelte` and `ShippingSlipForm.svelte` in `$lib/components`
+  - Replaced all 4 pages (`receiving/new`, `receiving/[id]/edit`, `shipping/new`, `shipping/[id]/edit`) to use shared components — pages reduced from ~300 lines to ~55 lines each
+- **Admin 担当者 change on edit**:
+  - `receiving/[id]/edit/+page.server.ts` and `shipping/[id]/edit/+page.server.ts`: load fetches accounts list and returns `isAdmin` flag; update action accepts `account_id` from form only when admin
+  - `ReceivingSlipForm` and `ShippingSlipForm`: show `SearchableSelect` for 担当者 when `isAdmin=true`
+
+#### Remaining in Plan 5
+- Implement authentication (login/logout, session management) — `password_hash` is currently `'PLACEHOLDER'` in seed data
+- Implement CSV import actions (currently stubs returning `{ success: true, count: 0 }`) for receiving, shipping, suppliers, products, inventory
+- Fix or stub out settings page (`accounts/+page.server.ts`, `settings/+page.server.ts` reference `schema.settings` which does not exist)
+- End-to-end verification of all CRUD screens
