@@ -160,7 +160,6 @@ src/routes/(app)/
 #### Known Pre-existing Type Errors
 - `Module '"$lib/components"' has no exported member 'SearchableSelect'` — SearchableSelect is exported in index.ts; likely a TS server cache issue
 - `json is of type 'unknown'` in CSV import handlers — resolved with `as any` cast on `res.json()`
-- `accounts/+page.server.ts`, `settings/+page.server.ts` — reference `schema.settings` which does not exist yet
 
 ### Plan 3 — Completed
 - **Schema** (`src/lib/server/db/schema.ts`): 9 tables defined with Drizzle ORM
@@ -257,7 +256,7 @@ All import actions fully implemented:
 - All INSERT / UPDATE / DELETE wrapped in try/catch across all server files
 - All multi-table mutations migrated from `db.batch()` to `db.transaction(async (tx) => { ... })`
 - Slip creation/import: slip number generated inside transaction; UNIQUE conflict → `fail(409, ...)`
-- Affected files: `suppliers`, `products`, `receiving/new`, `receiving/[id]`, `receiving/[id]/edit`, `receiving/+page` (import), `shipping/new`, `shipping/[id]`, `shipping/[id]/edit`, `shipping/+page` (import), `inventory`, `profile`, `settings`
+- Affected files: `suppliers`, `products`, `receiving/new`, `receiving/[id]`, `receiving/[id]/edit`, `receiving/+page` (import), `shipping/new`, `shipping/[id]`, `shipping/[id]/edit`, `shipping/+page` (import), `inventory`, `profile`
 
 #### Server-side Search
 All list pages now use server-side search via URL params (`?search=...&page=N`):
@@ -279,5 +278,3 @@ All list pages now use server-side search via URL params (`?search=...&page=N`):
   - `src/lib/utils/format.test.ts` (10) — `formatDate`, `formatDateTime`
   - `src/routes/page.svelte.spec.ts` (1) — renders `login/+page.svelte` h1
 
-#### Remaining
-- Fix or stub out settings page (`settings/+page.server.ts` references `schema.settings` which does not exist)

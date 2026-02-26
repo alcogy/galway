@@ -10,7 +10,6 @@
 		Boxes,
 		CircleUser,
 		Shield,
-		Settings,
 		PanelLeftClose,
 		PanelLeftOpen,
 		Sun,

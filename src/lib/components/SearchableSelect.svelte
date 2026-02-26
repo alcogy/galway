@@ -13,6 +13,7 @@
 		name?: string;
 		disabled?: boolean;
 		error?: string;
+		onchange?: (value: string) => void;
 	}
 
 	let {
@@ -21,7 +22,8 @@
 		value = $bindable(''),
 		name,
 		disabled,
-		error
+		error,
+		onchange
 	}: Props = $props();
 
 	let open = $state(false);
@@ -53,6 +55,7 @@
 		value = opt.value;
 		open = false;
 		searchQuery = '';
+		onchange?.(opt.value);
 	}
 
 	function closeDropdown() {
@@ -278,11 +281,12 @@
 		cursor: pointer;
 
 		&:hover {
-			background-color: var(--color-hover);
+			color: var(--color-primary);
+			background-color: var(--color-primary-light);
 		}
 
 		&.is-selected {
-			color: var(--color-primary);
+			background-color: var(--color-bg-sunken);
 			font-weight: 500;
 		}
 	}

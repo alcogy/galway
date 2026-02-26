@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ClipboardList, Upload, Download } from '@lucide/svelte';
-	import { Button, Label, Modal, Table, Select, SearchBar, Pagination, CsvImportDialog } from '$lib/components';
+	import { Button, Label, Modal, Table, Select, SearchBar, SearchableSelect, Pagination, CsvImportDialog } from '$lib/components';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
 	import type { PageData } from './$types';
@@ -13,10 +13,16 @@
 	let stocktakeProductId = $state('');
 	let stocktakeQuantity = $state(0);
 	let searchQuery = $state(page.url.searchParams.get('search') || '');
+	let supplierFilter = $state(page.url.searchParams.get('supplier') || '');
 
 	const productOptions = $derived(
 		data.products.map((p) => ({ value: p.id, label: `${p.code} ${p.name}` }))
 	);
+
+	const supplierOptions = $derived([
+		{ value: '', label: '全仕入先' },
+		...data.suppliers.map((s) => ({ value: s.id, label: s.name }))
+	]);
 
 	function openStocktake() {
 		stocktakeProductId = '';
@@ -24,23 +30,31 @@
 		showModal = true;
 	}
 
-	function handleSearch() {
+	function buildParams(page: number) {
 		const params = new URLSearchParams();
 		if (searchQuery) params.set('search', searchQuery);
-		params.set('page', '1');
-		goto(`?${params.toString()}`, { keepFocus: true });
+		if (supplierFilter) params.set('supplier', supplierFilter);
+		params.set('page', String(page));
+		return params;
+	}
+
+	function handleSearch() {
+		goto(`?${buildParams(1).toString()}`, { keepFocus: true });
+	}
+
+	function handleSupplierChange(val: string) {
+		supplierFilter = val;
+		goto(`?${buildParams(1).toString()}`, { keepFocus: true });
 	}
 
 	function handlePageChange(newPage: number) {
-		const params = new URLSearchParams();
-		if (searchQuery) params.set('search', searchQuery);
-		params.set('page', newPage.toString());
-		goto(`?${params.toString()}`, { keepFocus: true });
+		goto(`?${buildParams(newPage).toString()}`, { keepFocus: true });
 	}
 
 	function getExportUrl() {
 		const params = new URLSearchParams();
 		if (searchQuery) params.set('search', searchQuery);
+		if (supplierFilter) params.set('supplier', supplierFilter);
 		return `/inventory/export?${params.toString()}`;
 	}
 
@@ -95,6 +109,14 @@
 
 	<div class="filters">
 		<SearchBar bind:value={searchQuery} placeholder="商品名・コードで検索..." onsubmit={handleSearch} />
+		<div class="supplier-filter">
+			<SearchableSelect
+				options={supplierOptions}
+				bind:value={supplierFilter}
+				placeholder="全仕入先"
+				onchange={handleSupplierChange}
+			/>
+		</div>
 	</div>
 
 	<div class="table-with-pagination">
@@ -249,6 +271,18 @@
 			color: var(--color-danger);
 			border-color: var(--color-danger);
 		}
+	}
+
+	.filters {
+		display: flex;
+		align-items: center;
+		gap: var(--space-md);
+		flex-wrap: wrap;
+	}
+
+	.supplier-filter {
+		width: 220px;
+		flex-shrink: 0;
 	}
 
 	.table-with-pagination {

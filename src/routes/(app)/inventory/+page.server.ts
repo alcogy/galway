@@ -1,5 +1,5 @@
 import { fail } from '@sveltejs/kit';
-import { eq, asc, like, or, count } from 'drizzle-orm';
+import { eq, asc, like, or, count, and, inArray } from 'drizzle-orm';
 import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import { parseCSV } from '$lib/utils/csv';
@@ -19,14 +19,50 @@ export const load: PageServerLoad = async ({ platform, url }) => {
 
 	const itemsPerPage = 20;
 	const searchQuery = url.searchParams.get('search') || '';
+	const supplierId = url.searchParams.get('supplier') || '';
 	const currentPage = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
 
-	const whereClause = searchQuery
+	const suppliers = await db
+		.select({ id: schema.suppliers.id, name: schema.suppliers.name })
+		.from(schema.suppliers)
+		.orderBy(asc(schema.suppliers.name));
+
+	// 仕入先が選択されている場合、その仕入先に紐づく商品IDを取得
+	let supplierProductIds: string[] | null = null;
+	if (supplierId) {
+		const spRows = await db
+			.select({ product_id: schema.supplierProducts.product_id })
+			.from(schema.supplierProducts)
+			.where(eq(schema.supplierProducts.supplier_id, supplierId));
+		supplierProductIds = spRows.map((r) => r.product_id);
+		if (supplierProductIds.length === 0) {
+			return {
+				inventory: [],
+				products: [],
+				totalItems: 0,
+				itemsPerPage,
+				currentPage,
+				searchQuery,
+				supplierId,
+				suppliers,
+			};
+		}
+	}
+
+	const searchCondition = searchQuery
 		? or(
 				like(schema.products.code, `%${searchQuery}%`),
 				like(schema.products.name, `%${searchQuery}%`)
 			)
 		: undefined;
+	const supplierCondition = supplierProductIds
+		? inArray(schema.products.id, supplierProductIds)
+		: undefined;
+	const whereClause =
+		searchCondition && supplierCondition
+			? and(searchCondition, supplierCondition)
+			: searchCondition ?? supplierCondition;
+
 	const offset = (currentPage - 1) * itemsPerPage;
 
 	const [countResult, inventoryRows, products] = await Promise.all([
@@ -74,6 +110,8 @@ export const load: PageServerLoad = async ({ platform, url }) => {
 		itemsPerPage,
 		currentPage,
 		searchQuery,
+		supplierId,
+		suppliers,
 	};
 };
 
