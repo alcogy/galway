@@ -1,13 +1,28 @@
 <script lang="ts">
-	import { Sidebar } from '$lib/components';
+	import { Sidebar, ConfirmDialog } from '$lib/components';
 	import { getTheme, setTheme } from '$lib/theme.svelte';
 	import type { LayoutData } from './$types';
 
 	let { children, data }: { children: any; data: LayoutData } = $props();
+
+	let signoutOpen = $state(false);
 </script>
 
+<ConfirmDialog
+	bind:open={signoutOpen}
+	title="サインアウト"
+	message="サインアウトしてもよろしいですか？"
+	confirmLabel="サインアウト"
+	onconfirm={() => { window.location.href = '/logout'; }}
+/>
+
 <div class="app-shell">
-	<Sidebar theme={getTheme()} onthemechange={setTheme} role={data.user?.role as 'admin' | 'general' | undefined} />
+	<Sidebar
+		theme={getTheme()}
+		onthemechange={setTheme}
+		role={data.user?.role as 'admin' | 'general' | undefined}
+		onsignout={() => (signoutOpen = true)}
+	/>
 
 	<main class="main-content">
 		{@render children()}

@@ -23,16 +23,18 @@
 		label: string;
 		icon: typeof LayoutDashboard;
 		adminOnly?: boolean;
+		onclick?: () => void;
 	}
 
 	interface Props {
 		role?: 'admin' | 'general';
 		theme?: 'light' | 'dark' | 'system';
 		onthemechange?: (theme: 'light' | 'dark' | 'system') => void;
+		onsignout?: () => void;
 		logo?: Snippet;
 	}
 
-	let { role = 'general', theme = 'system', onthemechange, logo }: Props = $props();
+	let { role = 'general', theme = 'system', onthemechange, onsignout, logo }: Props = $props();
 
 	let collapsed = $state(false);
 	let mobileOpen = $state(false);
@@ -47,10 +49,10 @@
 		{ href: '/accounts', label: 'アカウント管理', icon: Shield, adminOnly: true }
 	];
 
-	const secondaryNavItems: NavItem[] = [
+	const secondaryNavItems = $derived<NavItem[]>([
 		{ href: '/profile', label: 'プロフィール', icon: CircleUser },
-		{ href: '/logout', label: 'サインアウト', icon: LogOut }
-	];
+		{ href: '/logout', label: 'サインアウト', icon: LogOut, onclick: onsignout }
+	]);
 
 	const themeOptions = [
 		{ value: 'light' as const, icon: Sun, label: 'Light' },
@@ -113,15 +115,25 @@
 		<div class="nav-group">
 			{#each secondaryNavItems as item (item.href)}
 				{#if !item.adminOnly || role === 'admin'}
-					<a
-						href={item.href}
-						class="nav-item"
-						class:active={isActive(item.href)}
-						onclick={closeMobile}
-					>
-						<item.icon size={18} />
-						<span class="nav-label">{item.label}</span>
-					</a>
+					{#if item.onclick}
+						<button
+							class="nav-item"
+							onclick={() => { item.onclick?.(); closeMobile(); }}
+						>
+							<item.icon size={18} />
+							<span class="nav-label">{item.label}</span>
+						</button>
+					{:else}
+						<a
+							href={item.href}
+							class="nav-item"
+							class:active={isActive(item.href)}
+							onclick={closeMobile}
+						>
+							<item.icon size={18} />
+							<span class="nav-label">{item.label}</span>
+						</a>
+					{/if}
 				{/if}
 			{/each}
 		</div>
@@ -229,6 +241,12 @@
 			background-color var(--transition-fast),
 			color var(--transition-fast);
 		white-space: nowrap;
+		/* button reset */
+		width: 100%;
+		border: none;
+		background: none;
+		cursor: pointer;
+		font-family: inherit;
 
 		&:hover {
 			background-color: var(--sidebar-hover);
