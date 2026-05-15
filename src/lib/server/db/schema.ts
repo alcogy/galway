@@ -128,6 +128,45 @@ export const receivingSlipDetails = sqliteTable('receiving_slip_details', {
 });
 
 // -----------------------------------------------
+// 発注伝票 (Purchase Order)
+// -----------------------------------------------
+export const purchaseOrders = sqliteTable('purchase_orders', {
+	id: text('id')
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+	order_number: text('order_number').notNull().unique(),
+	ordered_at: text('ordered_at').notNull(), // YYYY-MM-DD
+	expected_at: text('expected_at'), // YYYY-MM-DD (optional)
+	supplier_id: text('supplier_id')
+		.notNull()
+		.references(() => suppliers.id),
+	account_id: text('account_id')
+		.notNull()
+		.references(() => accounts.id),
+	status: text('status', { enum: ['draft', 'ordered', 'received', 'cancelled'] })
+		.notNull()
+		.default('draft'),
+	note: text('note').notNull().default(''),
+	created_at: text('created_at')
+		.notNull()
+		.$defaultFn(() => new Date().toISOString())
+});
+
+export const purchaseOrderDetails = sqliteTable('purchase_order_details', {
+	id: text('id')
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+	order_id: text('order_id')
+		.notNull()
+		.references(() => purchaseOrders.id, { onDelete: 'cascade' }),
+	product_id: text('product_id')
+		.notNull()
+		.references(() => products.id),
+	line_no: int('line_no').notNull(),
+	quantity: real('quantity').notNull()
+});
+
+// -----------------------------------------------
 // 出荷先マスタ (Customer / Shipping Destination)
 // -----------------------------------------------
 export const customers = sqliteTable('customers', {
