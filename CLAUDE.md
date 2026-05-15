@@ -326,10 +326,85 @@ New features added on top of Plan 5:
 - `0004_sad_spacker_dave.sql` — purchase_orders, purchase_order_details
 - `0005_steep_joystick.sql` — inventory_schedules
 
+## Plan 7 — Completed (2026-05-15)
+
+Additional features and fixes implemented in the same session:
+
+### Settings page (/settings)
+- `settings` table added (migration 0006) — key-value store (`key` PK, `value`, `updated_at`)
+- Default keys seeded: `notification_email`, `low_stock_alert_enabled`, `alert_email_enabled`, `slack_webhook_url`
+- `/settings` page (admin only): toggle for low-stock alert on/off, email/Slack fields as placeholders
+- Dashboard low-stock alert section respects `low_stock_alert_enabled` setting
+- `use:enhance` form for save without full reload; success/error banner
+
+### Dashboard — today's schedule sections
+- **本日の入荷予定**: purchase order details where `expected_at = today` AND `status = 'ordered'`
+- **本日の出荷予定**: shipping slip details where `shipped_at = today`
+- Displayed as two-column grid cards between stats and low-stock alert
+
+### 監査ログ (Audit Log)
+- `audit_logs` table added (migration 0007): `id, user_id, user_name, action, target_type, target_id, target_label, detail(JSON text), created_at`
+- `src/lib/server/audit.ts`: `logAudit()` utility — wraps in try/catch so a log failure never breaks the main operation
+- All CRUD actions instrumented across 18 server files:
+  - Actions logged: `create`, `update`, `delete`, `import`, `status_change`, `stocktake`, `settings_save`
+  - Targets: `product`, `supplier`, `receiving_slip`, `shipping_slip`, `inventory`, `purchase_order`, `customer`, `category`, `account`, `settings`
+- `/audit-logs` page (admin only): paginated table with action/target/user filters; color-coded action badges
+
+### Bug fixes
+- **Inventory table style**: `row` snippet `<td>` elements don't inherit Table.svelte's scoped CSS; fixed with `:global(tbody tr td)` padding/border in `.table-with-pagination`
+- **Sidebar active state**: `/inventory-schedules` was incorrectly matching `/inventory` — fixed `isActive()` to use `pathname === href || pathname.startsWith(href + '/')`
+
+### Supplemental seed data (scripts/seed-plan6.sql)
+- 5 product categories; all 12 products assigned category + min_quantity (PRD004/006/008 trigger low-stock alert)
+- 3 customers; linked to existing shipping slips
+- 3 purchase orders with details (received/ordered/draft)
+- 3 inventory schedules (completed/planned/planned)
+- Script: `bun run db:seed-plan6:local`
+- **Note**: admin account ID is a UUID `3ec44910-...`, not `acc-1`
+
+### Product rename: AES Supplier → Galway
+- `package.json` name: `galway`
+- `wrangler.jsonc` name: `galway`, database_name: `galway-db`
+- All page `<title>` tags and Sidebar logo updated to "Galway"
+- CLAUDE.md updated
+- **Pending**: repository rename and local directory rename (done by user)
+
+### Route additions (Plan 7)
+```
+src/routes/(app)/
+  settings/                   — Settings page (admin only)
+  audit-logs/                 — Audit log viewer (admin only)
+```
+
+### Sidebar nav order (complete)
+ダッシュボード → 仕入先管理 → 商品管理 → カテゴリ管理 → 発注管理 → 入荷管理 → 出荷管理 → 出荷先管理 → 在庫管理 → 棚卸スケジュール → レポート → [admin: アカウント管理, 操作ログ, 設定]
+
 ## TODO — Future Features (not yet implemented)
 
-### Notification System (保留中)
-- Email notifications (Cloudflare Email Workers) and/or Slack notifications
-- Use cases: low-stock alerts, receiving completion, scheduled inventory reminders
-- Deferred: need to decide on channel (email vs Slack vs both) and configuration UI before implementation
+### Email Notifications (次フェーズ)
+- **Decided**: Use Cloudflare Email Workers (Send Email binding)
+- **Reason**: keep infrastructure within Cloudflare; no extra cost; domain already/will be managed by Cloudflare
+- **Requirement**: root domain must be managed by Cloudflare DNS + Email Routing enabled
+- **Sender pattern**: `noreply@notify.yourdomain.com` → admin email address (any external address OK)
+- **Local dev**: `send_email` binding is stubbed locally — no real sends, no domain needed for dev
+- **Settings already in place**: `notification_email` and `alert_email_enabled` keys exist in `settings` table
+- **wrangler.jsonc addition needed**:
+  ```jsonc
+  "send_email": [{ "name": "EMAIL" }]
+  ```
+- **Implementation pattern**:
+  ```typescript
+  if (platform?.env.EMAIL) {
+    await platform.env.EMAIL.send({ from, to, subject, html });
+  } else {
+    console.log('[dev] email skipped');
+  }
+  ```
+- **Trigger points to implement**: low-stock alert on dashboard load, receiving slip created, scheduled inventory reminder
+- **Slack notifications**: also possible; Slack webhook URL stored in settings — implement after email
+
+### Repository / Directory Rename (user action)
+- GitHub repo: rename `aes-supplier` → `galway`
+- Local directory: rename `aes-supplier/` → `galway/`
+- Update any CI/CD config that references the old name
 
