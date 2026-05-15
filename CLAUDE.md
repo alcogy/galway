@@ -278,6 +278,54 @@ All list pages now use server-side search via URL params (`?search=...&page=N`):
   - `src/lib/utils/format.test.ts` (10) — `formatDate`, `formatDateTime`
   - `src/routes/page.svelte.spec.ts` (1) — renders `login/+page.svelte` h1
 
+## Plan 6 — Completed (2026-05-15)
+
+New features added on top of Plan 5:
+
+### B. 在庫アラート
+- `products.min_quantity` column added (migration 0001)
+- Dashboard shows low-stock alert section (items where `quantity < min_quantity`)
+- Inventory list highlights low-stock rows with warning color and badge
+
+### C. 商品カテゴリ管理
+- `product_categories` table added (migration 0002); `products.category_id` FK (SET NULL on delete)
+- `/categories` page: CRUD for categories; shows product count per category
+- Products list: category column, category filter dropdown
+- Products form: category selector field
+- CSV export includes category and min_quantity columns
+
+### D. 出荷先管理
+- `customers` table added (migration 0003); `shipping_slips.customer_id` FK (SET NULL on delete)
+- `/customers` page: CRUD for customers
+- ShippingSlipForm updated with customer_id SearchableSelect
+- Shipping list, detail, and new/edit pages show customer_name
+
+### A. 出荷リスト PDF出力
+- `/shipping/[id]/print` dedicated print page — A4 layout with slip info, details table, signature boxes
+- Auto-triggers `window.print()` on mount; sidebar hidden via `:global()` CSS
+- "PDF出力" button on shipping slip detail page (opens in new tab)
+
+### E. 発注管理
+- `purchase_orders` + `purchase_order_details` tables added (migration 0004)
+- `/purchasing` pages: list, new, detail, edit
+- Status workflow: draft → ordered → received / cancelled
+- Order numbers: PO-YYYY-NNN (auto-numbered in transaction)
+
+### F. レポート・分析
+- `/reports` page: bar charts (6-month receiving/shipping trend), top-10 shipping products, supplier ranking
+- Pure CSS/HTML bar charts (no external chart library)
+
+### G. 棚卸スケジュール
+- `inventory_schedules` table added (migration 0005)
+- `/inventory-schedules` page: list, create, status transitions (planned → in_progress → completed)
+
+### DB Migrations Added
+- `0001_clammy_swordsman.sql` — products.min_quantity
+- `0002_medical_peter_quill.sql` — product_categories, products.category_id
+- `0003_superb_red_skull.sql` — customers, shipping_slips.customer_id
+- `0004_sad_spacker_dave.sql` — purchase_orders, purchase_order_details
+- `0005_steep_joystick.sql` — inventory_schedules
+
 ## TODO — Future Features (not yet implemented)
 
 ### Notification System (保留中)
