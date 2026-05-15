@@ -10,6 +10,7 @@
 	const initialData = $derived({
 		id: data.slip.id,
 		shipped_at: data.slip.shipped_at,
+		customer_id: data.slip.customer_id ?? null,
 		account_id: data.slip.account_id,
 		note: data.slip.note,
 		details: data.details.map((d) => ({ product_id: d.product_id, quantity: d.quantity }))
@@ -35,6 +36,7 @@
 	<Card title="伝票情報">
 		<ShippingSlipForm
 			products={data.products}
+			customers={data.customers}
 			accounts={data.accounts}
 			isAdmin={data.isAdmin}
 			{initialData}

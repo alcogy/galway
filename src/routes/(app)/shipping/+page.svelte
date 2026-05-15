@@ -17,6 +17,7 @@
 	const columns = [
 		{ key: 'slip_number', label: '伝票番号', width: '140px' },
 		{ key: 'shipped_at', label: '出荷日', width: '120px' },
+		{ key: 'customer_name', label: '出荷先', width: '160px' },
 		{ key: 'item_count', label: '品目数', width: '80px', numeric: true },
 		{ key: 'user_name', label: '担当者', width: '120px' }
 	];

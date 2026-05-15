@@ -8,17 +8,23 @@ import type { Actions, PageServerLoad } from './$types';
 export const load: PageServerLoad = async ({ platform }) => {
 	const db = getDb(platform!.env.DB);
 
-	const products = await db
-		.select({
-			id: schema.products.id,
-			code: schema.products.code,
-			name: schema.products.name,
-			unit: schema.products.unit,
-		})
-		.from(schema.products)
-		.orderBy(asc(schema.products.code));
+	const [products, customers] = await Promise.all([
+		db
+			.select({
+				id: schema.products.id,
+				code: schema.products.code,
+				name: schema.products.name,
+				unit: schema.products.unit,
+			})
+			.from(schema.products)
+			.orderBy(asc(schema.products.code)),
+		db
+			.select({ id: schema.customers.id, name: schema.customers.name })
+			.from(schema.customers)
+			.orderBy(asc(schema.customers.name)),
+	]);
 
-	return { products };
+	return { products, customers };
 };
 
 export const actions = {
@@ -30,6 +36,7 @@ export const actions = {
 		const shipped_at = data.get('shipped_at')?.toString();
 		const detailsJson = data.get('details')?.toString();
 		const note = data.get('note')?.toString() ?? '';
+		const customer_id = data.get('customer_id')?.toString() || null;
 
 		if (!shipped_at) return fail(400, { error: '出荷日は必須です' });
 		if (!detailsJson) return fail(400, { error: '明細が必要です' });
@@ -60,7 +67,7 @@ export const actions = {
 
 				const [slip] = await tx
 					.insert(schema.shippingSlips)
-					.values({ slip_number, shipped_at, account_id, note })
+					.values({ slip_number, shipped_at, customer_id, account_id, note })
 					.returning({ id: schema.shippingSlips.id });
 
 				for (let i = 0; i < validDetails.length; i++) {

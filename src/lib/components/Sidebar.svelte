@@ -9,6 +9,7 @@
 		Truck,
 		Boxes,
 		Tag,
+		MapPin,
 		CircleUser,
 		Shield,
 		PanelLeftClose,
@@ -47,6 +48,7 @@
 		{ href: '/categories', label: 'カテゴリ管理', icon: Tag },
 		{ href: '/receiving', label: '入荷管理', icon: PackageCheck },
 		{ href: '/shipping', label: '出荷管理', icon: Truck },
+		{ href: '/customers', label: '出荷先管理', icon: MapPin },
 		{ href: '/inventory', label: '在庫管理', icon: Boxes },
 		{ href: '/accounts', label: 'アカウント管理', icon: Shield, adminOnly: true }
 	];

@@ -8,12 +8,13 @@ import type { Actions, PageServerLoad } from './$types';
 export const load: PageServerLoad = async ({ params, platform, locals }) => {
 	const db = getDb(platform!.env.DB);
 
-	const [slipRows, details, products, accounts] = await Promise.all([
+	const [slipRows, details, products, accounts, customers] = await Promise.all([
 		db
 			.select({
 				id: schema.shippingSlips.id,
 				slip_number: schema.shippingSlips.slip_number,
 				shipped_at: schema.shippingSlips.shipped_at,
+				customer_id: schema.shippingSlips.customer_id,
 				account_id: schema.shippingSlips.account_id,
 				user_name: schema.accounts.name,
 				note: schema.shippingSlips.note,
@@ -56,6 +57,10 @@ export const load: PageServerLoad = async ({ params, platform, locals }) => {
 			.select({ id: schema.accounts.id, name: schema.accounts.name })
 			.from(schema.accounts)
 			.orderBy(asc(schema.accounts.name)),
+		db
+			.select({ id: schema.customers.id, name: schema.customers.name })
+			.from(schema.customers)
+			.orderBy(asc(schema.customers.name)),
 	]);
 
 	if (!slipRows[0]) error(404, '出荷伝票が見つかりません');
@@ -65,6 +70,7 @@ export const load: PageServerLoad = async ({ params, platform, locals }) => {
 		details,
 		products,
 		accounts,
+		customers,
 		isAdmin: locals.user?.role === 'admin',
 	};
 };
@@ -77,6 +83,7 @@ export const actions = {
 		const shipped_at = data.get('shipped_at')?.toString();
 		const detailsJson = data.get('details')?.toString();
 		const note = data.get('note')?.toString() ?? '';
+		const customer_id = data.get('customer_id')?.toString() || null;
 		const isAdmin = locals.user?.role === 'admin';
 		const account_id = isAdmin ? data.get('account_id')?.toString() : undefined;
 
@@ -94,7 +101,7 @@ export const actions = {
 		if (validDetails.length === 0) return fail(400, { error: '有効な明細が必要です' });
 
 		const now = new Date().toISOString();
-		const updateFields: Record<string, unknown> = { shipped_at, note };
+		const updateFields: Record<string, unknown> = { shipped_at, note, customer_id };
 		if (account_id) updateFields.account_id = account_id;
 
 		try {

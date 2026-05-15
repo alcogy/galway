@@ -65,6 +65,10 @@
 				<dd class="info-value">{data.slip.shipped_at}</dd>
 			</div>
 			<div class="info-item">
+				<dt class="info-label">出荷先</dt>
+				<dd class="info-value">{data.slip.customer_name || '—'}</dd>
+			</div>
+			<div class="info-item">
 				<dt class="info-label">品目数</dt>
 				<dd class="info-value">{data.slip.item_count}</dd>
 			</div>

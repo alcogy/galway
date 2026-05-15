@@ -27,6 +27,7 @@
 	<Card title="伝票情報">
 		<ShippingSlipForm
 			products={data.products}
+			customers={data.customers}
 			oncancel={() => goto('/shipping')}
 		/>
 	</Card>

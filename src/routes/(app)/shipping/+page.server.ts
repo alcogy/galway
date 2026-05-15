@@ -10,6 +10,7 @@ export interface ShippingSlip {
 	id: string;
 	slip_number: string;
 	shipped_at: string;
+	customer_name: string | null;
 	item_count: number;
 	user_name: string | null;
 }
@@ -32,11 +33,13 @@ export const load: PageServerLoad = async ({ platform }) => {
 				id: schema.shippingSlips.id,
 				slip_number: schema.shippingSlips.slip_number,
 				shipped_at: schema.shippingSlips.shipped_at,
+				customer_name: schema.customers.name,
 				item_count: count(schema.shippingSlipDetails.id),
 				user_name: schema.accounts.name,
 			})
 			.from(schema.shippingSlips)
 			.leftJoin(schema.accounts, eq(schema.shippingSlips.account_id, schema.accounts.id))
+			.leftJoin(schema.customers, eq(schema.shippingSlips.customer_id, schema.customers.id))
 			.leftJoin(
 				schema.shippingSlipDetails,
 				eq(schema.shippingSlips.id, schema.shippingSlipDetails.slip_id)

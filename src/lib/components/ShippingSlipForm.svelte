@@ -13,6 +13,7 @@
 	interface SlipData {
 		id: string;
 		shipped_at: string;
+		customer_id: string | null;
 		account_id: string;
 		note: string | null;
 		details: DetailItem[];
@@ -20,13 +21,14 @@
 
 	interface Props {
 		products: { id: string; code: string; name: string }[];
+		customers?: { id: string; name: string }[];
 		accounts?: { id: string; name: string }[];
 		isAdmin?: boolean;
 		initialData?: SlipData;
 		oncancel?: () => void;
 	}
 
-	let { products, accounts = [], isAdmin = false, initialData, oncancel }: Props = $props();
+	let { products, customers = [], accounts = [], isAdmin = false, initialData, oncancel }: Props = $props();
 
 	const isEdit = $derived(!!initialData?.id);
 	const action = $derived(isEdit ? '?/update' : '?/create');
@@ -36,8 +38,13 @@
 		products.map((p) => ({ value: p.id, label: `${p.code} ${p.name}` }))
 	);
 	const accountOptions = $derived(accounts.map((a) => ({ value: a.id, label: a.name })));
+	const customerOptions = $derived([
+		{ value: '', label: '未設定' },
+		...customers.map((c) => ({ value: c.id, label: c.name })),
+	]);
 
 	let date = $state('');
+	let customerId = $state('');
 	let accountId = $state('');
 	let note = $state('');
 	let details = $state<DetailItem[]>([]);
@@ -45,11 +52,13 @@
 	$effect(() => {
 		if (initialData) {
 			date = initialData.shipped_at;
+			customerId = initialData.customer_id ?? '';
 			accountId = initialData.account_id;
 			note = initialData.note ?? '';
 			details = initialData.details.map((d) => ({ product_id: d.product_id, quantity: d.quantity }));
 		} else {
 			date = new Date().toISOString().slice(0, 10);
+			customerId = '';
 			accountId = '';
 			note = '';
 			details = [{ product_id: '', quantity: 1 }];
@@ -74,6 +83,16 @@
 	<div class="field">
 		<Label required>出荷日</Label>
 		<input class="date-input" type="date" name="shipped_at" bind:value={date} required />
+	</div>
+
+	<div class="field">
+		<Label>出荷先</Label>
+		<SearchableSelect
+			name="customer_id"
+			options={customerOptions}
+			placeholder="出荷先を選択（任意）"
+			bind:value={customerId}
+		/>
 	</div>
 
 	{#if isAdmin}

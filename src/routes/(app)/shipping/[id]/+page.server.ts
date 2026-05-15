@@ -1,5 +1,5 @@
 import { error, redirect, fail } from '@sveltejs/kit';
-import { eq, count, asc } from 'drizzle-orm';
+import { eq, count, asc, isNull, or } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
@@ -23,6 +23,8 @@ export const load: PageServerLoad = async ({ params, platform }) => {
 				id: schema.shippingSlips.id,
 				slip_number: schema.shippingSlips.slip_number,
 				shipped_at: schema.shippingSlips.shipped_at,
+				customer_id: schema.shippingSlips.customer_id,
+				customer_name: schema.customers.name,
 				account_id: schema.shippingSlips.account_id,
 				user_name: schema.accounts.name,
 				note: schema.shippingSlips.note,
@@ -31,6 +33,7 @@ export const load: PageServerLoad = async ({ params, platform }) => {
 			})
 			.from(schema.shippingSlips)
 			.leftJoin(schema.accounts, eq(schema.shippingSlips.account_id, schema.accounts.id))
+			.leftJoin(schema.customers, eq(schema.shippingSlips.customer_id, schema.customers.id))
 			.leftJoin(
 				schema.shippingSlipDetails,
 				eq(schema.shippingSlips.id, schema.shippingSlipDetails.slip_id)

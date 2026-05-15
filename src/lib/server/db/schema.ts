@@ -128,6 +128,27 @@ export const receivingSlipDetails = sqliteTable('receiving_slip_details', {
 });
 
 // -----------------------------------------------
+// 出荷先マスタ (Customer / Shipping Destination)
+// -----------------------------------------------
+export const customers = sqliteTable('customers', {
+	id: text('id')
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+	name: text('name').notNull(),
+	tel: text('tel'),
+	zipcode: text('zipcode'),
+	address: text('address'),
+	email: text('email'),
+	note: text('note'),
+	created_at: text('created_at')
+		.notNull()
+		.$defaultFn(() => new Date().toISOString()),
+	updated_at: text('updated_at')
+		.notNull()
+		.$defaultFn(() => new Date().toISOString())
+});
+
+// -----------------------------------------------
 // 出荷伝票 (Shipping Slip)
 // -----------------------------------------------
 export const shippingSlips = sqliteTable('shipping_slips', {
@@ -136,6 +157,7 @@ export const shippingSlips = sqliteTable('shipping_slips', {
 		.$defaultFn(() => crypto.randomUUID()),
 	slip_number: text('slip_number').notNull().unique(),
 	shipped_at: text('shipped_at').notNull(), // YYYY-MM-DD
+	customer_id: text('customer_id').references(() => customers.id, { onDelete: 'set null' }),
 	account_id: text('account_id')
 		.notNull()
 		.references(() => accounts.id),
