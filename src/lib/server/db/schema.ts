@@ -224,6 +224,24 @@ export const shippingSlipDetails = sqliteTable('shipping_slip_details', {
 });
 
 // -----------------------------------------------
+// 棚卸スケジュール (Inventory Schedule)
+// -----------------------------------------------
+export const inventorySchedules = sqliteTable('inventory_schedules', {
+	id: text('id')
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+	scheduled_at: text('scheduled_at').notNull(), // YYYY-MM-DD
+	title: text('title').notNull(),
+	note: text('note'),
+	status: text('status', { enum: ['planned', 'in_progress', 'completed', 'cancelled'] })
+		.notNull()
+		.default('planned'),
+	created_at: text('created_at')
+		.notNull()
+		.$defaultFn(() => new Date().toISOString())
+});
+
+// -----------------------------------------------
 // 在庫テーブル (Inventory)
 // -----------------------------------------------
 export const inventory = sqliteTable('inventory', {

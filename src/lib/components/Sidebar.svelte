@@ -11,6 +11,7 @@
 		Tag,
 		MapPin,
 		ClipboardSignature,
+		CalendarCheck,
 		BarChart3,
 		CircleUser,
 		Shield,
@@ -53,6 +54,7 @@
 		{ href: '/shipping', label: '出荷管理', icon: Truck },
 		{ href: '/customers', label: '出荷先管理', icon: MapPin },
 		{ href: '/inventory', label: '在庫管理', icon: Boxes },
+		{ href: '/inventory-schedules', label: '棚卸スケジュール', icon: CalendarCheck },
 		{ href: '/reports', label: 'レポート', icon: BarChart3 },
 		{ href: '/accounts', label: 'アカウント管理', icon: Shield, adminOnly: true }
 	];
