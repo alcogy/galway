@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ClipboardList, Upload, Download } from '@lucide/svelte';
+	import { ClipboardList, Upload, Download, AlertTriangle } from '@lucide/svelte';
 	import { Button, Label, Modal, Table, Select, SearchBar, SearchableSelect, Pagination, CsvImportDialog } from '$lib/components';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
@@ -121,14 +121,24 @@
 
 	<div class="table-with-pagination">
 		<Table {columns} rows={data.inventory}>
-			{#snippet cell(col, value)}
-				{#if col.key === 'updated_at'}
-					{formatDate(value as string | null)}
-				{:else if col.key === 'quantity'}
-					{(value as number).toLocaleString()}
-				{:else}
-					{value}
-				{/if}
+			{#snippet row(item)}
+				{@const isLow = item.min_quantity > 0 && item.quantity < item.min_quantity}
+				<tr class:low-stock={isLow}>
+					<td>{item.product_code}</td>
+					<td>{item.product_name}</td>
+					<td class="num" class:qty-low={isLow}>
+						<span class="qty-cell">
+							{item.quantity.toLocaleString('ja-JP')}
+							{#if isLow}
+								<span class="low-badge" title="最低在庫数 {item.min_quantity.toLocaleString('ja-JP')} を下回っています">
+									<AlertTriangle size={12} />
+								</span>
+							{/if}
+						</span>
+					</td>
+					<td>{item.unit}</td>
+					<td>{formatDate(item.updated_at)}</td>
+				</tr>
 			{/snippet}
 			{#snippet empty()}
 				<span>在庫データがありません</span>
@@ -289,6 +299,34 @@
 		:global(.table-wrapper) {
 			border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 			border-bottom: none;
+		}
+
+		:global(tr.low-stock) {
+			background-color: color-mix(in srgb, var(--color-danger, #f97316) 6%, transparent) !important;
+		}
+
+		:global(td.num) {
+			text-align: right;
+			font-variant-numeric: tabular-nums;
+		}
+
+		:global(.qty-cell) {
+			display: inline-flex;
+			align-items: center;
+			gap: var(--space-xs);
+			justify-content: flex-end;
+			width: 100%;
+		}
+
+		:global(.qty-low) {
+			color: var(--color-danger, #f97316);
+			font-weight: 600;
+		}
+
+		:global(.low-badge) {
+			color: var(--color-danger, #f97316);
+			display: inline-flex;
+			align-items: center;
 		}
 	}
 

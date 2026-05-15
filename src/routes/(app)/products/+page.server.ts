@@ -11,6 +11,7 @@ export interface Product {
 	name: string;
 	unit: string;
 	description: string | null;
+	min_quantity: number;
 }
 
 export const load: PageServerLoad = async ({ platform, url }) => {
@@ -37,6 +38,7 @@ export const load: PageServerLoad = async ({ platform, url }) => {
 				name: schema.products.name,
 				unit: schema.products.unit,
 				description: schema.products.description,
+				min_quantity: schema.products.min_quantity,
 			})
 			.from(schema.products)
 			.where(whereClause)
@@ -61,6 +63,7 @@ export const actions = {
 		const code = data.get('code')?.toString().trim();
 		const name = data.get('name')?.toString().trim();
 		const unit = data.get('unit')?.toString().trim();
+		const min_quantity = parseFloat(data.get('min_quantity')?.toString() || '0');
 
 		if (!code) return fail(400, { error: '商品コードは必須です' });
 		if (!name) return fail(400, { error: '商品名は必須です' });
@@ -77,6 +80,7 @@ export const actions = {
 						name,
 						unit,
 						description: data.get('description')?.toString().trim() || null,
+						min_quantity: isNaN(min_quantity) ? 0 : min_quantity,
 					})
 					.returning({ id: schema.products.id });
 
@@ -103,6 +107,7 @@ export const actions = {
 		const code = data.get('code')?.toString().trim();
 		const name = data.get('name')?.toString().trim();
 		const unit = data.get('unit')?.toString().trim();
+		const min_quantity = parseFloat(data.get('min_quantity')?.toString() || '0');
 
 		if (!id) return fail(400, { error: 'IDが必要です' });
 		if (!code) return fail(400, { error: '商品コードは必須です' });
@@ -117,6 +122,7 @@ export const actions = {
 					name,
 					unit,
 					description: data.get('description')?.toString().trim() || null,
+					min_quantity: isNaN(min_quantity) ? 0 : min_quantity,
 					updated_at: new Date().toISOString(),
 				})
 				.where(eq(schema.products.id, id));

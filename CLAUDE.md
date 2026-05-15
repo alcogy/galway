@@ -278,3 +278,10 @@ All list pages now use server-side search via URL params (`?search=...&page=N`):
   - `src/lib/utils/format.test.ts` (10) — `formatDate`, `formatDateTime`
   - `src/routes/page.svelte.spec.ts` (1) — renders `login/+page.svelte` h1
 
+## TODO — Future Features (not yet implemented)
+
+### Notification System (保留中)
+- Email notifications (Cloudflare Email Workers) and/or Slack notifications
+- Use cases: low-stock alerts, receiving completion, scheduled inventory reminders
+- Deferred: need to decide on channel (email vs Slack vs both) and configuration UI before implementation
+

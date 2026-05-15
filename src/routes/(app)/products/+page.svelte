@@ -41,6 +41,7 @@
 	let name = $state('');
 	let unit = $state('');
 	let description = $state('');
+	let minQuantity = $state('0');
 
 	function openCreate() {
 		editing = null;
@@ -48,6 +49,7 @@
 		name = '';
 		unit = '';
 		description = '';
+		minQuantity = '0';
 		showModal = true;
 	}
 
@@ -57,6 +59,7 @@
 		name = product.name;
 		unit = product.unit;
 		description = product.description ?? '';
+		minQuantity = String(product.min_quantity);
 		showModal = true;
 	}
 
@@ -146,6 +149,10 @@
 			<div class="field">
 				<Label required>単位</Label>
 				<Input name="unit" bind:value={unit} placeholder="個、kg、m など" required />
+			</div>
+			<div class="field">
+				<Label>最低在庫数</Label>
+				<Input name="min_quantity" type="number" bind:value={minQuantity} min="0" step="0.01" placeholder="0" />
 			</div>
 			<div class="field full">
 				<Label>説明</Label>

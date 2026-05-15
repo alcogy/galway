@@ -11,6 +11,7 @@ export interface InventoryItem {
 	product_name: string;
 	quantity: number;
 	unit: string;
+	min_quantity: number;
 	updated_at: string;
 }
 
@@ -79,6 +80,7 @@ export const load: PageServerLoad = async ({ platform, url }) => {
 				product_name: schema.products.name,
 				quantity: schema.inventory.quantity,
 				unit: schema.products.unit,
+				min_quantity: schema.products.min_quantity,
 				updated_at: schema.inventory.updated_at,
 			})
 			.from(schema.products)
@@ -103,6 +105,7 @@ export const load: PageServerLoad = async ({ platform, url }) => {
 		inventory: inventoryRows.map((item) => ({
 			...item,
 			quantity: item.quantity ?? 0,
+			min_quantity: item.min_quantity ?? 0,
 			updated_at: item.updated_at ?? '',
 		})),
 		products,

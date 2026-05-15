@@ -46,6 +46,7 @@ export const products = sqliteTable('products', {
 	name: text('name').notNull(),
 	unit: text('unit').notNull(),
 	description: text('description'),
+	min_quantity: real('min_quantity').notNull().default(0),
 	created_at: text('created_at')
 		.notNull()
 		.$defaultFn(() => new Date().toISOString()),

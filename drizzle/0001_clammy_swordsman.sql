@@ -1,0 +1,1 @@
+ALTER TABLE `products` ADD `min_quantity` real DEFAULT 0 NOT NULL;
