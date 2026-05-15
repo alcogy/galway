@@ -1,27 +1,6 @@
 {
 	"name": "aes-supplier",
-	"private": true,
 	"version": "0.0.1",
-	"type": "module",
-	"scripts": {
-		"dev": "vite dev",
-		"build": "vite build",
-		"preview": "wrangler dev .svelte-kit/cloudflare/_worker.js --port 4173",
-		"prepare": "svelte-kit sync || echo ''",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"lint": "prettier --check . && eslint .",
-		"format": "prettier --write .",
-		"test:unit": "vitest",
-		"test": "bun run test:unit -- --run && bun run test:e2e",
-		"test:e2e": "playwright test",
-		"gen": "wrangler types",
-		"db:studio": "drizzle-kit studio",
-		"db:generate": "drizzle-kit generate",
-		"db:migrate:local": "wrangler d1 migrations apply aes-supplier-db --local",
-		"db:migrate:remote": "wrangler d1 migrations apply aes-supplier-db --remote",
-		"db:seed:local": "wrangler d1 execute aes-supplier-db --local --file=./scripts/seed.sql"
-	},
 	"devDependencies": {
 		"@eslint/compat": "^2.0.2",
 		"@eslint/js": "^9.39.2",
@@ -50,5 +29,26 @@
 		"vitest": "^4.0.18",
 		"vitest-browser-svelte": "^2.0.2",
 		"wrangler": "^4.63.0"
-	}
+	},
+	"private": true,
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "wrangler dev .svelte-kit/cloudflare/_worker.js --port 4173",
+		"prepare": "svelte-kit sync || echo ''",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"lint": "prettier --check . && eslint .",
+		"format": "prettier --write .",
+		"test:unit": "vitest",
+		"test": "bun run test:unit -- --run && bun run test:e2e",
+		"test:e2e": "playwright test",
+		"gen": "wrangler types",
+		"db:studio": "drizzle-kit studio",
+		"db:generate": "drizzle-kit generate",
+		"db:migrate:local": "wrangler d1 migrations apply aes-supplier-db --local",
+		"db:migrate:remote": "wrangler d1 migrations apply aes-supplier-db --remote",
+		"db:seed:local": "wrangler d1 execute aes-supplier-db --local --file=./scripts/seed.sql"
+	},
+	"type": "module"
 }

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ArrowLeft, Pencil, Trash2, Download } from '@lucide/svelte';
+	import { ArrowLeft, Pencil, Trash2, Download, FileText } from '@lucide/svelte';
 	import { Button, Card, ConfirmDialog, Table } from '$lib/components';
 	import type { PageData } from './$types';
 	import { goto } from '$app/navigation';
@@ -46,6 +46,10 @@
 			<a href="/shipping/{data.slip.id}/export" class="btn-download">
 				<Download size={14} />
 				CSVダウンロード
+			</a>
+			<a href="/shipping/{data.slip.id}/print" target="_blank" class="btn-download">
+				<FileText size={14} />
+				PDF出力
 			</a>
 			<Button variant="secondary" size="sm" onclick={() => goto(`/shipping/${data.slip.id}/edit`)}>
 				<Pencil size={14} />
