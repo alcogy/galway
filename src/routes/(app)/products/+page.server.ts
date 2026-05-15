@@ -3,6 +3,7 @@ import { eq, asc, like, or, and, count } from 'drizzle-orm';
 import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import { parseCSV } from '$lib/utils/csv';
+import { logAudit } from '$lib/server/audit';
 import type { Actions, PageServerLoad } from './$types';
 
 export interface Product {
@@ -77,7 +78,7 @@ export const load: PageServerLoad = async ({ platform, url }) => {
 };
 
 export const actions = {
-	create: async ({ request, platform }) => {
+	create: async ({ request, platform, locals }) => {
 		const db = getDb(platform!.env.DB);
 		const data = await request.formData();
 		const code = data.get('code')?.toString().trim();
@@ -112,6 +113,7 @@ export const actions = {
 					.onConflictDoNothing();
 			});
 
+			await logAudit({ db, user_id: locals.user!.id, user_name: locals.user!.name, action: 'create', target_type: 'product', target_label: `${code} ${name}` });
 			return { success: true };
 		} catch (error: any) {
 			if (error?.message?.includes('UNIQUE')) {
@@ -122,7 +124,7 @@ export const actions = {
 		}
 	},
 
-	update: async ({ request, platform }) => {
+	update: async ({ request, platform, locals }) => {
 		const db = getDb(platform!.env.DB);
 		const data = await request.formData();
 		const id = data.get('id')?.toString();
@@ -151,6 +153,7 @@ export const actions = {
 				})
 				.where(eq(schema.products.id, id));
 
+			await logAudit({ db, user_id: locals.user!.id, user_name: locals.user!.name, action: 'update', target_type: 'product', target_id: id, target_label: `${code} ${name}` });
 			return { success: true };
 		} catch (error: any) {
 			if (error?.message?.includes('UNIQUE')) {
@@ -161,14 +164,16 @@ export const actions = {
 		}
 	},
 
-	delete: async ({ request, platform }) => {
+	delete: async ({ request, platform, locals }) => {
 		const db = getDb(platform!.env.DB);
 		const data = await request.formData();
 		const id = data.get('id')?.toString();
 		if (!id) return fail(400, { error: 'IDが必要です' });
 
 		try {
+			const [target] = await db.select({ code: schema.products.code, name: schema.products.name }).from(schema.products).where(eq(schema.products.id, id));
 			await db.delete(schema.products).where(eq(schema.products.id, id));
+			await logAudit({ db, user_id: locals.user!.id, user_name: locals.user!.name, action: 'delete', target_type: 'product', target_id: id, target_label: target ? `${target.code} ${target.name}` : id });
 			return { success: true };
 		} catch (error) {
 			console.error('Failed to delete product:', error);
@@ -176,7 +181,7 @@ export const actions = {
 		}
 	},
 
-	import: async ({ request, platform }) => {
+	import: async ({ request, platform, locals }) => {
 		const db = getDb(platform!.env.DB);
 		const data = await request.formData();
 		const file = data.get('file') as File | null;
@@ -233,6 +238,7 @@ export const actions = {
 				}
 			});
 
+			await logAudit({ db, user_id: locals.user!.id, user_name: locals.user!.name, action: 'import', target_type: 'product', detail: { count: records.length, mode } });
 			return { success: true, count: records.length };
 		} catch (error: any) {
 			if (error?.message?.includes('UNIQUE')) {

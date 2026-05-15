@@ -3,6 +3,7 @@ import { eq, asc, like, or, count, and, inArray } from 'drizzle-orm';
 import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import { parseCSV } from '$lib/utils/csv';
+import { logAudit } from '$lib/server/audit';
 import type { Actions, PageServerLoad } from './$types';
 
 export interface InventoryItem {
@@ -119,7 +120,7 @@ export const load: PageServerLoad = async ({ platform, url }) => {
 };
 
 export const actions = {
-	stocktake: async ({ request, platform }) => {
+	stocktake: async ({ request, platform, locals }) => {
 		const db = getDb(platform!.env.DB);
 		const data = await request.formData();
 		const product_id = data.get('product_id')?.toString();
@@ -134,6 +135,7 @@ export const actions = {
 		const now = new Date().toISOString();
 
 		try {
+			const [prod] = await db.select({ code: schema.products.code, name: schema.products.name }).from(schema.products).where(eq(schema.products.id, product_id));
 			await db
 				.insert(schema.inventory)
 				.values({ product_id, quantity, updated_at: now })
@@ -142,6 +144,7 @@ export const actions = {
 					set: { quantity, updated_at: now },
 				});
 
+			await logAudit({ db, user_id: locals.user!.id, user_name: locals.user!.name, action: 'stocktake', target_type: 'inventory', target_id: product_id, target_label: prod ? `${prod.code} ${prod.name}` : product_id, detail: { quantity } });
 			return { success: true };
 		} catch (err) {
 			console.error('Failed to update inventory:', err);
@@ -149,7 +152,7 @@ export const actions = {
 		}
 	},
 
-	import: async ({ request, platform }) => {
+	import: async ({ request, platform, locals }) => {
 		const db = getDb(platform!.env.DB);
 		const data = await request.formData();
 		const file = data.get('file') as File | null;
@@ -204,6 +207,7 @@ export const actions = {
 						});
 				}
 			});
+			await logAudit({ db, user_id: locals.user!.id, user_name: locals.user!.name, action: 'import', target_type: 'inventory', detail: { count: records.length, mode } });
 			return { success: true, count: records.length };
 		} catch (err) {
 			console.error('Failed to import inventory:', err);

@@ -3,6 +3,7 @@ import { eq, asc, like, count } from 'drizzle-orm';
 import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import { parseCSV } from '$lib/utils/csv';
+import { logAudit } from '$lib/server/audit';
 import type { Actions, PageServerLoad } from './$types';
 
 export interface Supplier {
@@ -54,7 +55,7 @@ export const load: PageServerLoad = async ({ platform, url }) => {
 };
 
 export const actions = {
-	create: async ({ request, platform }) => {
+	create: async ({ request, platform, locals }) => {
 		const db = getDb(platform!.env.DB);
 		const data = await request.formData();
 		const name = data.get('name')?.toString().trim();
@@ -69,6 +70,7 @@ export const actions = {
 				address: data.get('address')?.toString().trim() || null,
 				email: data.get('email')?.toString().trim() || null,
 			});
+			await logAudit({ db, user_id: locals.user!.id, user_name: locals.user!.name, action: 'create', target_type: 'supplier', target_label: name });
 			return { success: true };
 		} catch (error) {
 			console.error('Failed to create supplier:', error);
@@ -76,7 +78,7 @@ export const actions = {
 		}
 	},
 
-	update: async ({ request, platform }) => {
+	update: async ({ request, platform, locals }) => {
 		const db = getDb(platform!.env.DB);
 		const data = await request.formData();
 		const id = data.get('id')?.toString();
@@ -97,6 +99,7 @@ export const actions = {
 					updated_at: new Date().toISOString(),
 				})
 				.where(eq(schema.suppliers.id, id));
+			await logAudit({ db, user_id: locals.user!.id, user_name: locals.user!.name, action: 'update', target_type: 'supplier', target_id: id, target_label: name });
 			return { success: true };
 		} catch (error) {
 			console.error('Failed to update supplier:', error);
@@ -104,14 +107,16 @@ export const actions = {
 		}
 	},
 
-	delete: async ({ request, platform }) => {
+	delete: async ({ request, platform, locals }) => {
 		const db = getDb(platform!.env.DB);
 		const data = await request.formData();
 		const id = data.get('id')?.toString();
 		if (!id) return fail(400, { error: 'IDが必要です' });
 
 		try {
+			const [target] = await db.select({ name: schema.suppliers.name }).from(schema.suppliers).where(eq(schema.suppliers.id, id));
 			await db.delete(schema.suppliers).where(eq(schema.suppliers.id, id));
+			await logAudit({ db, user_id: locals.user!.id, user_name: locals.user!.name, action: 'delete', target_type: 'supplier', target_id: id, target_label: target?.name });
 			return { success: true };
 		} catch (error) {
 			console.error('Failed to delete supplier:', error);
@@ -119,7 +124,7 @@ export const actions = {
 		}
 	},
 
-	import: async ({ request, platform }) => {
+	import: async ({ request, platform, locals }) => {
 		const db = getDb(platform!.env.DB);
 		const data = await request.formData();
 		const file = data.get('file') as File | null;
@@ -163,6 +168,7 @@ export const actions = {
 				}
 				await tx.insert(schema.suppliers).values(records);
 			});
+			await logAudit({ db, user_id: locals.user!.id, user_name: locals.user!.name, action: 'import', target_type: 'supplier', detail: { count: records.length, mode } });
 			return { success: true, count: records.length };
 		} catch (error) {
 			console.error('Failed to import suppliers:', error);

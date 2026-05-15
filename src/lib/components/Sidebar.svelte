@@ -13,6 +13,7 @@
 		ClipboardSignature,
 		CalendarCheck,
 		BarChart3,
+		ScrollText,
 		Settings,
 		CircleUser,
 		Shield,
@@ -58,6 +59,7 @@
 		{ href: '/inventory-schedules', label: '棚卸スケジュール', icon: CalendarCheck },
 		{ href: '/reports', label: 'レポート', icon: BarChart3 },
 		{ href: '/accounts', label: 'アカウント管理', icon: Shield, adminOnly: true },
+		{ href: '/audit-logs', label: '操作ログ', icon: ScrollText, adminOnly: true },
 		{ href: '/settings', label: '設定', icon: Settings, adminOnly: true }
 	];
 

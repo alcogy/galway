@@ -2,6 +2,7 @@ import { fail } from '@sveltejs/kit';
 import { eq, asc, count } from 'drizzle-orm';
 import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
+import { logAudit } from '$lib/server/audit';
 import type { Actions, PageServerLoad } from './$types';
 
 export interface Customer {
@@ -38,7 +39,7 @@ export const load: PageServerLoad = async ({ platform }) => {
 };
 
 export const actions = {
-	create: async ({ request, platform }) => {
+	create: async ({ request, platform, locals }) => {
 		const db = getDb(platform!.env.DB);
 		const data = await request.formData();
 		const name = data.get('name')?.toString().trim();
@@ -57,6 +58,7 @@ export const actions = {
 				created_at: now,
 				updated_at: now,
 			});
+			await logAudit({ db, user_id: locals.user!.id, user_name: locals.user!.name, action: 'create', target_type: 'customer', target_label: name });
 			return { success: true };
 		} catch (error) {
 			console.error('Failed to create customer:', error);
@@ -64,7 +66,7 @@ export const actions = {
 		}
 	},
 
-	update: async ({ request, platform }) => {
+	update: async ({ request, platform, locals }) => {
 		const db = getDb(platform!.env.DB);
 		const data = await request.formData();
 		const id = data.get('id')?.toString();
@@ -86,6 +88,7 @@ export const actions = {
 					updated_at: new Date().toISOString(),
 				})
 				.where(eq(schema.customers.id, id));
+			await logAudit({ db, user_id: locals.user!.id, user_name: locals.user!.name, action: 'update', target_type: 'customer', target_id: id, target_label: name });
 			return { success: true };
 		} catch (error) {
 			console.error('Failed to update customer:', error);
@@ -93,14 +96,16 @@ export const actions = {
 		}
 	},
 
-	delete: async ({ request, platform }) => {
+	delete: async ({ request, platform, locals }) => {
 		const db = getDb(platform!.env.DB);
 		const data = await request.formData();
 		const id = data.get('id')?.toString();
 		if (!id) return fail(400, { error: 'IDが必要です' });
 
 		try {
+			const [target] = await db.select({ name: schema.customers.name }).from(schema.customers).where(eq(schema.customers.id, id));
 			await db.delete(schema.customers).where(eq(schema.customers.id, id));
+			await logAudit({ db, user_id: locals.user!.id, user_name: locals.user!.name, action: 'delete', target_type: 'customer', target_id: id, target_label: target?.name });
 			return { success: true };
 		} catch (error) {
 			console.error('Failed to delete customer:', error);

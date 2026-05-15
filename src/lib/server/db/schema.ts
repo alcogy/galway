@@ -224,6 +224,25 @@ export const shippingSlipDetails = sqliteTable('shipping_slip_details', {
 });
 
 // -----------------------------------------------
+// 監査ログ (Audit Log)
+// -----------------------------------------------
+export const auditLogs = sqliteTable('audit_logs', {
+	id: text('id')
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+	user_id: text('user_id').references(() => accounts.id, { onDelete: 'set null' }),
+	user_name: text('user_name'),
+	action: text('action').notNull(),
+	target_type: text('target_type').notNull(),
+	target_id: text('target_id'),
+	target_label: text('target_label'),
+	detail: text('detail'),
+	created_at: text('created_at')
+		.notNull()
+		.$defaultFn(() => new Date().toISOString())
+});
+
+// -----------------------------------------------
 // システム設定 (Settings)
 // -----------------------------------------------
 export const settings = sqliteTable('settings', {

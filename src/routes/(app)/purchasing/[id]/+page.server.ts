@@ -2,6 +2,7 @@ import { error, redirect, fail } from '@sveltejs/kit';
 import { eq, asc } from 'drizzle-orm';
 import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
+import { logAudit } from '$lib/server/audit';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, platform }) => {
@@ -48,7 +49,7 @@ export const load: PageServerLoad = async ({ params, platform }) => {
 };
 
 export const actions = {
-	updateStatus: async ({ params, request, platform }) => {
+	updateStatus: async ({ params, request, platform, locals }) => {
 		const db = getDb(platform!.env.DB);
 		const data = await request.formData();
 		const status = data.get('status')?.toString() as 'draft' | 'ordered' | 'received' | 'cancelled' | undefined;
@@ -56,10 +57,12 @@ export const actions = {
 		if (!status) return fail(400, { error: 'ステータスが必要です' });
 
 		try {
+			const [order] = await db.select({ order_number: schema.purchaseOrders.order_number }).from(schema.purchaseOrders).where(eq(schema.purchaseOrders.id, params.id));
 			await db
 				.update(schema.purchaseOrders)
 				.set({ status })
 				.where(eq(schema.purchaseOrders.id, params.id));
+			await logAudit({ db, user_id: locals.user!.id, user_name: locals.user!.name, action: 'status_change', target_type: 'purchase_order', target_id: params.id, target_label: order?.order_number, detail: { status } });
 			return { success: true };
 		} catch (err) {
 			console.error('Failed to update status:', err);
@@ -67,10 +70,12 @@ export const actions = {
 		}
 	},
 
-	delete: async ({ params, platform }) => {
+	delete: async ({ params, platform, locals }) => {
 		const db = getDb(platform!.env.DB);
 		try {
+			const [order] = await db.select({ order_number: schema.purchaseOrders.order_number }).from(schema.purchaseOrders).where(eq(schema.purchaseOrders.id, params.id));
 			await db.delete(schema.purchaseOrders).where(eq(schema.purchaseOrders.id, params.id));
+			await logAudit({ db, user_id: locals.user!.id, user_name: locals.user!.name, action: 'delete', target_type: 'purchase_order', target_id: params.id, target_label: order?.order_number });
 		} catch (err) {
 			console.error('Failed to delete purchase order:', err);
 			return fail(500, { error: '発注の削除に失敗しました。' });

@@ -2,6 +2,7 @@ import { fail } from '@sveltejs/kit';
 import { eq, desc, count, like, asc } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 import { getDb } from '$lib/server/db';
+import { logAudit } from '$lib/server/audit';
 import * as schema from '$lib/server/db/schema';
 import { parseCSV } from '$lib/utils/csv';
 import type { Actions, PageServerLoad } from './$types';
@@ -152,6 +153,7 @@ export const actions = {
 				}
 			});
 
+			await logAudit({ db, user_id: locals.user!.id, user_name: locals.user!.name, action: 'import', target_type: 'receiving_slip', detail: { count: detailRecords.length, date } });
 			return { success: true, count: detailRecords.length };
 		} catch (err) {
 			const message = String(err);

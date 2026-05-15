@@ -2,6 +2,7 @@ import { error, redirect, fail } from '@sveltejs/kit';
 import { eq, count, asc } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 import { getDb } from '$lib/server/db';
+import { logAudit } from '$lib/server/audit';
 import * as schema from '$lib/server/db/schema';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -77,7 +78,7 @@ export const load: PageServerLoad = async ({ params, platform }) => {
 };
 
 export const actions = {
-	delete: async ({ params, platform }) => {
+	delete: async ({ params, platform, locals }) => {
 		const db = getDb(platform!.env.DB);
 		const now = new Date().toISOString();
 
@@ -108,6 +109,7 @@ export const actions = {
 			return fail(500, { error: '入荷伝票の削除に失敗しました。' });
 		}
 
+		await logAudit({ db, user_id: locals.user!.id, user_name: locals.user!.name, action: 'delete', target_type: 'receiving_slip', target_id: params.id });
 		redirect(303, '/receiving');
 	},
 } satisfies Actions;

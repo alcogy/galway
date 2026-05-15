@@ -2,6 +2,7 @@ import { redirect, fail } from '@sveltejs/kit';
 import { like, desc, asc } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 import { getDb } from '$lib/server/db';
+import { logAudit } from '$lib/server/audit';
 import * as schema from '$lib/server/db/schema';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -102,6 +103,7 @@ export const actions = {
 			throw err;
 		}
 
+		await logAudit({ db, user_id: locals.user!.id, user_name: locals.user!.name, action: 'create', target_type: 'receiving_slip', detail: { supplier_id, received_at, item_count: validDetails.length } });
 		redirect(303, '/receiving');
 	},
 } satisfies Actions;

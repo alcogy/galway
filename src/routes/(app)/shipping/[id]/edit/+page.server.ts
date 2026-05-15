@@ -2,6 +2,7 @@ import { error, redirect, fail } from '@sveltejs/kit';
 import { eq, asc, count } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 import { getDb } from '$lib/server/db';
+import { logAudit } from '$lib/server/audit';
 import * as schema from '$lib/server/db/schema';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -160,6 +161,7 @@ export const actions = {
 			return fail(500, { error: '出荷伝票の更新に失敗しました。' });
 		}
 
+		await logAudit({ db, user_id: locals.user!.id, user_name: locals.user!.name, action: 'update', target_type: 'shipping_slip', target_id: params.id, detail: { item_count: validDetails.length } });
 		redirect(303, `/shipping/${params.id}`);
 	},
 } satisfies Actions;

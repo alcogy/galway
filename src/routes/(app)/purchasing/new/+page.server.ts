@@ -2,6 +2,7 @@ import { redirect, fail } from '@sveltejs/kit';
 import { like, desc, asc } from 'drizzle-orm';
 import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
+import { logAudit } from '$lib/server/audit';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ platform }) => {
@@ -78,6 +79,7 @@ export const actions = {
 				}
 			});
 
+			await logAudit({ db, user_id: locals.user!.id, user_name: locals.user!.name, action: 'create', target_type: 'purchase_order', target_id: newId, detail: { supplier_id, ordered_at, item_count: validDetails.length } });
 			redirect(303, `/purchasing/${newId}`);
 		} catch (err) {
 			const message = String(err);

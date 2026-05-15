@@ -2,6 +2,7 @@ import { fail } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
+import { logAudit } from '$lib/server/audit';
 import type { Actions, PageServerLoad } from './$types';
 
 const SETTING_KEYS = [
@@ -30,7 +31,7 @@ export const load: PageServerLoad = async ({ platform }) => {
 };
 
 export const actions = {
-	save: async ({ request, platform }) => {
+	save: async ({ request, platform, locals }) => {
 		const db = getDb(platform!.env.DB);
 		const data = await request.formData();
 
@@ -50,6 +51,7 @@ export const actions = {
 					.values({ key, value, updated_at: now })
 					.onConflictDoUpdate({ target: schema.settings.key, set: { value, updated_at: now } });
 			}
+			await logAudit({ db, user_id: locals.user!.id, user_name: locals.user!.name, action: 'settings_save', target_type: 'settings' });
 			return { success: true };
 		} catch (err) {
 			console.error('Failed to save settings:', err);
