@@ -105,7 +105,7 @@
 		{#if logo}
 			{@render logo()}
 		{:else}
-			<span class="logo-text">AES SUPPLIER</span>
+			<span class="logo-text">Galway</span>
 		{/if}
 	</div>
 

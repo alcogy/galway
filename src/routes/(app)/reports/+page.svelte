@@ -10,7 +10,7 @@
 </script>
 
 <svelte:head>
-	<title>レポート — AES Supplier</title>
+	<title>レポート — Galway</title>
 </svelte:head>
 
 <div class="page">

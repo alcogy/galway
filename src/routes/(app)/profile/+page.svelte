@@ -23,7 +23,7 @@
 </script>
 
 <svelte:head>
-	<title>プロフィール — AES SUPPLIER</title>
+	<title>プロフィール — Galway</title>
 </svelte:head>
 
 <div class="page">

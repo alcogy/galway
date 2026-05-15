@@ -45,7 +45,7 @@ After completing the code, ask the user if they want a playground link. Only cal
 - **Runtime access**: `platform.env.DB` binding (never `DATABASE_URL` at runtime)
 - **Local dev**: Wrangler's local D1 via `getPlatformProxy()` in `hooks.server.ts`
 - **Config file**: `wrangler.jsonc` (NOT `wrangler.toml`)
-- **D1 binding**: `binding: "DB"`, `database_name: "aes-supplier-db"`
+- **D1 binding**: `binding: "DB"`, `database_name: "galway-db"`
 - **Migrations dir**: `./drizzle` (managed by drizzle-kit generate + wrangler d1 migrations apply)
 
 ### DB Mutation Rules (enforced across all +page.server.ts / +server.ts)
@@ -100,7 +100,7 @@ This is a simple procurement management system (仕入管理システム).
 ## Implementation Status
 
 ### Plan 1 — Completed
-- `wrangler.jsonc`: D1 binding added (`binding: "DB"`, `database_name: "aes-supplier-db"`)
+- `wrangler.jsonc`: D1 binding added (`binding: "DB"`, `database_name: "galway-db"`)
 - `drizzle.config.ts`: Simplified (no `DATABASE_URL`; uses sqlite dialect)
 - `src/lib/server/db/index.ts`: Replaced `@libsql/client` with `drizzle-orm/d1`; exports `getDb(d1: D1Database)`
 - `src/hooks.server.ts`: `getPlatformProxy<Env>()` provides D1 in local dev (`vite dev`)

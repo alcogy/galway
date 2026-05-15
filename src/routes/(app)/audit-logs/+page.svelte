@@ -66,7 +66,7 @@
 </script>
 
 <svelte:head>
-	<title>操作ログ — AES Supplier</title>
+	<title>操作ログ — Galway</title>
 </svelte:head>
 
 <div class="page">

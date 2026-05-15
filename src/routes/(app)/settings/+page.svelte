@@ -19,7 +19,7 @@
 </script>
 
 <svelte:head>
-	<title>設定 — AES Supplier</title>
+	<title>設定 — Galway</title>
 </svelte:head>
 
 <div class="page">

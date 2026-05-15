@@ -9,7 +9,7 @@
 </script>
 
 <svelte:head>
-	<title>入荷登録 — AES Supplier</title>
+	<title>入荷登録 — Galway</title>
 </svelte:head>
 
 <div class="page">

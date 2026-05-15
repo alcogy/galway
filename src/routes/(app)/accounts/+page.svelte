@@ -93,7 +93,7 @@
 </script>
 
 <svelte:head>
-	<title>アカウント管理 — AES SUPPLIER</title>
+	<title>アカウント管理 — Galway</title>
 </svelte:head>
 
 <div class="page">

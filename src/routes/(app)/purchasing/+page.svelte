@@ -31,7 +31,7 @@
 </script>
 
 <svelte:head>
-	<title>発注管理 — AES Supplier</title>
+	<title>発注管理 — Galway</title>
 </svelte:head>
 
 <div class="page">

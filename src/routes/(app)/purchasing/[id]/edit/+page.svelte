@@ -33,7 +33,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.order.order_number} 編集 — AES Supplier</title>
+	<title>{data.order.order_number} 編集 — Galway</title>
 </svelte:head>
 
 <div class="page">

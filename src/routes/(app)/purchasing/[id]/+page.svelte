@@ -43,7 +43,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.order.order_number} — AES Supplier</title>
+	<title>{data.order.order_number} — Galway</title>
 </svelte:head>
 
 <div class="page">

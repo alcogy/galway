@@ -13,7 +13,7 @@
 </script>
 
 <svelte:head>
-	<title>ダッシュボード — AES Supplier</title>
+	<title>ダッシュボード — Galway</title>
 </svelte:head>
 
 <div class="dashboard">

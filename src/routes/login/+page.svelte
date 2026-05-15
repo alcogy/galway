@@ -17,7 +17,7 @@
 </script>
 
 <svelte:head>
-	<title>サインイン — AES SUPPLIER</title>
+	<title>サインイン — Galway</title>
 </svelte:head>
 
 <div class="login-page">
@@ -27,7 +27,7 @@
 
 	<div class="login-card">
 		<div class="login-header">
-			<h1 class="login-title">AES SUPPLIER</h1>
+			<h1 class="login-title">Galway</h1>
 			<p class="login-subtitle">Sign in to your account</p>
 		</div>
 

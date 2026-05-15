@@ -55,7 +55,7 @@
 </script>
 
 <svelte:head>
-	<title>棚卸スケジュール — AES Supplier</title>
+	<title>棚卸スケジュール — Galway</title>
 </svelte:head>
 
 <div class="page">

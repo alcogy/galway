@@ -79,7 +79,7 @@
 </script>
 
 <svelte:head>
-	<title>在庫管理 — AES Supplier</title>
+	<title>在庫管理 — Galway</title>
 </svelte:head>
 
 <div class="page">

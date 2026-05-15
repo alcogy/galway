@@ -81,7 +81,7 @@
 </script>
 
 <svelte:head>
-	<title>仕入先管理 — AES Supplier</title>
+	<title>仕入先管理 — Galway</title>
 </svelte:head>
 
 <div class="page">

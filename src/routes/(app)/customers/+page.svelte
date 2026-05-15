@@ -58,7 +58,7 @@
 </script>
 
 <svelte:head>
-	<title>出荷先管理 — AES Supplier</title>
+	<title>出荷先管理 — Galway</title>
 </svelte:head>
 
 <div class="page">

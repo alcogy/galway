@@ -44,7 +44,7 @@
 </script>
 
 <svelte:head>
-	<title>カテゴリ管理 — AES Supplier</title>
+	<title>カテゴリ管理 — Galway</title>
 </svelte:head>
 
 <div class="page">

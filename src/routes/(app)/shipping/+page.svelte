@@ -24,7 +24,7 @@
 </script>
 
 <svelte:head>
-	<title>出荷管理 — AES Supplier</title>
+	<title>出荷管理 — Galway</title>
 </svelte:head>
 
 <div class="page">

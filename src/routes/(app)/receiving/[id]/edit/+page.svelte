@@ -18,7 +18,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.slip.slip_number} 編集 — AES Supplier</title>
+	<title>{data.slip.slip_number} 編集 — Galway</title>
 </svelte:head>
 
 <div class="page">

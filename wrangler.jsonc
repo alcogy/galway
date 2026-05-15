@@ -1,6 +1,6 @@
 {
 	"$schema": "./node_modules/wrangler/config-schema.json",
-	"name": "aes-supplier",
+	"name": "galway",
 	"compatibility_date": "2026-02-24",
 	"compatibility_flags": ["nodejs_als"],
 	"main": ".svelte-kit/cloudflare/_worker.js",
@@ -12,9 +12,9 @@
 	"preview_urls": true,
 	"d1_databases": [
 		{
-			// Run `wrangler d1 create aes-supplier-db` to get the real database_id for remote deployment
+			// Run `wrangler d1 create galway-db` to get the real database_id for remote deployment
 			"binding": "DB",
-			"database_name": "aes-supplier-db",
+			"database_name": "galway-db",
 			"database_id": "00000000-0000-0000-0000-000000000000",
 			"migrations_dir": "./drizzle"
 		}

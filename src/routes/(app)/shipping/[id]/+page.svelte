@@ -29,7 +29,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.slip.slip_number} — AES Supplier</title>
+	<title>{data.slip.slip_number} — Galway</title>
 </svelte:head>
 
 <div class="page">

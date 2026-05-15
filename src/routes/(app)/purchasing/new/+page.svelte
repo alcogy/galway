@@ -25,7 +25,7 @@
 </script>
 
 <svelte:head>
-	<title>新規発注 — AES Supplier</title>
+	<title>新規発注 — Galway</title>
 </svelte:head>
 
 <div class="page">

@@ -94,7 +94,7 @@
 </script>
 
 <svelte:head>
-	<title>商品管理 — AES Supplier</title>
+	<title>商品管理 — Galway</title>
 </svelte:head>
 
 <div class="page">
