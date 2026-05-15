@@ -403,8 +403,8 @@ src/routes/(app)/
 - **Trigger points to implement**: low-stock alert on dashboard load, receiving slip created, scheduled inventory reminder
 - **Slack notifications**: also possible; Slack webhook URL stored in settings — implement after email
 
-### Repository / Directory Rename (user action)
-- GitHub repo: rename `aes-supplier` → `galway`
-- Local directory: rename `aes-supplier/` → `galway/`
-- Update any CI/CD config that references the old name
+### Repository / Directory Rename — Completed (2026-05-15)
+- GitHub repo: `https://github.com/alcogy/galway.git` ✅
+- Local directory: `galway/` ✅
+- git remote URL updated ✅
 

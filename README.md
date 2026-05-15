@@ -1,42 +1,191 @@
-# sv
+# Galway — 仕入管理システム
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+仕入先・商品・入出荷・在庫を一元管理するシンプルな調達管理システムです。
 
-## Creating a project
+## 技術スタック
 
-If you're seeing this, you've probably already done this step. Congrats!
+| 項目 | 内容 |
+|------|------|
+| フレームワーク | SvelteKit 2 + Svelte 5 |
+| デプロイ先 | Cloudflare Pages / Workers |
+| データベース | Cloudflare D1 (SQLite) |
+| ORM | Drizzle ORM |
+| パッケージマネージャー | Bun |
+
+---
+
+## 機能一覧
+
+### ダッシュボード (`/`)
+- 仕入先数・商品数・入荷件数・出荷件数のサマリーカード
+- **本日の入荷予定**: 発注済み (`ordered`) かつ本日が入荷予定日の発注明細を一覧表示
+- **本日の出荷予定**: 本日出荷の出荷伝票明細を一覧表示
+- **在庫アラート**: 現在庫が最小在庫数を下回っている商品を一覧表示（設定で有効/無効切替可）
+
+### 仕入先管理 (`/suppliers`)
+- 仕入先の一覧・登録・編集・削除
+- 検索（仕入先名）
+- CSVインポート（追加 / 置換モード）・CSVエクスポート
+- 登録項目: 仕入先名、電話番号、FAX、郵便番号、住所、メールアドレス
+
+### 商品管理 (`/products`)
+- 商品の一覧・登録・編集・削除
+- 検索（商品コード・商品名）・カテゴリ絞り込み
+- CSVインポート（追加 / 置換モード）・CSVエクスポート
+- 登録項目: 商品コード（一意）、商品名、単位、説明、カテゴリ、最小在庫数
+- 商品登録時に在庫レコードを自動作成（数量 0）
+
+### カテゴリ管理 (`/categories`)
+- カテゴリの一覧・登録・編集・削除
+- 各カテゴリに紐づく商品数を表示
+
+### 発注管理 (`/purchasing`)
+- 発注伝票の一覧・登録・詳細・編集
+- ステータスワークフロー: `下書き` → `発注済み` → `入荷済み` / `キャンセル`
+- 発注番号: `PO-YYYY-NNN` 形式（トランザクション内で自動採番）
+- 入荷予定日を設定可能（ダッシュボードの本日入荷予定に連動）
+
+### 入荷管理 (`/receiving`)
+- 入荷伝票の一覧・登録・詳細・編集・削除
+- 伝票番号: `RCV-YYYY-NNN` 形式（自動採番）
+- 入荷登録で在庫を加算（UPSERT）
+- CSVインポート（仕入先・入荷日を指定して一括登録）
+- 明細 CSV ダウンロード（ファイル名に仕入先名・入荷日を含む）
+- 管理者は担当者を変更可能
+
+### 出荷管理 (`/shipping`)
+- 出荷伝票の一覧・登録・詳細・編集・削除
+- 伝票番号: `SHP-YYYY-NNN` 形式（自動採番）
+- 出荷登録で在庫を減算
+- CSVインポート（出荷日を指定して一括登録）
+- 明細 CSV ダウンロード
+- **PDF出力** (`/shipping/[id]/print`): A4レイアウトの印刷用ページ。開くと自動的に印刷ダイアログが起動
+- 出荷先（顧客）を紐づけ可能
+- 管理者は担当者を変更可能
+
+### 出荷先管理 (`/customers`)
+- 出荷先（顧客）の一覧・登録・編集・削除
+- 登録項目: 顧客名、電話番号、FAX、郵便番号、住所、メールアドレス
+
+### 在庫管理 (`/inventory`)
+- 全商品の現在庫を一覧表示
+- 検索（商品コード・商品名）
+- 最小在庫数を下回る商品を警告色で強調表示
+- **棚卸登録**: モーダルから実在庫数を直接入力・上書き更新
+- CSVインポート（在庫数を一括更新）・CSVエクスポート
+
+### 棚卸スケジュール (`/inventory-schedules`)
+- 棚卸スケジュールの一覧・登録・詳細
+- ステータス管理: `計画中` → `実施中` → `完了`
+
+### レポート (`/reports`)
+- 過去 6 ヶ月の入荷・出荷トレンドバーチャート
+- 出荷数量 TOP 10 商品ランキング
+- 仕入先別入荷実績ランキング
+
+### アカウント管理 (`/accounts`) — 管理者のみ
+- ユーザーアカウントの一覧・登録・編集・削除
+- ロール: `admin`（管理者）/ `general`（一般）
+- 使用中アカウントは削除不可（外部キー制約エラーをハンドリング）
+
+### 操作ログ (`/audit-logs`) — 管理者のみ
+- 全 CRUD 操作の監査ログを一覧表示
+- アクション・対象・ユーザーで絞り込み
+- アクション種別: `作成` `更新` `削除` `インポート` `棚卸` `ステータス変更` `設定保存`
+
+### 設定 (`/settings`) — 管理者のみ
+- 在庫アラートの有効/無効切替
+- 通知メールアドレス・Slack Webhook URL の設定（将来のメール通知機能向けプレースホルダー）
+
+---
+
+## セットアップ
+
+### 1. 依存パッケージのインストール
 
 ```sh
-# create a new project
-npx sv create my-app
+bun install
 ```
 
-To recreate this project with the same configuration:
+### 2. ローカル DB のセットアップ
 
 ```sh
-# recreate this project
-bun x sv create --template minimal --types ts --add prettier eslint vitest="usages:unit,component" playwright sveltekit-adapter="adapter:cloudflare+cfTarget:workers" drizzle="database:sqlite+sqlite:libsql" mcp="ide:claude-code+setup:remote" --install bun .
+# マイグレーション適用
+bun run db:migrate:local
+
+# 基本シードデータ投入（アカウント・仕入先・商品・入出荷伝票・在庫）
+bun run db:seed:local
+
+# 追加シードデータ投入（カテゴリ・顧客・発注・棚卸スケジュール）
+bun run db:seed-plan6:local
 ```
 
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+### 3. 開発サーバー起動
 
 ```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+bun run dev
 ```
 
-## Building
+ブラウザで `http://localhost:5173` を開いてください。
 
-To create a production version of your app:
+---
+
+## ログイン情報（開発用）
+
+| メールアドレス | パスワード | ロール |
+|----------------|------------|--------|
+| admin@example.com | admin123 | 管理者 |
+| suzuki@example.com | general123 | 一般 |
+| sato@example.com | general123 | 一般 |
+
+---
+
+## スクリプト一覧
+
+| コマンド | 内容 |
+|----------|------|
+| `bun run dev` | 開発サーバー起動 |
+| `bun run build` | プロダクションビルド |
+| `bun run preview` | ビルド結果をローカルで確認（Wrangler） |
+| `bun run check` | 型チェック |
+| `bun run lint` | Lint / フォーマットチェック |
+| `bun run format` | 自動フォーマット |
+| `bun run test:unit` | ユニットテスト（Vitest） |
+| `bun run test:e2e` | E2E テスト（Playwright） |
+| `bun run db:generate` | Drizzle マイグレーションファイル生成 |
+| `bun run db:migrate:local` | ローカル D1 にマイグレーション適用 |
+| `bun run db:migrate:remote` | リモート D1 にマイグレーション適用 |
+| `bun run db:seed:local` | 基本シードデータ投入（ローカル） |
+| `bun run db:seed-plan6:local` | 追加シードデータ投入（ローカル） |
+| `bun run db:studio` | Drizzle Studio 起動 |
+
+---
+
+## リモートデプロイ
+
+1. [Cloudflare Dashboard](https://dash.cloudflare.com/) で D1 データベースを作成
 
 ```sh
-npm run build
+wrangler d1 create galway-db
 ```
 
-You can preview the production build with `npm run preview`.
+2. 返却された `database_id` を `wrangler.jsonc` の `d1_databases[0].database_id` に設定
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+3. リモートにマイグレーションを適用
+
+```sh
+bun run db:migrate:remote
+```
+
+4. Cloudflare Pages にデプロイ
+
+```sh
+bun run build
+wrangler pages deploy .svelte-kit/cloudflare
+```
+
+---
+
+## ライセンス
+
+Private
