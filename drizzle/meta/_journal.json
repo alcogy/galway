@@ -15,6 +15,13 @@
       "when": 1778828427446,
       "tag": "0001_clammy_swordsman",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1778829249468,
+      "tag": "0002_medical_peter_quill",
+      "breakpoints": true
     }
   ]
 }

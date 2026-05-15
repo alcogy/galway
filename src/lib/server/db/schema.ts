@@ -36,6 +36,20 @@ export const suppliers = sqliteTable('suppliers', {
 });
 
 // -----------------------------------------------
+// 商品カテゴリ (Product Category)
+// -----------------------------------------------
+export const productCategories = sqliteTable('product_categories', {
+	id: text('id')
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+	name: text('name').notNull().unique(),
+	description: text('description'),
+	created_at: text('created_at')
+		.notNull()
+		.$defaultFn(() => new Date().toISOString())
+});
+
+// -----------------------------------------------
 // 商品マスタ (Product Master)
 // -----------------------------------------------
 export const products = sqliteTable('products', {
@@ -46,6 +60,7 @@ export const products = sqliteTable('products', {
 	name: text('name').notNull(),
 	unit: text('unit').notNull(),
 	description: text('description'),
+	category_id: text('category_id').references(() => productCategories.id, { onDelete: 'set null' }),
 	min_quantity: real('min_quantity').notNull().default(0),
 	created_at: text('created_at')
 		.notNull()

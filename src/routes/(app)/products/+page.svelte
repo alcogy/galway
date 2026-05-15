@@ -2,7 +2,7 @@
 	import { Plus, Pencil, Trash2, Download, Upload } from '@lucide/svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
-	import { Button, Input, Label, Modal, ConfirmDialog, Table, SearchBar, Textarea, Pagination, CsvImportDialog } from '$lib/components';
+	import { Button, Input, Label, Modal, ConfirmDialog, Table, SearchBar, Textarea, Pagination, CsvImportDialog, Select } from '$lib/components';
 	import type { PageData } from './$types';
 	import type { Product } from './+page.server';
 
@@ -14,25 +14,38 @@
 	let editing = $state<Product | null>(null);
 	let deletingId = $state<string | null>(null);
 	let searchQuery = $state(page.url.searchParams.get('search') || '');
+	let categoryFilter = $state(page.url.searchParams.get('category') || '');
 	let importNotification = $state<{ type: 'success' | 'error'; message: string } | null>(null);
 
-	function handleSearch() {
+	const categoryOptions = $derived([
+		{ value: '', label: '全カテゴリ' },
+		...data.categories.map((c) => ({ value: c.id, label: c.name })),
+	]);
+
+	function buildParams(p: number) {
 		const params = new URLSearchParams();
 		if (searchQuery) params.set('search', searchQuery);
-		params.set('page', '1');
-		goto(`?${params.toString()}`, { keepFocus: true });
+		if (categoryFilter) params.set('category', categoryFilter);
+		params.set('page', String(p));
+		return params;
+	}
+
+	function handleSearch() {
+		goto(`?${buildParams(1).toString()}`, { keepFocus: true });
+	}
+
+	function handleCategoryChange() {
+		goto(`?${buildParams(1).toString()}`, { keepFocus: true });
 	}
 
 	function handlePageChange(newPage: number) {
-		const params = new URLSearchParams();
-		if (searchQuery) params.set('search', searchQuery);
-		params.set('page', newPage.toString());
-		goto(`?${params.toString()}`, { keepFocus: true });
+		goto(`?${buildParams(newPage).toString()}`, { keepFocus: true });
 	}
 
 	function getExportUrl() {
 		const params = new URLSearchParams();
 		if (searchQuery) params.set('search', searchQuery);
+		if (categoryFilter) params.set('category', categoryFilter);
 		return `/products/export?${params.toString()}`;
 	}
 
@@ -42,6 +55,7 @@
 	let unit = $state('');
 	let description = $state('');
 	let minQuantity = $state('0');
+	let selectedCategoryId = $state('');
 
 	function openCreate() {
 		editing = null;
@@ -50,6 +64,7 @@
 		unit = '';
 		description = '';
 		minQuantity = '0';
+		selectedCategoryId = '';
 		showModal = true;
 	}
 
@@ -60,6 +75,7 @@
 		unit = product.unit;
 		description = product.description ?? '';
 		minQuantity = String(product.min_quantity);
+		selectedCategoryId = product.category_id ?? '';
 		showModal = true;
 	}
 
@@ -71,8 +87,9 @@
 	const columns = [
 		{ key: 'code', label: '商品コード', width: '160px' },
 		{ key: 'name', label: '商品名' },
-		{ key: 'unit', label: '単位', width: '100px' },
-		{ key: 'description', label: '説明' }
+		{ key: 'category_name', label: 'カテゴリ', width: '140px' },
+		{ key: 'unit', label: '単位', width: '80px' },
+		{ key: 'description', label: '説明' },
 	];
 </script>
 
@@ -103,6 +120,10 @@
 
 	<div class="filters">
 		<SearchBar bind:value={searchQuery} placeholder="商品名・コードで検索..." onsubmit={handleSearch} />
+		<div class="category-filter">
+			<Select options={categoryOptions} bind:value={categoryFilter} onchange={handleCategoryChange} />
+		</div>
+
 	</div>
 
 	<div class="table-with-pagination">
@@ -149,6 +170,14 @@
 			<div class="field">
 				<Label required>単位</Label>
 				<Input name="unit" bind:value={unit} placeholder="個、kg、m など" required />
+			</div>
+			<div class="field">
+				<Label>カテゴリ</Label>
+				<Select
+					name="category_id"
+					options={[{ value: '', label: '未設定' }, ...data.categories.map((c) => ({ value: c.id, label: c.name }))]}
+					bind:value={selectedCategoryId}
+				/>
 			</div>
 			<div class="field">
 				<Label>最低在庫数</Label>
@@ -297,5 +326,10 @@
 		align-items: center;
 		gap: var(--space-md);
 		flex-wrap: wrap;
+
+		.category-filter {
+			width: 180px;
+			flex-shrink: 0;
+		}
 	}
 </style>

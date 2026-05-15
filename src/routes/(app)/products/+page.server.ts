@@ -1,5 +1,5 @@
 import { fail } from '@sveltejs/kit';
-import { eq, asc, like, or, count } from 'drizzle-orm';
+import { eq, asc, like, or, and, count } from 'drizzle-orm';
 import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import { parseCSV } from '$lib/utils/csv';
@@ -11,6 +11,8 @@ export interface Product {
 	name: string;
 	unit: string;
 	description: string | null;
+	category_id: string | null;
+	category_name: string | null;
 	min_quantity: number;
 }
 
@@ -19,17 +21,26 @@ export const load: PageServerLoad = async ({ platform, url }) => {
 
 	const itemsPerPage = 20;
 	const searchQuery = url.searchParams.get('search') || '';
+	const categoryFilter = url.searchParams.get('category') || '';
 	const currentPage = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
 
-	const whereClause = searchQuery
+	const searchCondition = searchQuery
 		? or(
 				like(schema.products.code, `%${searchQuery}%`),
 				like(schema.products.name, `%${searchQuery}%`)
 			)
 		: undefined;
+	const categoryCondition = categoryFilter
+		? eq(schema.products.category_id, categoryFilter)
+		: undefined;
+	const whereClause =
+		searchCondition && categoryCondition
+			? and(searchCondition, categoryCondition)
+			: searchCondition ?? categoryCondition;
+
 	const offset = (currentPage - 1) * itemsPerPage;
 
-	const [countResult, products] = await Promise.all([
+	const [countResult, products, categories] = await Promise.all([
 		db.select({ count: count() }).from(schema.products).where(whereClause),
 		db
 			.select({
@@ -38,21 +49,30 @@ export const load: PageServerLoad = async ({ platform, url }) => {
 				name: schema.products.name,
 				unit: schema.products.unit,
 				description: schema.products.description,
+				category_id: schema.products.category_id,
+				category_name: schema.productCategories.name,
 				min_quantity: schema.products.min_quantity,
 			})
 			.from(schema.products)
+			.leftJoin(schema.productCategories, eq(schema.products.category_id, schema.productCategories.id))
 			.where(whereClause)
 			.orderBy(asc(schema.products.code))
 			.limit(itemsPerPage)
 			.offset(offset),
+		db
+			.select({ id: schema.productCategories.id, name: schema.productCategories.name })
+			.from(schema.productCategories)
+			.orderBy(asc(schema.productCategories.name)),
 	]);
 
 	return {
 		products,
+		categories,
 		totalItems: countResult[0]?.count ?? 0,
 		itemsPerPage,
 		currentPage,
 		searchQuery,
+		categoryFilter,
 	};
 };
 
@@ -64,6 +84,7 @@ export const actions = {
 		const name = data.get('name')?.toString().trim();
 		const unit = data.get('unit')?.toString().trim();
 		const min_quantity = parseFloat(data.get('min_quantity')?.toString() || '0');
+		const category_id = data.get('category_id')?.toString() || null;
 
 		if (!code) return fail(400, { error: '商品コードは必須です' });
 		if (!name) return fail(400, { error: '商品名は必須です' });
@@ -80,6 +101,7 @@ export const actions = {
 						name,
 						unit,
 						description: data.get('description')?.toString().trim() || null,
+						category_id: category_id || null,
 						min_quantity: isNaN(min_quantity) ? 0 : min_quantity,
 					})
 					.returning({ id: schema.products.id });
@@ -108,6 +130,7 @@ export const actions = {
 		const name = data.get('name')?.toString().trim();
 		const unit = data.get('unit')?.toString().trim();
 		const min_quantity = parseFloat(data.get('min_quantity')?.toString() || '0');
+		const category_id = data.get('category_id')?.toString() || null;
 
 		if (!id) return fail(400, { error: 'IDが必要です' });
 		if (!code) return fail(400, { error: '商品コードは必須です' });
@@ -122,6 +145,7 @@ export const actions = {
 					name,
 					unit,
 					description: data.get('description')?.toString().trim() || null,
+					category_id: category_id || null,
 					min_quantity: isNaN(min_quantity) ? 0 : min_quantity,
 					updated_at: new Date().toISOString(),
 				})
