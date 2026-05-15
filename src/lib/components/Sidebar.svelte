@@ -13,6 +13,7 @@
 		ClipboardSignature,
 		CalendarCheck,
 		BarChart3,
+		Settings,
 		CircleUser,
 		Shield,
 		PanelLeftClose,
@@ -56,7 +57,8 @@
 		{ href: '/inventory', label: '在庫管理', icon: Boxes },
 		{ href: '/inventory-schedules', label: '棚卸スケジュール', icon: CalendarCheck },
 		{ href: '/reports', label: 'レポート', icon: BarChart3 },
-		{ href: '/accounts', label: 'アカウント管理', icon: Shield, adminOnly: true }
+		{ href: '/accounts', label: 'アカウント管理', icon: Shield, adminOnly: true },
+		{ href: '/settings', label: '設定', icon: Settings, adminOnly: true }
 	];
 
 	const secondaryNavItems = $derived<NavItem[]>([

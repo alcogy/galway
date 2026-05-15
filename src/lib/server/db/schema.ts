@@ -224,6 +224,17 @@ export const shippingSlipDetails = sqliteTable('shipping_slip_details', {
 });
 
 // -----------------------------------------------
+// システム設定 (Settings)
+// -----------------------------------------------
+export const settings = sqliteTable('settings', {
+	key: text('key').primaryKey(),
+	value: text('value').notNull().default(''),
+	updated_at: text('updated_at')
+		.notNull()
+		.$defaultFn(() => new Date().toISOString())
+});
+
+// -----------------------------------------------
 // 棚卸スケジュール (Inventory Schedule)
 // -----------------------------------------------
 export const inventorySchedules = sqliteTable('inventory_schedules', {

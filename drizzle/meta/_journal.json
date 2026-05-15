@@ -43,6 +43,13 @@
       "when": 1778830958556,
       "tag": "0005_steep_joystick",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1778832905717,
+      "tag": "0006_giant_captain_britain",
+      "breakpoints": true
     }
   ]
 }
