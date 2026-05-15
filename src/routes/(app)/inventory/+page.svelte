@@ -301,6 +301,17 @@
 			border-bottom: none;
 		}
 
+		/* row スニペット使用時は Table.svelte のスコープ付き td スタイルが当たらないため補完 */
+		:global(tbody tr td) {
+			padding: var(--space-md) var(--space-lg);
+			color: var(--color-text);
+			font-size: 0.8125rem;
+		}
+
+		:global(tbody tr:not(:last-child) td) {
+			border-bottom: 1px solid var(--color-border-light);
+		}
+
 		:global(tr.low-stock) {
 			background-color: color-mix(in srgb, var(--color-danger, #f97316) 6%, transparent) !important;
 		}
