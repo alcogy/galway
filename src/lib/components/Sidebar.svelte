@@ -72,7 +72,7 @@
 
 	function isActive(href: string): boolean {
 		if (href === '/') return page.url.pathname === href;
-		return page.url.pathname.startsWith(href);
+		return page.url.pathname === href || page.url.pathname.startsWith(href + '/');
 	}
 
 	function closeMobile() {
