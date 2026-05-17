@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Plus, Upload } from '@lucide/svelte';
-	import { Button, Table, Pagination, SlipCsvImportDialog } from '$lib/components';
+	import { Button, Table, Pagination, SlipCsvImportDialog } from '$lib/ui';
 	import { goto, invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
 	let { data }: { data: PageData } = $props();

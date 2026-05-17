@@ -87,7 +87,7 @@ This is a simple procurement management system (仕入管理システム).
 - Basic UI and layout are already implemented.
 - Dark / Light / System theme switching is available, implemented in `/src/lib/theme.svelte.ts`.
 - Responsive design for PC, tablet, and smartphone.
-- UI components are located in `/src/lib/components/`. Add new components there as needed.
+- UI components are located in `/src/lib/ui/`. Add new components there as needed.
 - The project in ../aes-crm/ should be referenced for its UI layout, composition, and design concepts. For more detailed application, see the UI layout, configuration, and design concepts of the project in ../aes-crm/.
 
 ### Implementation Plan
@@ -146,7 +146,7 @@ src/routes/(app)/
 - **`$state` init rule**: Never initialize `$state` from `data.*` directly — use empty string/null and set values in `$effect` or handler functions (autofixer flags this)
 - **Slip list columns**: Receiving list shows 伝票番号, 仕入先, 入荷日, 品目数, 担当者. Shipping list shows 伝票番号, 出荷日, 品目数, 担当者.
 
-#### Components (`src/lib/components/`)
+#### Components (`src/lib/ui/`)
 - `Select.svelte`: Styled `<select>` wrapper; value must be `$bindable()`
 - `SearchableSelect.svelte`: Searchable dropdown; `position: fixed` panel positioned via `getBoundingClientRect()` on click event to escape `overflow: hidden` parents; hidden `<input type="hidden">` for form submission; `{@attach (node) => { node.focus(); }}` for search input auto-focus; Props — `options`, `placeholder`, `value=$bindable('')`, `name`, `disabled`, `error`
 - `Table.svelte`: Accepts `columns`, `rows`, `onrowclick`, `actions` snippet, `cell` snippet, `empty` snippet
@@ -158,7 +158,7 @@ src/routes/(app)/
 - `ShippingSlipForm.svelte`: Same as ReceivingSlipForm but without supplier field; uses `shipped_at` instead of `received_at`.
 
 #### Known Pre-existing Type Errors
-- `Module '"$lib/components"' has no exported member 'SearchableSelect'` — SearchableSelect is exported in index.ts; likely a TS server cache issue
+- `Module '"$lib/ui"' has no exported member 'SearchableSelect'` — SearchableSelect is exported in index.ts; likely a TS server cache issue
 - `json is of type 'unknown'` in CSV import handlers — resolved with `as any` cast on `res.json()`
 
 ### Plan 3 — Completed
@@ -248,7 +248,7 @@ All import actions fully implemented:
 - `accounts/+page.server.ts` delete action: Detects `FOREIGN KEY constraint failed` → "このアカウントは使用されているため削除できません"
 
 #### Shared Slip Form Components
-- Created `ReceivingSlipForm.svelte` and `ShippingSlipForm.svelte` in `$lib/components`
+- Created `ReceivingSlipForm.svelte` and `ShippingSlipForm.svelte` in `$lib/ui`
 - All 4 slip pages (`receiving/new`, `receiving/[id]/edit`, `shipping/new`, `shipping/[id]/edit`) use shared components
 - Admins can change 担当者 on edit pages via `SearchableSelect`
 

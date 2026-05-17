@@ -2,7 +2,7 @@
 	import { Plus, Pencil, Trash2, Download, Upload } from '@lucide/svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
-	import { Button, Input, Label, Modal, ConfirmDialog, Table, SearchBar, Textarea, Pagination, CsvImportDialog, Select } from '$lib/components';
+	import { Button, Input, Label, Modal, ConfirmDialog, Table, SearchBar, Textarea, Pagination, CsvImportDialog, Select } from '$lib/ui';
 	import type { PageData } from './$types';
 	import type { Product } from './+page.server';
 

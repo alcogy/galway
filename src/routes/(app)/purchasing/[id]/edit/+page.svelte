@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ArrowLeft, Plus, Trash2 } from '@lucide/svelte';
-	import { Button, Card, Label, SearchableSelect, Textarea } from '$lib/components';
+	import { Button, Card, Label, SearchableSelect, Textarea } from '$lib/ui';
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
 

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Plus, Pencil, Trash2 } from '@lucide/svelte';
-	import { Button, Input, Label, Modal, ConfirmDialog, Table, Textarea } from '$lib/components';
+	import { Button, Input, Label, Modal, ConfirmDialog, Table, Textarea } from '$lib/ui';
 	import type { PageData } from './$types';
 	import type { Category } from './+page.server';
 

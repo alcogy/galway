@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Plus } from '@lucide/svelte';
-	import { Button, Table, Pagination } from '$lib/components';
+	import { Button, Table, Pagination } from '$lib/ui';
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
 

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { Select, Pagination, Input, Button } from '$lib/components';
+	import { Select, Pagination, Input, Button } from '$lib/ui';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();

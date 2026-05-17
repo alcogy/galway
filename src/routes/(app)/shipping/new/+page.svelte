@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { ArrowLeft } from '@lucide/svelte';
-	import { Card } from '$lib/components';
-	import ShippingSlipForm from '$lib/components/ShippingSlipForm.svelte';
+	import { Card } from '$lib/ui';
+	import ShippingSlipForm from '$lib/ui/ShippingSlipForm.svelte';
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
 

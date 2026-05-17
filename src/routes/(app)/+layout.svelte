@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Sidebar, ConfirmDialog } from '$lib/components';
+	import { Sidebar, ConfirmDialog } from '$lib/ui';
 	import { getTheme, setTheme } from '$lib/theme.svelte';
 	import type { LayoutData } from './$types';
 

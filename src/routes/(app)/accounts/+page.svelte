@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, Table, SearchBar, AccountEditor, ConfirmDialog, Pagination } from '$lib/components';
+	import { Button, Table, SearchBar, AccountEditor, ConfirmDialog, Pagination } from '$lib/ui';
 	import { Plus, Pencil, Trash2 } from '@lucide/svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { deserialize } from '$app/forms';

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, Card, ProfileEditor } from '$lib/components';
+	import { Button, Card, ProfileEditor } from '$lib/ui';
 	import { Pencil } from '@lucide/svelte';
 	import { invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';

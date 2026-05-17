@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ClipboardList, Upload, Download, AlertTriangle } from '@lucide/svelte';
-	import { Button, Label, Modal, Table, Select, SearchBar, SearchableSelect, Pagination, CsvImportDialog } from '$lib/components';
+	import { Button, Label, Modal, Table, Select, SearchBar, SearchableSelect, Pagination, CsvImportDialog } from '$lib/ui';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
 	import type { PageData } from './$types';

@@ -2,7 +2,7 @@
 	import { untrack } from 'svelte';
 	import { Button } from './index.js';
 	import { Plus, Trash2, ChevronUp, ChevronDown, ZoomIn, ZoomOut } from '@lucide/svelte';
-	import { SelectChip } from '$lib/components';
+	import { SelectChip } from '$lib/ui';
 
 	// ── Types ──────────────────────────────────────────────────────────────────
 	export interface Account {

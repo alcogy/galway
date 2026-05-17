@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, Input, Label } from '$lib/components';
+	import { Button, Input, Label } from '$lib/ui';
 	import { getTheme, setTheme, type Theme } from '$lib/theme.svelte';
 	import { Sun, Moon, Monitor } from '@lucide/svelte';
 	import type { ActionData } from './$types';

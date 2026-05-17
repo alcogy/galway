@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ArrowLeft, Pencil, Trash2 } from '@lucide/svelte';
-	import { Button, Card, ConfirmDialog, Table } from '$lib/components';
+	import { Button, Card, ConfirmDialog, Table } from '$lib/ui';
 	import { goto, invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
 
