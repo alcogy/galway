@@ -25,7 +25,7 @@
 		{ key: 'product_code', label: t('shipping.productCode'), width: '160px' },
 		{ key: 'product_name', label: t('shipping.productName') },
 		{ key: 'quantity', label: t('shipping.quantity'), width: '100px', numeric: true },
-		{ key: 'unit', label: t('shipping.unit'), width: '80px' }
+		{ key: 'unit', label: t('shipping.unit'), width: '120px' }
 	]);
 </script>
 

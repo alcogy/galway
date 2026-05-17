@@ -1,23 +1,27 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import type { PageData } from './$types';
+	import { t, getLocale } from '$lib/i18n';
 
 	let { data }: { data: PageData } = $props();
 
 	const totalQty = $derived(data.details.reduce((s, d) => s + d.quantity, 0));
 
-	onMount(() => {
-		window.print();
-	});
+	const localeStr = $derived(getLocale() === 'ja' ? 'ja-JP' : 'en-US');
 </script>
 
 <svelte:head>
-	<title>{data.slip.slip_number} — 出荷リスト</title>
+	<title>{data.slip.slip_number} — {t('shipping.printPageTitle')}</title>
 </svelte:head>
+
+<div class="screen-toolbar">
+	<button class="print-btn" onclick={() => window.print()}>
+		{t('shipping.printButton')}
+	</button>
+</div>
 
 <div class="print-page">
 	<div class="doc-header">
-		<h1 class="doc-title">出 荷 リ ス ト</h1>
+		<h1 class="doc-title">{t('shipping.printDocTitle')}</h1>
 		<div class="doc-meta">
 			<span class="slip-number">{data.slip.slip_number}</span>
 		</div>
@@ -26,20 +30,20 @@
 	<div class="info-section">
 		<dl class="info-grid">
 			<div class="info-item">
-				<dt>出荷日</dt>
+				<dt>{t('shipping.shippedAt')}</dt>
 				<dd>{data.slip.shipped_at}</dd>
 			</div>
 			<div class="info-item">
-				<dt>出荷先</dt>
+				<dt>{t('shipping.customer')}</dt>
 				<dd>{data.slip.customer_name || '—'}</dd>
 			</div>
 			<div class="info-item">
-				<dt>担当者</dt>
+				<dt>{t('shipping.person')}</dt>
 				<dd>{data.slip.user_name || '—'}</dd>
 			</div>
 			{#if data.slip.note}
 				<div class="info-item full">
-					<dt>備考</dt>
+					<dt>{t('shipping.note')}</dt>
 					<dd>{data.slip.note}</dd>
 				</div>
 			{/if}
@@ -50,11 +54,11 @@
 		<thead>
 			<tr>
 				<th class="col-no">No.</th>
-				<th class="col-code">商品コード</th>
-				<th class="col-name">商品名</th>
-				<th class="col-qty">数量</th>
-				<th class="col-unit">単位</th>
-				<th class="col-check">確認</th>
+				<th class="col-code">{t('shipping.productCode')}</th>
+				<th class="col-name">{t('shipping.productName')}</th>
+				<th class="col-qty">{t('shipping.quantity')}</th>
+				<th class="col-unit">{t('shipping.unit')}</th>
+				<th class="col-check">{t('shipping.colCheck')}</th>
 			</tr>
 		</thead>
 		<tbody>
@@ -63,7 +67,7 @@
 					<td class="col-no">{d.line_no}</td>
 					<td class="col-code">{d.product_code ?? ''}</td>
 					<td class="col-name">{d.product_name ?? ''}</td>
-					<td class="col-qty">{d.quantity.toLocaleString('ja-JP')}</td>
+					<td class="col-qty">{d.quantity.toLocaleString(localeStr)}</td>
 					<td class="col-unit">{d.unit ?? ''}</td>
 					<td class="col-check"></td>
 				</tr>
@@ -71,8 +75,8 @@
 		</tbody>
 		<tfoot>
 			<tr>
-				<td colspan="3" class="total-label">合計</td>
-				<td class="col-qty total-qty">{totalQty.toLocaleString('ja-JP')}</td>
+				<td colspan="3" class="total-label">{t('shipping.total')}</td>
+				<td class="col-qty total-qty">{totalQty.toLocaleString(localeStr)}</td>
 				<td colspan="2"></td>
 			</tr>
 		</tfoot>
@@ -80,17 +84,17 @@
 
 	<div class="signature-section">
 		<div class="sig-box">
-			<span class="sig-label">出荷確認</span>
+			<span class="sig-label">{t('shipping.sigShipping')}</span>
 			<div class="sig-area"></div>
 		</div>
 		<div class="sig-box">
-			<span class="sig-label">受領確認</span>
+			<span class="sig-label">{t('shipping.sigReceiving')}</span>
 			<div class="sig-area"></div>
 		</div>
 	</div>
 
 	<div class="footer">
-		<span>印刷日時: {new Date().toLocaleString('ja-JP')}</span>
+		<span>{t('shipping.printedAt')} {new Date().toLocaleString(localeStr)}</span>
 	</div>
 </div>
 
@@ -102,6 +106,10 @@
 		font-size: 12px;
 		color: #000;
 		background: #fff;
+	}
+
+	.screen-toolbar {
+		display: none;
 	}
 
 	.print-page {
@@ -125,7 +133,7 @@
 		font-size: 22px;
 		font-weight: 700;
 		margin: 0;
-		letter-spacing: 0.15em;
+		letter-spacing: 0.05em;
 	}
 
 	.slip-number {
@@ -207,7 +215,7 @@
 	}
 
 	.col-unit {
-		width: 40px;
+		width: 60px;
 		text-align: center;
 	}
 
@@ -264,13 +272,15 @@
 			margin: 0;
 		}
 
+		.screen-toolbar {
+			display: none !important;
+		}
+
 		.print-page {
 			width: 100%;
 			padding: 10mm 15mm;
 		}
-	}
 
-	@media print {
 		:global(.sidebar),
 		:global(.mobile-toggle) {
 			display: none !important;
@@ -295,6 +305,30 @@
 		:global(.main-content) {
 			margin-left: 0 !important;
 			padding: 20px 0 !important;
+		}
+
+		.screen-toolbar {
+			display: flex;
+			justify-content: flex-end;
+			width: 210mm;
+			margin: 0 auto 8px;
+			padding: 0 4px;
+			box-sizing: border-box;
+		}
+
+		.print-btn {
+			padding: 6px 20px;
+			background-color: #1a73e8;
+			color: #fff;
+			border: none;
+			border-radius: 4px;
+			font-size: 13px;
+			font-weight: 600;
+			cursor: pointer;
+
+			&:hover {
+				background-color: #1558b0;
+			}
 		}
 
 		.print-page {
