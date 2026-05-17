@@ -201,7 +201,7 @@ const en = {
 		productName: 'Product Name',
 		quantity: 'Quantity',
 		unit: 'Unit',
-		printDocTitle: 'S H I P P I N G   L I S T',
+		printDocTitle: 'SHIPPING LIST',
 		printPageTitle: 'Shipping List',
 		colCheck: 'Check',
 		total: 'Total',

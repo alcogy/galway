@@ -203,7 +203,7 @@ const ja: Dict = {
 		productName: '商品名',
 		quantity: '数量',
 		unit: '単位',
-		printDocTitle: '出 荷 リ ス ト',
+		printDocTitle: '出荷リスト',
 		printPageTitle: '出荷リスト',
 		colCheck: '確認',
 		total: '合計',
