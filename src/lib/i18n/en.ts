@@ -248,6 +248,8 @@ const en = {
 		statusCancelled: 'Cancelled',
 		actionStart: 'Start',
 		actionComplete: 'Complete',
+		actionCancel: 'Cancel Schedule',
+		cancelConfirm: 'Cancel this schedule?',
 		createTitle: 'New Stocktake Schedule',
 		deleteConfirm: 'Delete this schedule?',
 		empty: 'No stocktake schedules registered',

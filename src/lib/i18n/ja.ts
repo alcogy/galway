@@ -250,6 +250,8 @@ const ja: Dict = {
 		statusCancelled: 'キャンセル',
 		actionStart: '実施開始',
 		actionComplete: '完了にする',
+		actionCancel: 'キャンセルにする',
+		cancelConfirm: 'このスケジュールをキャンセルしますか？',
 		createTitle: '棚卸スケジュール登録',
 		deleteConfirm: 'このスケジュールを削除しますか？',
 		empty: '棚卸スケジュールが登録されていません',

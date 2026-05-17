@@ -30,8 +30,8 @@ export const actions = {
 		const title = data.get('title')?.toString().trim();
 		const scheduled_at = data.get('scheduled_at')?.toString();
 
-		if (!title) return fail(400, { error: 'タイトルは必須です' });
-		if (!scheduled_at) return fail(400, { error: '予定日は必須です' });
+		if (!title) return fail(400, { error: 'Title is required.' });
+		if (!scheduled_at) return fail(400, { error: 'Scheduled date is required.' });
 
 		try {
 			await db.insert(schema.inventorySchedules).values({
@@ -42,7 +42,7 @@ export const actions = {
 			return { success: true };
 		} catch (error) {
 			console.error('Failed to create schedule:', error);
-			return fail(500, { error: '棚卸スケジュールの登録に失敗しました。' });
+			return fail(500, { error: 'Failed to create stocktake schedule.' });
 		}
 	},
 
@@ -52,8 +52,11 @@ export const actions = {
 		const id = data.get('id')?.toString();
 		const status = data.get('status')?.toString() as InventorySchedule['status'] | undefined;
 
-		if (!id) return fail(400, { error: 'IDが必要です' });
-		if (!status) return fail(400, { error: 'ステータスが必要です' });
+		if (!id) return fail(400, { error: 'ID is required.' });
+		if (!status) return fail(400, { error: 'Status is required.' });
+
+		const allowed: InventorySchedule['status'][] = ['in_progress', 'completed', 'cancelled'];
+		if (!allowed.includes(status)) return fail(400, { error: 'Invalid status.' });
 
 		try {
 			await db
@@ -63,7 +66,7 @@ export const actions = {
 			return { success: true };
 		} catch (error) {
 			console.error('Failed to update schedule status:', error);
-			return fail(500, { error: 'ステータスの更新に失敗しました。' });
+			return fail(500, { error: 'Failed to update status.' });
 		}
 	},
 
@@ -71,14 +74,14 @@ export const actions = {
 		const db = getDb(platform!.env.DB);
 		const data = await request.formData();
 		const id = data.get('id')?.toString();
-		if (!id) return fail(400, { error: 'IDが必要です' });
+		if (!id) return fail(400, { error: 'ID is required.' });
 
 		try {
 			await db.delete(schema.inventorySchedules).where(eq(schema.inventorySchedules.id, id));
 			return { success: true };
 		} catch (error) {
 			console.error('Failed to delete schedule:', error);
-			return fail(500, { error: '棚卸スケジュールの削除に失敗しました。' });
+			return fail(500, { error: 'Failed to delete stocktake schedule.' });
 		}
 	},
 } satisfies Actions;
