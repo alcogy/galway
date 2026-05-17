@@ -5,6 +5,7 @@
 	import { deserialize } from '$app/forms';
 	import { page } from '$app/stores';
 	import type { PageData } from './$types';
+	import { t } from '$lib/i18n';
 
 	let { data }: { data: PageData } = $props();
 
@@ -15,20 +16,20 @@
 	let deleteTarget = $state<string | null>(null);
 	let deleteError = $state('');
 
-	const columns = [
-		{ key: 'name', label: '名前' },
-		{ key: 'email', label: 'メールアドレス' },
-		{ key: 'role', label: '権限', width: '120px' },
-		{ key: 'created_at', label: '登録日', width: '180px' }
-	];
+	const columns = $derived([
+		{ key: 'name', label: t('accounts.name') },
+		{ key: 'email', label: t('accounts.email') },
+		{ key: 'role', label: t('accounts.role'), width: '120px' },
+		{ key: 'created_at', label: t('accounts.createdAt'), width: '180px' }
+	]);
 
-	const roleLabels: Record<string, string> = { admin: '管理者', general: '一般' };
+	const roleLabels = $derived<Record<string, string>>({ admin: t('accounts.roleAdmin'), general: t('accounts.roleGeneral') });
 
 	const rows = $derived(
 		data.accounts.map((account) => ({
 			...account,
 			role: roleLabels[account.role] ?? account.role,
-			created_at: new Date(account.created_at).toLocaleDateString('ja-JP')
+			created_at: new Date(account.created_at).toLocaleDateString(),
 		}))
 	);
 
@@ -83,9 +84,9 @@
 		if (result.type === 'success') {
 			await invalidateAll();
 		} else if (result.type === 'failure') {
-			deleteError = result.data?.error || '削除に失敗しました';
+			deleteError = result.data?.error || t('common.error');
 		} else {
-			deleteError = '削除に失敗しました';
+			deleteError = t('common.error');
 		}
 
 		deleteTarget = null;
@@ -93,16 +94,16 @@
 </script>
 
 <svelte:head>
-	<title>アカウント管理 — Galway</title>
+	<title>{t('accounts.pageTitle')}</title>
 </svelte:head>
 
 <div class="page">
 	<div class="page-header">
-		<h1 class="page-title">アカウント管理</h1>
+		<h1 class="page-title">{t('accounts.title')}</h1>
 		<div class="page-actions">
 			<Button variant="primary" size="sm" onclick={() => openEditor()}>
 				<Plus size={14} />
-				アカウント追加
+				{t('accounts.createTitle')}
 			</Button>
 		</div>
 	</div>
@@ -110,16 +111,16 @@
 	{#if deleteError}
 		<div class="error-notification" role="alert">
 			<span>{deleteError}</span>
-			<button type="button" onclick={() => (deleteError = '')} aria-label="閉じる">×</button>
+			<button type="button" onclick={() => (deleteError = '')} aria-label="Close">×</button>
 		</div>
 	{/if}
 
-	<SearchBar bind:value={search} placeholder="アカウントを検索..." onsubmit={handleSearch} />
+	<SearchBar bind:value={search} placeholder={t('accounts.searchPlaceholder')} onsubmit={handleSearch} />
 
 	<div class="table-container">
 		<Table {columns} {rows}>
 			{#snippet empty()}
-				<p>アカウントが見つかりません</p>
+				<p>{t('accounts.empty')}</p>
 			{/snippet}
 			{#snippet actions(account)}
 				<div class="action-buttons">
@@ -157,9 +158,9 @@
 
 <ConfirmDialog
 	bind:open={showDeleteConfirm}
-	title="削除確認"
-	message="このアカウントを削除してもよろしいですか？この操作は取り消せません。"
-	confirmLabel="削除"
+	title={t('accounts.deleteConfirm')}
+	message={t('accounts.deleteConfirm')}
+	confirmLabel={t('common.delete')}
 	onconfirm={handleDelete}
 />
 

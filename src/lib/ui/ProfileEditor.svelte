@@ -4,6 +4,7 @@
 	import Label from './Label.svelte';
 	import Button from './Button.svelte';
 	import { enhance } from '$app/forms';
+	import { t } from '$lib/i18n';
 
 	interface ProfileData {
 		name: string;
@@ -19,7 +20,7 @@
 	let { open = $bindable(false), profile, onsave }: Props = $props();
 </script>
 
-<Modal bind:open title="プロフィール編集">
+<Modal bind:open title={t('profile.editTitle')}>
 	<form
 		class="editor-form"
 		method="POST"
@@ -35,7 +36,7 @@
 		}}
 	>
 		<div class="field">
-			<Label for="prof-name" required>名前</Label>
+			<Label for="prof-name" required>{t('profile.name')}</Label>
 			<Input
 				id="prof-name"
 				name="name"
@@ -46,7 +47,7 @@
 		</div>
 
 		<div class="field">
-			<Label for="prof-email" required>メールアドレス</Label>
+			<Label for="prof-email" required>{t('profile.email')}</Label>
 			<Input
 				id="prof-email"
 				name="email"
@@ -60,7 +61,7 @@
 		<div class="divider"></div>
 
 		<div class="field">
-			<Label for="prof-current-password">現在のパスワード</Label>
+			<Label for="prof-current-password">{t('profile.currentPassword')}</Label>
 			<Input
 				id="prof-current-password"
 				name="currentPassword"
@@ -70,7 +71,7 @@
 		</div>
 
 		<div class="field">
-			<Label for="prof-new-password">新しいパスワード</Label>
+			<Label for="prof-new-password">{t('profile.newPassword')}</Label>
 			<Input
 				id="prof-new-password"
 				name="newPassword"
@@ -80,8 +81,8 @@
 		</div>
 
 		<div class="form-actions">
-			<Button type="button" variant="secondary" onclick={() => (open = false)}>キャンセル</Button>
-			<Button type="submit" variant="primary">保存</Button>
+			<Button type="button" variant="secondary" onclick={() => (open = false)}>{t('common.cancel')}</Button>
+			<Button type="submit" variant="primary">{t('common.save')}</Button>
 		</div>
 	</form>
 </Modal>

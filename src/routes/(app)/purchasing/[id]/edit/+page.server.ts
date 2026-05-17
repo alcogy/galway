@@ -50,7 +50,7 @@ export const load: PageServerLoad = async ({ params, platform }) => {
 };
 
 export const actions = {
-	update: async ({ params, request, platform }) => {
+	update: async ({ params, request, platform, locals }) => {
 		const db = getDb(platform!.env.DB);
 		const data = await request.formData();
 

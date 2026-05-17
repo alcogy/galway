@@ -3,6 +3,7 @@
 	import { Button, Input, Label, Modal, ConfirmDialog, Table, Textarea } from '$lib/ui';
 	import type { PageData } from './$types';
 	import type { Category } from './+page.server';
+	import { t } from '$lib/i18n';
 
 	let { data }: { data: PageData } = $props();
 
@@ -36,24 +37,24 @@
 		showDeleteDialog = true;
 	}
 
-	const columns = [
-		{ key: 'name', label: 'カテゴリ名' },
-		{ key: 'description', label: '説明' },
-		{ key: 'product_count', label: '商品数', width: '100px', numeric: true },
-	];
+	const columns = $derived([
+		{ key: 'name', label: t('categories.categoryName') },
+		{ key: 'description', label: t('common.description') },
+		{ key: 'product_count', label: t('categories.productCount'), width: '100px', numeric: true },
+	]);
 </script>
 
 <svelte:head>
-	<title>カテゴリ管理 — Galway</title>
+	<title>{t('categories.pageTitle')}</title>
 </svelte:head>
 
 <div class="page">
 	<div class="page-header">
-		<h1 class="page-title">カテゴリ管理</h1>
+		<h1 class="page-title">{t('categories.title')}</h1>
 		<div class="page-actions">
 			<Button size="sm" onclick={openCreate}>
 				<Plus size={16} />
-				新規登録
+				{t('common.new')}
 			</Button>
 		</div>
 	</div>
@@ -70,13 +71,13 @@
 			</div>
 		{/snippet}
 		{#snippet empty()}
-			<span>カテゴリが登録されていません</span>
+			<span>{t('categories.empty')}</span>
 		{/snippet}
 	</Table>
 </div>
 
 <!-- Create / Edit Modal -->
-<Modal bind:open={showModal} title={editing ? 'カテゴリ編集' : 'カテゴリ登録'} size="sm">
+<Modal bind:open={showModal} title={editing ? t('categories.editTitle') : t('categories.createTitle')} size="sm">
 	<form
 		method="POST"
 		action={editing ? '?/update' : '?/create'}
@@ -92,19 +93,19 @@
 		{/if}
 
 		<div class="field">
-			<Label required>カテゴリ名</Label>
-			<Input name="name" bind:value={name} placeholder="例: 電子部品" required />
+			<Label required>{t('categories.categoryName')}</Label>
+			<Input name="name" bind:value={name} placeholder={t('categories.namePlaceholder')} required />
 		</div>
 		<div class="field">
-			<Label>説明</Label>
-			<Textarea name="description" bind:value={description} placeholder="カテゴリの説明（任意）" rows={3} />
+			<Label>{t('common.description')}</Label>
+			<Textarea name="description" bind:value={description} placeholder={t('categories.descriptionPlaceholder')} rows={3} />
 		</div>
 
 		<div class="form-actions">
 			<Button type="button" variant="secondary" onclick={() => (showModal = false)}>
-				キャンセル
+				{t('common.cancel')}
 			</Button>
-			<Button type="submit">{editing ? '更新' : '登録'}</Button>
+			<Button type="submit">{editing ? t('common.update') : t('common.register')}</Button>
 		</div>
 	</form>
 </Modal>
@@ -112,10 +113,10 @@
 <!-- Delete Confirm -->
 <ConfirmDialog
 	bind:open={showDeleteDialog}
-	title="カテゴリの削除"
-	message="このカテゴリを削除しますか？商品のカテゴリは未設定になります。"
-	confirmLabel="削除"
-	cancelLabel="キャンセル"
+	title={t('categories.deleteConfirm')}
+	message={t('categories.deleteMessage')}
+	confirmLabel={t('common.delete')}
+	cancelLabel={t('common.cancel')}
 	onconfirm={() => {
 		const form = document.createElement('form');
 		form.method = 'POST';

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Modal from './Modal.svelte';
 	import Button from './Button.svelte';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		open: boolean;
@@ -17,10 +18,12 @@
 		title = 'Confirm',
 		message,
 		confirmLabel = 'OK',
-		cancelLabel = 'キャンセル',
+		cancelLabel,
 		onconfirm,
 		oncancel
 	}: Props = $props();
+
+	const resolvedCancelLabel = $derived(cancelLabel ?? t('common.cancel'));
 
 	function handleConfirm() {
 		onconfirm?.();
@@ -38,7 +41,7 @@
 		<p class="confirm-message">{message}</p>
 
 		<div class="confirm-actions">
-			<Button type="button" variant="secondary" onclick={handleCancel}>{cancelLabel}</Button>
+			<Button type="button" variant="secondary" onclick={handleCancel}>{resolvedCancelLabel}</Button>
 			<Button type="button" variant="primary" onclick={handleConfirm}>{confirmLabel}</Button>
 		</div>
 	</div>

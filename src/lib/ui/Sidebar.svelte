@@ -24,6 +24,7 @@
 		Monitor,
 		LogOut
 	} from '@lucide/svelte';
+	import { t } from '$lib/i18n';
 
 	interface NavItem {
 		href: string;
@@ -46,26 +47,26 @@
 	let collapsed = $state(false);
 	let mobileOpen = $state(false);
 
-	const primaryNavItems: NavItem[] = [
-		{ href: '/', label: 'ダッシュボード', icon: LayoutDashboard },
-		{ href: '/suppliers', label: '仕入先管理', icon: Building2 },
-		{ href: '/products', label: '商品管理', icon: Package },
-		{ href: '/categories', label: 'カテゴリ管理', icon: Tag },
-		{ href: '/purchasing', label: '発注管理', icon: ClipboardSignature },
-		{ href: '/receiving', label: '入荷管理', icon: PackageCheck },
-		{ href: '/shipping', label: '出荷管理', icon: Truck },
-		{ href: '/customers', label: '出荷先管理', icon: MapPin },
-		{ href: '/inventory', label: '在庫管理', icon: Boxes },
-		{ href: '/inventory-schedules', label: '棚卸スケジュール', icon: CalendarCheck },
-		{ href: '/reports', label: 'レポート', icon: BarChart3 },
-		{ href: '/accounts', label: 'アカウント管理', icon: Shield, adminOnly: true },
-		{ href: '/audit-logs', label: '操作ログ', icon: ScrollText, adminOnly: true },
-		{ href: '/settings', label: '設定', icon: Settings, adminOnly: true }
-	];
+	const primaryNavItems = $derived<NavItem[]>([
+		{ href: '/', label: t('nav.dashboard'), icon: LayoutDashboard },
+		{ href: '/suppliers', label: t('nav.suppliers'), icon: Building2 },
+		{ href: '/products', label: t('nav.products'), icon: Package },
+		{ href: '/categories', label: t('nav.categories'), icon: Tag },
+		{ href: '/purchasing', label: t('nav.purchasing'), icon: ClipboardSignature },
+		{ href: '/receiving', label: t('nav.receiving'), icon: PackageCheck },
+		{ href: '/shipping', label: t('nav.shipping'), icon: Truck },
+		{ href: '/customers', label: t('nav.customers'), icon: MapPin },
+		{ href: '/inventory', label: t('nav.inventory'), icon: Boxes },
+		{ href: '/inventory-schedules', label: t('nav.inventorySchedules'), icon: CalendarCheck },
+		{ href: '/reports', label: t('nav.reports'), icon: BarChart3 },
+		{ href: '/accounts', label: t('nav.accounts'), icon: Shield, adminOnly: true },
+		{ href: '/audit-logs', label: t('nav.auditLogs'), icon: ScrollText, adminOnly: true },
+		{ href: '/settings', label: t('nav.settings'), icon: Settings, adminOnly: true }
+	]);
 
 	const secondaryNavItems = $derived<NavItem[]>([
-		{ href: '/profile', label: 'プロフィール', icon: CircleUser },
-		{ href: '/logout', label: 'サインアウト', icon: LogOut, onclick: onsignout }
+		{ href: '/profile', label: t('nav.profile'), icon: CircleUser },
+		{ href: '/logout', label: t('nav.signOut'), icon: LogOut, onclick: onsignout }
 	]);
 
 	const themeOptions = [

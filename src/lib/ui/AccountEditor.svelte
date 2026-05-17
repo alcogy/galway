@@ -4,6 +4,7 @@
 	import Label from './Label.svelte';
 	import Button from './Button.svelte';
 	import { enhance } from '$app/forms';
+	import { t } from '$lib/i18n';
 
 	interface AccountData {
 		id?: string;
@@ -26,7 +27,7 @@
 	let errorMessage = $state('');
 </script>
 
-<Modal bind:open title={isEdit ? 'アカウント編集' : 'アカウント新規作成'}>
+<Modal bind:open title={isEdit ? t('accounts.editTitle') : t('accounts.createTitle')}>
 	<form
 		class="editor-form"
 		method="POST"
@@ -38,7 +39,7 @@
 					open = false;
 					onsave?.();
 				} else if (result.type === 'failure') {
-					errorMessage = (result.data?.error as string) || 'エラーが発生しました';
+					errorMessage = (result.data?.error as string) || t('common.error');
 				}
 				await update({ reset: false });
 			};
@@ -53,18 +54,18 @@
 		{/if}
 
 		<div class="field">
-			<Label for="acct-name" required>名前</Label>
+			<Label for="acct-name" required>{t('accounts.name')}</Label>
 			<Input
 				id="acct-name"
 				name="name"
 				value={account?.name || ''}
-				placeholder="氏名を入力"
+				placeholder={t('accounts.namePlaceholder')}
 				required
 			/>
 		</div>
 
 		<div class="field">
-			<Label for="acct-email" required>メールアドレス</Label>
+			<Label for="acct-email" required>{t('accounts.email')}</Label>
 			<Input
 				id="acct-email"
 				name="email"
@@ -76,27 +77,27 @@
 		</div>
 
 		<div class="field">
-			<Label for="acct-role" required>権限</Label>
+			<Label for="acct-role" required>{t('accounts.role')}</Label>
 			<select id="acct-role" name="role" class="select" value={account?.role || 'general'}>
-				<option value="general">一般</option>
-				<option value="admin">管理者</option>
+				<option value="general">{t('accounts.roleGeneral')}</option>
+				<option value="admin">{t('accounts.roleAdmin')}</option>
 			</select>
 		</div>
 
 		<div class="field">
-			<Label for="acct-password">{isEdit ? '新しいパスワード（任意）' : 'パスワード'}</Label>
+			<Label for="acct-password">{isEdit ? t('accounts.newPassword') : t('accounts.password')}</Label>
 			<Input
 				id="acct-password"
 				name="password"
 				type="password"
-				placeholder={isEdit ? '空欄の場合は変更されません' : 'パスワードを設定'}
+				placeholder={isEdit ? t('accounts.passwordPlaceholder') : t('accounts.passwordSetPlaceholder')}
 				required={!isEdit}
 			/>
 		</div>
 
 		<div class="form-actions">
-			<Button type="button" variant="secondary" onclick={() => (open = false)}>キャンセル</Button>
-			<Button type="submit" variant="primary">{isEdit ? '保存' : '作成'}</Button>
+			<Button type="button" variant="secondary" onclick={() => (open = false)}>{t('common.cancel')}</Button>
+			<Button type="submit" variant="primary">{isEdit ? t('common.save') : t('common.register')}</Button>
 		</div>
 	</form>
 </Modal>

@@ -4,27 +4,28 @@
 	import ReceivingSlipForm from '$lib/ui/ReceivingSlipForm.svelte';
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
+	import { t } from '$lib/i18n';
 
 	let { data }: { data: PageData } = $props();
 </script>
 
 <svelte:head>
-	<title>入荷登録 — Galway</title>
+	<title>{t('receiving.newPageTitle')}</title>
 </svelte:head>
 
 <div class="page">
 	<div class="page-nav">
 		<a href="/receiving" class="back-link">
 			<ArrowLeft size={16} />
-			入荷管理へ戻る
+			{t('receiving.backToList')}
 		</a>
 	</div>
 
 	<div class="page-header">
-		<h1 class="page-title">入荷登録</h1>
+		<h1 class="page-title">{t('receiving.newSlip')}</h1>
 	</div>
 
-	<Card title="伝票情報">
+	<Card title={t('receiving.slipInfo')}>
 		<ReceivingSlipForm
 			suppliers={data.suppliers}
 			products={data.products}

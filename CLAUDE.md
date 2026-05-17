@@ -1,7 +1,7 @@
 You are able to use the Svelte MCP server, where you have access to comprehensive Svelte 5 and SvelteKit documentation. Here's how to use the available tools effectively:
 
 **Rule**
-Write CLAUDE.md (this file) entirely in English, except when quoting screen items or labels.
+Write CLAUDE.md (this file) entirely in English.
 
 ## Available MCP Tools:
 
@@ -51,36 +51,36 @@ After completing the code, ask the user if they want a playground link. Only cal
 ### DB Mutation Rules (enforced across all +page.server.ts / +server.ts)
 1. **Always wrap INSERT / UPDATE / DELETE in try/catch.** Return `fail(500, { error: '...' })` on unexpected errors.
 2. **Use `db.transaction(async (tx) => { ... })` whenever two or more related tables are mutated together.** Use `tx` instead of `db` for all operations inside. Do NOT use `db.batch()` — use sequential `await tx.operation()` calls instead.
-3. **Slip number conflict handling:** Catch `UNIQUE constraint failed` on `slip_number` and return `fail(409, { error: '伝票番号が競合しました。再度お試しください。' })`.
+3. **Slip number conflict handling:** Catch `UNIQUE constraint failed` on `slip_number` and return `fail(409, { error: 'Slip number conflict. Please try again.' })`.
 4. **Redirect after mutation** must be placed *outside* the try/catch block so the SvelteKit redirect is not swallowed.
 
 ## System Overview
 
-This is a simple procurement management system (仕入管理システム).
+This is a simple procurement management system.
 
 ### Core Business Functions
 - **Master Management**: Manage suppliers and products
-- **Receiving Management (入荷管理)**: Record incoming stock; increases inventory relatively
-- **Shipping Management (出荷管理)**: Record outgoing stock; decreases inventory relatively
-- **Inventory Management (在庫管理)**: Physical inventory count (棚卸) — registers actual stock quantities per product and updates inventory records
+- **Receiving Management**: Record incoming stock; increases inventory
+- **Shipping Management**: Record outgoing stock; decreases inventory
+- **Inventory Management**: Physical inventory count (stocktake) — registers actual stock quantities per product and updates inventory records
 
 ### Screens
-- 仕入先管理 (Supplier Management)
-- 商品管理 (Product Management)
-- 入荷管理 (Receiving Management)
-- 出荷管理 (Shipping Management)
-- 在庫管理 (Inventory Management)
+- Supplier Management
+- Product Management
+- Receiving Management
+- Shipping Management
+- Inventory Management
 
 ### Database Tables
 - `accounts` — User accounts (email, password_hash, name, role: admin|general)
-- `suppliers` — 仕入先マスタ (name, tel, fax, zipcode, address, email; no code — identified by name)
-- `products` — 商品マスタ (code unique, name, unit, description)
-- `supplier_products` — 仕入先商品関係 (supplier_id + product_id, unique constraint)
-- `receiving_slips` — 入荷伝票 (slip_number unique, received_at, supplier_id FK, account_id FK, note)
-- `receiving_slip_details` — 入荷伝票明細 (slip_id FK cascade, product_id FK, line_no, quantity: real)
-- `shipping_slips` — 出荷伝票 (slip_number unique, shipped_at, account_id FK, note)
-- `shipping_slip_details` — 出荷伝票明細 (slip_id FK cascade, product_id FK, line_no, quantity: real)
-- `inventory` — 在庫 (product_id PK FK, quantity: real, updated_at)
+- `suppliers` — Supplier master (name, tel, fax, zipcode, address, email; no code — identified by name)
+- `products` — Product master (code unique, name, unit, description)
+- `supplier_products` — Supplier-product relation (supplier_id + product_id, unique constraint)
+- `receiving_slips` — Receiving slips (slip_number unique, received_at, supplier_id FK, account_id FK, note)
+- `receiving_slip_details` — Receiving slip line items (slip_id FK cascade, product_id FK, line_no, quantity: real)
+- `shipping_slips` — Shipping slips (slip_number unique, shipped_at, account_id FK, note)
+- `shipping_slip_details` — Shipping slip line items (slip_id FK cascade, product_id FK, line_no, quantity: real)
+- `inventory` — Inventory (product_id PK FK, quantity: real, updated_at)
 
 ### UI Guidelines
 - Design inspired by the Cloudflare dashboard — simple and clean.
@@ -122,29 +122,29 @@ src/routes/(app)/
   receiving/new/                        — Receiving slip create page
   receiving/[id]/                       — Receiving slip detail + CSV download
   receiving/[id]/edit/                  — Receiving slip edit page
-  receiving/[id]/export/+server.ts      — CSV download endpoint (明細; filename includes 仕入先名 and 入荷日)
+  receiving/[id]/export/+server.ts      — CSV download endpoint (line items; filename includes supplier name and date)
   shipping/                             — Shipping slip list (row-click → detail) + CSV import
   shipping/new/                         — Shipping slip create page
   shipping/[id]/                        — Shipping slip detail + CSV download
   shipping/[id]/edit/                   — Shipping slip edit page
-  shipping/[id]/export/+server.ts       — CSV download endpoint (明細; filename includes 出荷日)
-  inventory/                            — Inventory list + 棚卸登録 modal + CSV import/export
-  inventory/export/+server.ts           — CSV download endpoint (在庫一覧)
+  shipping/[id]/export/+server.ts       — CSV download endpoint (line items; filename includes ship date)
+  inventory/                            — Inventory list + stocktake modal + CSV import/export
+  inventory/export/+server.ts           — CSV download endpoint (inventory list)
 ```
 
 #### Key UI Patterns
 - **Row-click navigation**: Receiving and shipping lists use `onrowclick={(row) => goto('/receiving/${row.id}')}` — no action column
-- **Detail page layout**: back link → page header with actions (CSV download, 編集 button) → 伝票情報 Card (dl grid) → 明細 Table section → 削除 danger zone
+- **Detail page layout**: back link → page header with actions (CSV download, Edit button) → Slip Info Card (dl grid) → Line Items Table section → Delete danger zone
 - **Create/Edit as pages**: Receiving and shipping slips use dedicated pages (not modals). Line items serialized as JSON in a hidden input (`name="details"`). Edit pages use `$effect` to set initial state from data.
 - **Form page layout**: back link → page header → Card containing the form → form-actions at bottom inside card
-- **担当者 (person in charge)**: Displayed on slip detail pages. On create: set automatically from the logged-in account. On edit: admins can change it via a `SearchableSelect` field; non-admins cannot (field hidden, server ignores submitted value).
+- **Person in charge**: Displayed on slip detail pages. On create: set automatically from the logged-in account. On edit: admins can change it via a `SearchableSelect` field; non-admins cannot (field hidden, server ignores submitted value).
 - **Numeric columns**: `Table.svelte` `Column` interface has `numeric?: boolean`. When true: right-aligns the cell and formats via `Number(val).toLocaleString('ja-JP')`.
-- **CSV import on list pages**: Receiving and shipping lists have a CSVインポート button (Upload icon) that opens `SlipCsvImportDialog`. Inventory list uses `CsvImportDialog`. On success, calls `invalidateAll()` and shows an `importNotification` banner (auto-dismisses after 6 s). All import actions are fully implemented.
-- **CSV download endpoints**: `+server.ts` GET routes returning `text/csv; charset=utf-8` with UTF-8 BOM (`\uFEFF`). Japanese filenames use RFC 5987 encoding: `filename*=UTF-8''${encodeURIComponent(filename)}`.
+- **CSV import on list pages**: Receiving and shipping lists have a CSV Import button (Upload icon) that opens `SlipCsvImportDialog`. Inventory list uses `CsvImportDialog`. On success, calls `invalidateAll()` and shows an `importNotification` banner (auto-dismisses after 6 s). All import actions are fully implemented.
+- **CSV download endpoints**: `+server.ts` GET routes returning `text/csv; charset=utf-8` with UTF-8 BOM (`﻿`). Non-ASCII filenames use RFC 5987 encoding: `filename*=UTF-8''${encodeURIComponent(filename)}`.
 - **Pagination**: All lists paginated 20 items/page; `.table-with-pagination` wrapper removes bottom border-radius from Table so Pagination attaches seamlessly
 - **Server-side search**: All list pages (suppliers, products, inventory, accounts) use server-side search via URL params (`?search=...&page=N`). Search triggers `goto()` on form submit; page change via `handlePageChange(n)`. Initialize `searchQuery` from `page.url.searchParams.get('search')` using `import { page } from '$app/state'`. No client-side `$derived` filtering.
 - **`$state` init rule**: Never initialize `$state` from `data.*` directly — use empty string/null and set values in `$effect` or handler functions (autofixer flags this)
-- **Slip list columns**: Receiving list shows 伝票番号, 仕入先, 入荷日, 品目数, 担当者. Shipping list shows 伝票番号, 出荷日, 品目数, 担当者.
+- **Slip list columns**: Receiving list shows Slip No., Supplier, Received Date, Item Count, Person. Shipping list shows Slip No., Ship Date, Item Count, Person.
 
 #### Components (`src/lib/ui/`)
 - `Select.svelte`: Styled `<select>` wrapper; value must be `$bindable()`
@@ -152,9 +152,9 @@ src/routes/(app)/
 - `Table.svelte`: Accepts `columns`, `rows`, `onrowclick`, `actions` snippet, `cell` snippet, `empty` snippet
 - `Card.svelte`: Accepts `title` and `children`; `card-body` has `padding: var(--space-xl)` — override with `:global(.card-body)` for full-width content
 - `CsvImportDialog.svelte`: Used in suppliers and products pages (append/replace mode + file drop zone)
-- `SlipCsvImportDialog.svelte`: Used in receiving and shipping list pages; append-only; Props — `open=$bindable()`, `title`, `dateLabel='入荷日'`, `suppliers?: {id,name}[]` (omit for shipping), `onimport?: (file, date, supplierId?) => void`; expected CSV columns: 商品コード, 商品名, 数量
+- `SlipCsvImportDialog.svelte`: Used in receiving and shipping list pages; append-only; Props — `open=$bindable()`, `title`, `dateLabel` (defaults to t('receiving.receivedAt')), `suppliers?: {id,name}[]` (omit for shipping), `onimport?: (file, date, supplierId?) => void`; expected CSV columns: product code, product name, quantity
 - `Pagination.svelte`: Props — `totalItems`, `itemsPerPage`, `currentPage`, `onPageChange`
-- `ReceivingSlipForm.svelte`: Shared form for receiving slip create/edit. Props — `suppliers`, `products`, `accounts?`, `isAdmin?=false`, `initialData?` (undefined = create mode), `oncancel?`. Derives `action` (`?/create`|`?/update`) and `submitLabel` (登録|更新) from `initialData`. Uses `$effect` to initialize mutable state from `initialData`. Shows 担当者 `SearchableSelect` when `isAdmin=true`.
+- `ReceivingSlipForm.svelte`: Shared form for receiving slip create/edit. Props — `suppliers`, `products`, `accounts?`, `isAdmin?=false`, `initialData?` (undefined = create mode), `oncancel?`. Derives `action` (`?/create`|`?/update`) and `submitLabel` from `initialData`. Uses `$effect` to initialize mutable state from `initialData`. Shows person-in-charge `SearchableSelect` when `isAdmin=true`.
 - `ShippingSlipForm.svelte`: Same as ReceivingSlipForm but without supplier field; uses `shipped_at` instead of `received_at`.
 
 #### Known Pre-existing Type Errors
@@ -217,7 +217,7 @@ const [last] = await tx.select({ n: schema.receivingSlips.slip_number })
 const lastNum = last ? parseInt(last.n.split('-')[2], 10) : 0;
 const slip_number = `RCV-${year}-${String(lastNum + 1).padStart(3, '0')}`;
 // SHP-YYYY-NNN for shipping
-// UNIQUE constraint violation on slip_number → fail(409, { error: '伝票番号が競合しました。再度お試しください。' })
+// UNIQUE constraint violation on slip_number → fail(409, { error: 'Slip number conflict. Please try again.' })
 ```
 
 #### Product Create → Auto-create Inventory Row
@@ -235,22 +235,22 @@ When a product is created (UI or CSV import), an inventory row is inserted with 
 
 #### CSV Import
 All import actions fully implemented:
-- `suppliers`: append/replace mode, columns: 仕入先名, 電話番号, FAX, 郵便番号, 住所, メールアドレス
-- `products`: append/replace mode, columns: 商品コード, 商品名, 単位, 説明
-- `receiving`: creates a new slip + details + inventory UPSERT; columns: 商品コード, 数量
-- `shipping`: creates a new slip + details + inventory UPDATE; columns: 商品コード, 数量
-- `inventory`: append/replace mode (UPSERT); columns: 商品コード, 数量 (or 在庫数)
+- `suppliers`: append/replace mode, columns: supplier name, phone, fax, zip code, address, email
+- `products`: append/replace mode, columns: product code, product name, unit, description
+- `receiving`: creates a new slip + details + inventory UPSERT; columns: product code, quantity
+- `shipping`: creates a new slip + details + inventory UPDATE; columns: product code, quantity
+- `inventory`: append/replace mode (UPSERT); columns: product code, quantity (or stock quantity)
 - CSV parsing via `$lib/utils/csv.ts`
 
 #### Account CRUD Error Handling
 - `AccountEditor.svelte`: Error banner inside modal for create/update `fail()` responses (via `use:enhance` `result.type === 'failure'`)
 - `accounts/+page.svelte`: Error notification banner for delete failures; uses `fetch` with `x-sveltekit-action: 'true'` + `deserialize`
-- `accounts/+page.server.ts` delete action: Detects `FOREIGN KEY constraint failed` → "このアカウントは使用されているため削除できません"
+- `accounts/+page.server.ts` delete action: Detects `FOREIGN KEY constraint failed` → returns "This account is in use and cannot be deleted."
 
 #### Shared Slip Form Components
 - Created `ReceivingSlipForm.svelte` and `ShippingSlipForm.svelte` in `$lib/ui`
 - All 4 slip pages (`receiving/new`, `receiving/[id]/edit`, `shipping/new`, `shipping/[id]/edit`) use shared components
-- Admins can change 担当者 on edit pages via `SearchableSelect`
+- Admins can change person in charge on edit pages via `SearchableSelect`
 
 #### DB Mutation Hardening
 - All INSERT / UPDATE / DELETE wrapped in try/catch across all server files
@@ -282,40 +282,40 @@ All list pages now use server-side search via URL params (`?search=...&page=N`):
 
 New features added on top of Plan 5:
 
-### B. 在庫アラート
+### B. Low Stock Alert
 - `products.min_quantity` column added (migration 0001)
 - Dashboard shows low-stock alert section (items where `quantity < min_quantity`)
 - Inventory list highlights low-stock rows with warning color and badge
 
-### C. 商品カテゴリ管理
+### C. Product Category Management
 - `product_categories` table added (migration 0002); `products.category_id` FK (SET NULL on delete)
 - `/categories` page: CRUD for categories; shows product count per category
 - Products list: category column, category filter dropdown
 - Products form: category selector field
 - CSV export includes category and min_quantity columns
 
-### D. 出荷先管理
+### D. Customer (Ship-to) Management
 - `customers` table added (migration 0003); `shipping_slips.customer_id` FK (SET NULL on delete)
 - `/customers` page: CRUD for customers
 - ShippingSlipForm updated with customer_id SearchableSelect
 - Shipping list, detail, and new/edit pages show customer_name
 
-### A. 出荷リスト PDF出力
+### A. Shipping Slip PDF Export
 - `/shipping/[id]/print` dedicated print page — A4 layout with slip info, details table, signature boxes
 - Auto-triggers `window.print()` on mount; sidebar hidden via `:global()` CSS
-- "PDF出力" button on shipping slip detail page (opens in new tab)
+- "Print PDF" button on shipping slip detail page (opens in new tab)
 
-### E. 発注管理
+### E. Purchase Order Management
 - `purchase_orders` + `purchase_order_details` tables added (migration 0004)
 - `/purchasing` pages: list, new, detail, edit
 - Status workflow: draft → ordered → received / cancelled
 - Order numbers: PO-YYYY-NNN (auto-numbered in transaction)
 
-### F. レポート・分析
+### F. Reports & Analytics
 - `/reports` page: bar charts (6-month receiving/shipping trend), top-10 shipping products, supplier ranking
 - Pure CSS/HTML bar charts (no external chart library)
 
-### G. 棚卸スケジュール
+### G. Stocktake Schedule
 - `inventory_schedules` table added (migration 0005)
 - `/inventory-schedules` page: list, create, status transitions (planned → in_progress → completed)
 
@@ -337,12 +337,12 @@ Additional features and fixes implemented in the same session:
 - Dashboard low-stock alert section respects `low_stock_alert_enabled` setting
 - `use:enhance` form for save without full reload; success/error banner
 
-### Dashboard — today's schedule sections
-- **本日の入荷予定**: purchase order details where `expected_at = today` AND `status = 'ordered'`
-- **本日の出荷予定**: shipping slip details where `shipped_at = today`
+### Dashboard — Today's Schedule Sections
+- **Today's Receiving**: purchase order details where `expected_at = today` AND `status = 'ordered'`
+- **Today's Shipping**: shipping slip details where `shipped_at = today`
 - Displayed as two-column grid cards between stats and low-stock alert
 
-### 監査ログ (Audit Log)
+### Audit Log
 - `audit_logs` table added (migration 0007): `id, user_id, user_name, action, target_type, target_id, target_label, detail(JSON text), created_at`
 - `src/lib/server/audit.ts`: `logAudit()` utility — wraps in try/catch so a log failure never breaks the main operation
 - All CRUD actions instrumented across 18 server files:
@@ -377,11 +377,23 @@ src/routes/(app)/
 ```
 
 ### Sidebar nav order (complete)
-ダッシュボード → 仕入先管理 → 商品管理 → カテゴリ管理 → 発注管理 → 入荷管理 → 出荷管理 → 出荷先管理 → 在庫管理 → 棚卸スケジュール → レポート → [admin: アカウント管理, 操作ログ, 設定]
+Dashboard → Suppliers → Products → Categories → Purchasing → Receiving → Shipping → Customers → Inventory → Stocktake Schedule → Reports → [admin: Accounts, Audit Logs, Settings]
+
+## Plan 8 — Completed (2026-05-18)
+
+### EN/JA Language Switching
+- `src/lib/i18n/en.ts`: English dictionary (source of truth; defines `Dict` type)
+- `src/lib/i18n/ja.ts`: Japanese dictionary (implements `Dict`)
+- `src/lib/i18n/index.svelte.ts`: reactive `locale` state (`$state`), `t(key)`, `setLocale()`, `initLocale()`
+- `src/lib/i18n/index.ts`: barrel re-export so `$lib/i18n` resolves correctly
+- All `.svelte` files and UI components import `{ t } from '$lib/i18n'` and use `t('section.key')` for all UI strings
+- Language persisted in `localStorage` under key `galway-locale`; initialized on mount via `initLocale()` in `(app)/+layout.svelte`
+- Language switcher: Settings page (`/settings`) → Language card with EN / JA toggle buttons
+- Default locale: `en`
 
 ## TODO — Future Features (not yet implemented)
 
-### Email Notifications (次フェーズ)
+### Email Notifications (Next Phase)
 - **Decided**: Use Cloudflare Email Workers (Send Email binding)
 - **Reason**: keep infrastructure within Cloudflare; no extra cost; domain already/will be managed by Cloudflare
 - **Requirement**: root domain must be managed by Cloudflare DNS + Email Routing enabled
@@ -407,4 +419,3 @@ src/routes/(app)/
 - GitHub repo: `https://github.com/alcogy/galway.git` ✅
 - Local directory: `galway/` ✅
 - git remote URL updated ✅
-

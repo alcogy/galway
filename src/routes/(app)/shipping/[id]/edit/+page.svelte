@@ -4,6 +4,7 @@
 	import ShippingSlipForm from '$lib/ui/ShippingSlipForm.svelte';
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
+	import { t } from '$lib/i18n';
 
 	let { data }: { data: PageData } = $props();
 
@@ -18,22 +19,22 @@
 </script>
 
 <svelte:head>
-	<title>{data.slip.slip_number} 編集 — Galway</title>
+	<title>{data.slip.slip_number} — Galway</title>
 </svelte:head>
 
 <div class="page">
 	<div class="page-nav">
 		<a href="/shipping/{data.slip.id}" class="back-link">
 			<ArrowLeft size={16} />
-			{data.slip.slip_number} へ戻る
+			{data.slip.slip_number}
 		</a>
 	</div>
 
 	<div class="page-header">
-		<h1 class="page-title">出荷編集</h1>
+		<h1 class="page-title">{t('shipping.editTitle')}</h1>
 	</div>
 
-	<Card title="伝票情報">
+	<Card title={t('shipping.slipInfo')}>
 		<ShippingSlipForm
 			products={data.products}
 			customers={data.customers}

@@ -5,6 +5,7 @@
 	import { Button, Input, Label, Modal, ConfirmDialog, Table, SearchBar, Textarea, Pagination, CsvImportDialog, Select } from '$lib/ui';
 	import type { PageData } from './$types';
 	import type { Product } from './+page.server';
+	import { t } from '$lib/i18n';
 
 	let { data }: { data: PageData } = $props();
 
@@ -18,7 +19,7 @@
 	let importNotification = $state<{ type: 'success' | 'error'; message: string } | null>(null);
 
 	const categoryOptions = $derived([
-		{ value: '', label: '全カテゴリ' },
+		{ value: '', label: t('products.allCategories') },
 		...data.categories.map((c) => ({ value: c.id, label: c.name })),
 	]);
 
@@ -84,42 +85,42 @@
 		showDeleteDialog = true;
 	}
 
-	const columns = [
-		{ key: 'code', label: '商品コード', width: '160px' },
-		{ key: 'name', label: '商品名' },
-		{ key: 'category_name', label: 'カテゴリ', width: '140px' },
-		{ key: 'unit', label: '単位', width: '80px' },
-		{ key: 'description', label: '説明' },
-	];
+	const columns = $derived([
+		{ key: 'code', label: t('products.productCode'), width: '160px' },
+		{ key: 'name', label: t('products.productName') },
+		{ key: 'category_name', label: t('products.category'), width: '140px' },
+		{ key: 'unit', label: t('products.unit'), width: '80px' },
+		{ key: 'description', label: t('products.description') },
+	]);
 </script>
 
 <svelte:head>
-	<title>商品管理 — Galway</title>
+	<title>{t('products.pageTitle')}</title>
 </svelte:head>
 
 <div class="page">
 	<div class="page-header">
-		<h1 class="page-title">商品管理</h1>
+		<h1 class="page-title">{t('products.title')}</h1>
 		<div class="page-actions">
 			<a href={getExportUrl()} download>
 				<Button variant="secondary" size="sm">
 					<Download size={14} />
-					CSVダウンロード
+					{t('common.csvDownload')}
 				</Button>
 			</a>
 			<Button variant="secondary" size="sm" onclick={() => (showImportDialog = true)}>
 				<Upload size={14} />
-				CSVインポート
+				{t('common.csvImport')}
 			</Button>
 			<Button size="sm" onclick={openCreate}>
 				<Plus size={16} />
-				新規登録
+				{t('common.new')}
 			</Button>
 		</div>
 	</div>
 
 	<div class="filters">
-		<SearchBar bind:value={searchQuery} placeholder="商品名・コードで検索..." onsubmit={handleSearch} />
+		<SearchBar bind:value={searchQuery} placeholder={t('products.searchPlaceholder')} onsubmit={handleSearch} />
 		<div class="category-filter">
 			<Select options={categoryOptions} bind:value={categoryFilter} onchange={handleCategoryChange} />
 		</div>
@@ -139,7 +140,7 @@
 				</div>
 			{/snippet}
 			{#snippet empty()}
-				<span>商品が登録されていません</span>
+				<span>{t('products.empty')}</span>
 			{/snippet}
 		</Table>
 		<Pagination
@@ -152,7 +153,7 @@
 </div>
 
 <!-- Create / Edit Modal -->
-<Modal bind:open={showModal} title={editing ? '商品編集' : '商品登録'} size="md">
+<Modal bind:open={showModal} title={editing ? t('products.editTitle') : t('products.createTitle')} size="md">
 	<form method="POST" action={editing ? '?/update' : '?/create'} class="form">
 		{#if editing}
 			<input type="hidden" name="id" value={editing.id} />
@@ -160,40 +161,40 @@
 
 		<div class="form-grid">
 			<div class="field">
-				<Label required>商品コード</Label>
+				<Label required>{t('products.productCode')}</Label>
 				<Input name="code" bind:value={code} placeholder="PRD001" required />
 			</div>
 			<div class="field">
-				<Label required>商品名</Label>
-				<Input name="name" bind:value={name} placeholder="〇〇部品" required />
+				<Label required>{t('products.productName')}</Label>
+				<Input name="name" bind:value={name} required />
 			</div>
 			<div class="field">
-				<Label required>単位</Label>
-				<Input name="unit" bind:value={unit} placeholder="個、kg、m など" required />
+				<Label required>{t('products.unit')}</Label>
+				<Input name="unit" bind:value={unit} required />
 			</div>
 			<div class="field">
-				<Label>カテゴリ</Label>
+				<Label>{t('products.category')}</Label>
 				<Select
 					name="category_id"
-					options={[{ value: '', label: '未設定' }, ...data.categories.map((c) => ({ value: c.id, label: c.name }))]}
+					options={[{ value: '', label: t('products.allCategories') }, ...data.categories.map((c) => ({ value: c.id, label: c.name }))]}
 					bind:value={selectedCategoryId}
 				/>
 			</div>
 			<div class="field">
-				<Label>最低在庫数</Label>
+				<Label>{t('products.minQuantity')}</Label>
 				<Input name="min_quantity" type="number" bind:value={minQuantity} min="0" step="0.01" placeholder="0" />
 			</div>
 			<div class="field full">
-				<Label>説明</Label>
-				<Textarea name="description" bind:value={description} placeholder="商品の説明（任意）" rows={3} />
+				<Label>{t('products.description')}</Label>
+				<Textarea name="description" bind:value={description} rows={3} />
 			</div>
 		</div>
 
 		<div class="form-actions">
 			<Button type="button" variant="secondary" onclick={() => (showModal = false)}>
-				キャンセル
+				{t('common.cancel')}
 			</Button>
-			<Button type="submit">{editing ? '更新' : '登録'}</Button>
+			<Button type="submit">{editing ? t('common.update') : t('common.register')}</Button>
 		</div>
 	</form>
 </Modal>
@@ -201,10 +202,10 @@
 <!-- Delete Confirm -->
 <ConfirmDialog
 	bind:open={showDeleteDialog}
-	title="商品の削除"
-	message="この商品を削除しますか？在庫情報も削除されます。"
-	confirmLabel="削除"
-	cancelLabel="キャンセル"
+	title={t('products.deleteConfirm')}
+	message={t('products.deleteConfirm')}
+	confirmLabel={t('common.delete')}
+	cancelLabel={t('common.cancel')}
 	onconfirm={() => {
 		const form = document.createElement('form');
 		form.method = 'POST';
@@ -222,7 +223,6 @@
 <!-- CSV Import -->
 <CsvImportDialog
 	bind:open={showImportDialog}
-	title="商品CSVインポート"
 	onimport={async (file, mode) => {
 		const formData = new FormData();
 		formData.append('file', file);
@@ -236,12 +236,12 @@
 			const json = await res.json() as any;
 			if (json.type === 'success') {
 				await invalidateAll();
-				importNotification = { type: 'success', message: `${json.data?.count ?? ''}件の商品データをインポートしました` };
+				importNotification = { type: 'success', message: `${json.data?.count ?? ''} ${t('common.items')} imported` };
 			} else {
-				importNotification = { type: 'error', message: json.data?.error || 'インポートに失敗しました' };
+				importNotification = { type: 'error', message: json.data?.error || t('common.error') };
 			}
 		} catch {
-			importNotification = { type: 'error', message: 'インポートに失敗しました' };
+			importNotification = { type: 'error', message: t('common.error') };
 		}
 		setTimeout(() => { importNotification = null; }, 6000);
 	}}

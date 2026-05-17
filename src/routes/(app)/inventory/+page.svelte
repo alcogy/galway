@@ -4,6 +4,7 @@
 	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
 	import type { PageData } from './$types';
+	import { t } from '$lib/i18n';
 
 	let { data }: { data: PageData } = $props();
 
@@ -20,7 +21,7 @@
 	);
 
 	const supplierOptions = $derived([
-		{ value: '', label: '全仕入先' },
+		{ value: '', label: t('inventory.allSuppliers') },
 		...data.suppliers.map((s) => ({ value: s.id, label: s.name }))
 	]);
 
@@ -58,13 +59,13 @@
 		return `/inventory/export?${params.toString()}`;
 	}
 
-	const columns = [
-		{ key: 'product_code', label: '商品コード', width: '160px' },
-		{ key: 'product_name', label: '商品名' },
-		{ key: 'quantity', label: '在庫数', width: '100px', numeric: true },
-		{ key: 'unit', label: '単位', width: '80px' },
-		{ key: 'updated_at', label: '最終更新日', width: '150px' }
-	];
+	const columns = $derived([
+		{ key: 'product_code', label: t('inventory.productCode'), width: '160px' },
+		{ key: 'product_name', label: t('inventory.productName') },
+		{ key: 'quantity', label: t('inventory.quantity'), width: '100px', numeric: true },
+		{ key: 'unit', label: t('inventory.unit'), width: '80px' },
+		{ key: 'updated_at', label: t('inventory.lastUpdated'), width: '150px' }
+	]);
 
 	function formatDate(iso: string | null): string {
 		if (!iso) return '—';
@@ -79,24 +80,24 @@
 </script>
 
 <svelte:head>
-	<title>在庫管理 — Galway</title>
+	<title>{t('inventory.pageTitle')}</title>
 </svelte:head>
 
 <div class="page">
 	<div class="page-header">
-		<h1 class="page-title">在庫管理</h1>
+		<h1 class="page-title">{t('inventory.title')}</h1>
 		<div class="page-actions">
 			<a href={getExportUrl()} class="btn-download" download>
 				<Download size={14} />
-				CSVダウンロード
+				{t('common.csvDownload')}
 			</a>
 			<Button variant="secondary" size="sm" onclick={() => (showImportDialog = true)}>
 				<Upload size={14} />
-				CSVインポート
+				{t('common.csvImport')}
 			</Button>
 			<Button size="sm" onclick={openStocktake}>
 				<ClipboardList size={16} />
-				棚卸登録
+				{t('inventory.stocktake')}
 			</Button>
 		</div>
 	</div>
@@ -108,12 +109,12 @@
 	{/if}
 
 	<div class="filters">
-		<SearchBar bind:value={searchQuery} placeholder="商品名・コードで検索..." onsubmit={handleSearch} />
+		<SearchBar bind:value={searchQuery} placeholder={t('inventory.searchPlaceholder')} onsubmit={handleSearch} />
 		<div class="supplier-filter">
 			<SearchableSelect
 				options={supplierOptions}
 				bind:value={supplierFilter}
-				placeholder="全仕入先"
+				placeholder={t('inventory.allSuppliers')}
 				onchange={handleSupplierChange}
 			/>
 		</div>
@@ -128,9 +129,9 @@
 					<td>{item.product_name}</td>
 					<td class="num" class:qty-low={isLow}>
 						<span class="qty-cell">
-							{item.quantity.toLocaleString('ja-JP')}
+							{item.quantity.toLocaleString()}
 							{#if isLow}
-								<span class="low-badge" title="最低在庫数 {item.min_quantity.toLocaleString('ja-JP')} を下回っています">
+								<span class="low-badge" title="{t('inventory.lowStock')}: {item.min_quantity.toLocaleString()}">
 									<AlertTriangle size={12} />
 								</span>
 							{/if}
@@ -141,7 +142,7 @@
 				</tr>
 			{/snippet}
 			{#snippet empty()}
-				<span>在庫データがありません</span>
+				<span>{t('inventory.empty')}</span>
 			{/snippet}
 		</Table>
 		<Pagination
@@ -155,7 +156,6 @@
 
 <CsvImportDialog
 	bind:open={showImportDialog}
-	title="在庫CSVインポート"
 	onimport={async (file, mode) => {
 		const formData = new FormData();
 		formData.append('file', file);
@@ -169,32 +169,32 @@
 			const json = await res.json() as any;
 			if (json.type === 'success') {
 				await invalidateAll();
-				importNotification = { type: 'success', message: `${json.data?.count ?? ''}件の在庫データをインポートしました` };
+				importNotification = { type: 'success', message: `${json.data?.count ?? ''} ${t('common.items')} imported` };
 			} else {
-				importNotification = { type: 'error', message: json.data?.error || 'インポートに失敗しました' };
+				importNotification = { type: 'error', message: json.data?.error || t('common.error') };
 			}
 		} catch {
-			importNotification = { type: 'error', message: 'インポートに失敗しました' };
+			importNotification = { type: 'error', message: t('common.error') };
 		}
 		setTimeout(() => { importNotification = null; }, 6000);
 	}}
 />
 
 <!-- Stocktake Modal -->
-<Modal bind:open={showModal} title="棚卸登録" size="sm">
+<Modal bind:open={showModal} title={t('inventory.stocktakeTitle')} size="sm">
 	<form method="POST" action="?/stocktake" class="form">
 		<div class="field">
-			<Label required>商品</Label>
+			<Label required>{t('inventory.product')}</Label>
 			<Select
 				name="product_id"
 				options={productOptions}
-				placeholder="商品を選択"
+				placeholder={t('purchasing.selectProduct')}
 				bind:value={stocktakeProductId}
 				required
 			/>
 		</div>
 		<div class="field">
-			<Label required>実数量</Label>
+			<Label required>{t('inventory.stocktakeQty')}</Label>
 			<input
 				class="number-input"
 				type="number"
@@ -203,14 +203,13 @@
 				bind:value={stocktakeQuantity}
 				required
 			/>
-			<p class="field-hint">現在の実際の在庫数を入力してください</p>
 		</div>
 
 		<div class="form-actions">
 			<Button type="button" variant="secondary" onclick={() => (showModal = false)}>
-				キャンセル
+				{t('common.cancel')}
 			</Button>
-			<Button type="submit">登録</Button>
+			<Button type="submit">{t('common.register')}</Button>
 		</div>
 	</form>
 </Modal>

@@ -4,6 +4,7 @@
 	import Label from './Label.svelte';
 	import SearchableSelect from './SearchableSelect.svelte';
 	import { Upload, FileText, X } from '@lucide/svelte';
+	import { t } from '$lib/i18n';
 
 	interface Supplier {
 		id: string;
@@ -21,12 +22,15 @@
 
 	let {
 		open = $bindable(false),
-		title = 'CSVインポート',
-		dateLabel = '入荷日',
+		title,
+		dateLabel,
 		suppliers,
 		onimport,
 		onclose
 	}: Props = $props();
+
+	const resolvedTitle = $derived(title ?? t('csvDialog.defaultTitle'));
+	const resolvedDateLabel = $derived(dateLabel ?? t('receiving.receivedAt'));
 
 	const MAX_SIZE = 1 * 1024 * 1024 * 1024;
 
@@ -54,8 +58,8 @@
 	);
 
 	function validateFile(file: File): string {
-		if (!file.name.toLowerCase().endsWith('.csv')) return 'CSVファイル（.csv）を選択してください。';
-		if (file.size > MAX_SIZE) return 'ファイルサイズが1GBを超えています。';
+		if (!file.name.toLowerCase().endsWith('.csv')) return t('csvDialog.invalidFile');
+		if (file.size > MAX_SIZE) return t('csvDialog.fileTooLarge');
 		return '';
 	}
 
@@ -111,7 +115,7 @@
 	}
 </script>
 
-<Modal bind:open {title} onclose={handleClose} size="md">
+<Modal bind:open title={resolvedTitle} onclose={handleClose} size="md">
 	<div class="import-dialog">
 
 		<!-- Drop zone -->
@@ -135,7 +139,7 @@
 						class="clear-btn"
 						type="button"
 						onclick={(e) => { e.preventDefault(); clearFile(); }}
-						aria-label="ファイルを削除"
+						aria-label={t('csvDialog.deleteFile')}
 					>
 						<X size={16} />
 					</button>
@@ -143,9 +147,9 @@
 			{:else}
 				<div class="drop-prompt">
 					<Upload size={32} class="upload-icon" />
-					<p class="drop-primary">ファイルをここにドロップ</p>
-					<p class="drop-secondary">またはクリックしてファイルを選択</p>
-					<p class="drop-hint">.csv形式 · 最大 1 GB</p>
+					<p class="drop-primary">{t('csvDialog.dropFile')}</p>
+					<p class="drop-secondary">{t('csvDialog.orClick')}</p>
+					<p class="drop-hint">{t('csvDialog.hint')}</p>
 				</div>
 			{/if}
 			<input
@@ -163,15 +167,15 @@
 		<!-- Date and supplier settings -->
 		<div class="settings">
 			<div class="field">
-				<Label required>{dateLabel}</Label>
+				<Label required>{resolvedDateLabel}</Label>
 				<input class="date-input" type="date" bind:value={date} required />
 			</div>
 			{#if suppliers != null}
 				<div class="field">
-					<Label required>仕入先</Label>
+					<Label required>{t('slipForm.supplier')}</Label>
 					<SearchableSelect
 						options={supplierOptions}
-						placeholder="仕入先を選択"
+						placeholder={t('csvDialog.selectSupplier')}
 						bind:value={supplierId}
 					/>
 				</div>
@@ -180,21 +184,21 @@
 
 		<!-- CSV format hint -->
 		<div class="csv-hint">
-			<p class="csv-hint-label">CSVフォーマット（1行目はヘッダー行）</p>
+			<p class="csv-hint-label">{t('csvDialog.csvFormat')}</p>
 			<div class="csv-hint-table">
-				<span class="csv-hint-col">商品コード</span>
-				<span class="csv-hint-col">商品名</span>
-				<span class="csv-hint-col">数量</span>
+				<span class="csv-hint-col">{t('csvDialog.productCode')}</span>
+				<span class="csv-hint-col">{t('csvDialog.productName')}</span>
+				<span class="csv-hint-col">{t('csvDialog.quantity')}</span>
 			</div>
-			<p class="csv-hint-example">例: PRD001, アルミフレーム A型, 100</p>
+			<p class="csv-hint-example">{t('csvDialog.example')}</p>
 		</div>
 
 		<!-- Footer -->
 		<div class="footer">
-			<Button variant="secondary" onclick={handleClose}>キャンセル</Button>
+			<Button variant="secondary" onclick={handleClose}>{t('csvDialog.cancel')}</Button>
 			<Button disabled={!canImport} onclick={handleImport}>
 				<Upload size={14} />
-				インポート
+				{t('csvDialog.import')}
 			</Button>
 		</div>
 	</div>

@@ -3,25 +3,26 @@
 	import { Button, Card, ConfirmDialog, Table } from '$lib/ui';
 	import { goto, invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
+	import { t } from '$lib/i18n';
 
 	let { data }: { data: PageData } = $props();
 
 	let showDeleteDialog = $state(false);
 	let updatingStatus = $state(false);
 
-	const STATUS_LABELS: Record<string, string> = {
-		draft: '下書き',
-		ordered: '発注済',
-		received: '入荷済',
-		cancelled: 'キャンセル',
-	};
+	const STATUS_LABELS = $derived<Record<string, string>>({
+		draft: t('purchasing.statusDraft'),
+		ordered: t('purchasing.statusOrdered'),
+		received: t('purchasing.statusReceived'),
+		cancelled: t('purchasing.statusCancelled'),
+	});
 
-	const STATUS_TRANSITIONS: Record<string, { label: string; next: string }[]> = {
-		draft: [{ label: '発注確定', next: 'ordered' }, { label: 'キャンセル', next: 'cancelled' }],
-		ordered: [{ label: '入荷済にする', next: 'received' }, { label: 'キャンセル', next: 'cancelled' }],
+	const STATUS_TRANSITIONS = $derived<Record<string, { label: string; next: string }[]>>({
+		draft: [{ label: t('purchasing.actionConfirm'), next: 'ordered' }, { label: t('purchasing.actionCancel'), next: 'cancelled' }],
+		ordered: [{ label: t('purchasing.actionReceive'), next: 'received' }, { label: t('purchasing.actionCancel'), next: 'cancelled' }],
 		received: [],
-		cancelled: [{ label: '下書きに戻す', next: 'draft' }],
-	};
+		cancelled: [{ label: t('purchasing.actionRevertDraft'), next: 'draft' }],
+	});
 
 	const transitions = $derived(STATUS_TRANSITIONS[data.order.status] ?? []);
 
@@ -34,12 +35,12 @@
 		updatingStatus = false;
 	}
 
-	const columns = [
-		{ key: 'product_code', label: '商品コード', width: '160px' },
-		{ key: 'product_name', label: '商品名' },
-		{ key: 'quantity', label: '数量', width: '100px', numeric: true },
-		{ key: 'unit', label: '単位', width: '80px' },
-	];
+	const columns = $derived([
+		{ key: 'product_code', label: t('purchasing.productCode'), width: '160px' },
+		{ key: 'product_name', label: t('purchasing.productName') },
+		{ key: 'quantity', label: t('purchasing.quantity'), width: '100px', numeric: true },
+		{ key: 'unit', label: t('purchasing.unit'), width: '80px' },
+	]);
 </script>
 
 <svelte:head>
@@ -50,40 +51,40 @@
 	<div class="page-nav">
 		<a href="/purchasing" class="back-link">
 			<ArrowLeft size={16} />
-			発注管理へ戻る
+			{t('purchasing.backToList')}
 		</a>
 	</div>
 
 	<div class="page-header">
 		<h1 class="page-title">{data.order.order_number}</h1>
 		<div class="page-actions">
-			{#each transitions as t (t.next)}
+			{#each transitions as tr (tr.next)}
 				<Button
 					variant="secondary"
 					size="sm"
 					disabled={updatingStatus}
-					onclick={() => changeStatus(t.next)}
+					onclick={() => changeStatus(tr.next)}
 				>
-					{t.label}
+					{tr.label}
 				</Button>
 			{/each}
 			{#if data.order.status === 'draft'}
 				<Button variant="secondary" size="sm" onclick={() => goto(`/purchasing/${data.order.id}/edit`)}>
 					<Pencil size={14} />
-					編集
+					{t('common.edit')}
 				</Button>
 			{/if}
 		</div>
 	</div>
 
-	<Card title="発注情報">
+	<Card title={t('purchasing.orderInfo')}>
 		<dl class="info-grid">
 			<div class="info-item">
-				<dt class="info-label">発注番号</dt>
+				<dt class="info-label">{t('purchasing.orderNumber')}</dt>
 				<dd class="info-value">{data.order.order_number}</dd>
 			</div>
 			<div class="info-item">
-				<dt class="info-label">ステータス</dt>
+				<dt class="info-label">{t('purchasing.status')}</dt>
 				<dd class="info-value">
 					<span class="status-badge status-{data.order.status}">
 						{STATUS_LABELS[data.order.status]}
@@ -91,24 +92,24 @@
 				</dd>
 			</div>
 			<div class="info-item">
-				<dt class="info-label">仕入先</dt>
+				<dt class="info-label">{t('purchasing.supplier')}</dt>
 				<dd class="info-value">{data.order.supplier_name}</dd>
 			</div>
 			<div class="info-item">
-				<dt class="info-label">発注日</dt>
+				<dt class="info-label">{t('purchasing.orderedAt')}</dt>
 				<dd class="info-value">{data.order.ordered_at}</dd>
 			</div>
 			<div class="info-item">
-				<dt class="info-label">入荷予定日</dt>
+				<dt class="info-label">{t('purchasing.expectedAt')}</dt>
 				<dd class="info-value">{data.order.expected_at ?? '—'}</dd>
 			</div>
 			<div class="info-item">
-				<dt class="info-label">担当者</dt>
+				<dt class="info-label">{t('purchasing.person')}</dt>
 				<dd class="info-value">{data.order.user_name ?? '—'}</dd>
 			</div>
 			{#if data.order.note}
 				<div class="info-item full">
-					<dt class="info-label">備考</dt>
+					<dt class="info-label">{t('purchasing.note')}</dt>
 					<dd class="info-value">{data.order.note}</dd>
 				</div>
 			{/if}
@@ -116,21 +117,21 @@
 	</Card>
 
 	<section>
-		<h2 class="section-title">発注明細</h2>
+		<h2 class="section-title">{t('purchasing.orderDetails')}</h2>
 		<Table {columns} rows={data.details}>
 			{#snippet empty()}
-				<span>明細がありません</span>
+				<span>{t('common.noData')}</span>
 			{/snippet}
 		</Table>
 	</section>
 
 	{#if data.order.status === 'draft' || data.order.status === 'cancelled'}
 		<section class="danger-zone">
-			<h2 class="danger-title">削除</h2>
-			<p class="danger-desc">この発注を削除します。この操作は取り消せません。</p>
+			<h2 class="danger-title">{t('common.delete')}</h2>
+			<p class="danger-desc">{t('purchasing.deleteConfirm')}</p>
 			<Button variant="danger" size="sm" onclick={() => (showDeleteDialog = true)}>
 				<Trash2 size={14} />
-				発注を削除
+				{t('common.delete')}
 			</Button>
 		</section>
 	{/if}
@@ -138,10 +139,10 @@
 
 <ConfirmDialog
 	bind:open={showDeleteDialog}
-	title="発注の削除"
-	message="この発注を削除しますか？"
-	confirmLabel="削除"
-	cancelLabel="キャンセル"
+	title={t('purchasing.deleteConfirm')}
+	message={t('purchasing.deleteConfirm')}
+	confirmLabel={t('common.delete')}
+	cancelLabel={t('common.cancel')}
 	onconfirm={() => {
 		const form = document.createElement('form');
 		form.method = 'POST';

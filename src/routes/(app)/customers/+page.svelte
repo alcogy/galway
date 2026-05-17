@@ -3,6 +3,7 @@
 	import { Button, Input, Label, Modal, ConfirmDialog, Table, Textarea } from '$lib/ui';
 	import type { PageData } from './$types';
 	import type { Customer } from './+page.server';
+	import { t } from '$lib/i18n';
 
 	let { data }: { data: PageData } = $props();
 
@@ -48,26 +49,26 @@
 		showDeleteDialog = true;
 	}
 
-	const columns = [
-		{ key: 'name', label: '出荷先名' },
-		{ key: 'tel', label: '電話番号', width: '140px' },
-		{ key: 'address', label: '住所' },
-		{ key: 'email', label: 'メールアドレス', width: '200px' },
-		{ key: 'slip_count', label: '出荷件数', width: '100px', numeric: true },
-	];
+	const columns = $derived([
+		{ key: 'name', label: t('customers.customerName') },
+		{ key: 'tel', label: t('customers.phone'), width: '140px' },
+		{ key: 'address', label: t('customers.address') },
+		{ key: 'email', label: t('customers.email'), width: '200px' },
+		{ key: 'slip_count', label: t('customers.shippingCount'), width: '100px', numeric: true },
+	]);
 </script>
 
 <svelte:head>
-	<title>出荷先管理 — Galway</title>
+	<title>{t('customers.pageTitle')}</title>
 </svelte:head>
 
 <div class="page">
 	<div class="page-header">
-		<h1 class="page-title">出荷先管理</h1>
+		<h1 class="page-title">{t('customers.title')}</h1>
 		<div class="page-actions">
 			<Button size="sm" onclick={openCreate}>
 				<Plus size={16} />
-				新規登録
+				{t('common.new')}
 			</Button>
 		</div>
 	</div>
@@ -84,13 +85,13 @@
 			</div>
 		{/snippet}
 		{#snippet empty()}
-			<span>出荷先が登録されていません</span>
+			<span>{t('customers.empty')}</span>
 		{/snippet}
 	</Table>
 </div>
 
 <!-- Create / Edit Modal -->
-<Modal bind:open={showModal} title={editing ? '出荷先編集' : '出荷先登録'} size="md">
+<Modal bind:open={showModal} title={editing ? t('customers.editTitle') : t('customers.createTitle')} size="md">
 	<form
 		method="POST"
 		action={editing ? '?/update' : '?/create'}
@@ -107,36 +108,36 @@
 
 		<div class="form-grid">
 			<div class="field full">
-				<Label required>出荷先名</Label>
-				<Input name="name" bind:value={name} placeholder="〇〇株式会社" required />
+				<Label required>{t('customers.customerName')}</Label>
+				<Input name="name" bind:value={name} placeholder={t('customers.namePlaceholder')} required />
 			</div>
 			<div class="field">
-				<Label>電話番号</Label>
+				<Label>{t('customers.phone')}</Label>
 				<Input name="tel" bind:value={tel} placeholder="03-1234-5678" />
 			</div>
 			<div class="field">
-				<Label>メールアドレス</Label>
+				<Label>{t('customers.email')}</Label>
 				<Input name="email" type="email" bind:value={email} placeholder="info@example.com" />
 			</div>
 			<div class="field">
-				<Label>郵便番号</Label>
+				<Label>{t('customers.zipcode')}</Label>
 				<Input name="zipcode" bind:value={zipcode} placeholder="123-4567" />
 			</div>
 			<div class="field full">
-				<Label>住所</Label>
-				<Input name="address" bind:value={address} placeholder="東京都千代田区..." />
+				<Label>{t('customers.address')}</Label>
+				<Input name="address" bind:value={address} />
 			</div>
 			<div class="field full">
-				<Label>備考</Label>
-				<Textarea name="note" bind:value={note} placeholder="備考（任意）" rows={3} />
+				<Label>{t('common.note')}</Label>
+				<Textarea name="note" bind:value={note} rows={3} />
 			</div>
 		</div>
 
 		<div class="form-actions">
 			<Button type="button" variant="secondary" onclick={() => (showModal = false)}>
-				キャンセル
+				{t('common.cancel')}
 			</Button>
-			<Button type="submit">{editing ? '更新' : '登録'}</Button>
+			<Button type="submit">{editing ? t('common.update') : t('common.register')}</Button>
 		</div>
 	</form>
 </Modal>
@@ -144,10 +145,10 @@
 <!-- Delete Confirm -->
 <ConfirmDialog
 	bind:open={showDeleteDialog}
-	title="出荷先の削除"
-	message="この出荷先を削除しますか？関連する出荷伝票の出荷先は未設定になります。"
-	confirmLabel="削除"
-	cancelLabel="キャンセル"
+	title={t('customers.deleteConfirm')}
+	message={t('customers.deleteConfirm')}
+	confirmLabel={t('common.delete')}
+	cancelLabel={t('common.cancel')}
 	onconfirm={() => {
 		const form = document.createElement('form');
 		form.method = 'POST';

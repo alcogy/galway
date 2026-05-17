@@ -3,6 +3,7 @@
 	import { Button, Card, Label, SearchableSelect, Textarea } from '$lib/ui';
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
+	import { t } from '$lib/i18n';
 
 	let { data }: { data: PageData } = $props();
 
@@ -25,62 +26,62 @@
 </script>
 
 <svelte:head>
-	<title>新規発注 — Galway</title>
+	<title>{t('purchasing.newPageTitle')}</title>
 </svelte:head>
 
 <div class="page">
 	<div class="page-nav">
 		<a href="/purchasing" class="back-link">
 			<ArrowLeft size={16} />
-			発注管理へ戻る
+			{t('purchasing.backToList')}
 		</a>
 	</div>
 
 	<div class="page-header">
-		<h1 class="page-title">新規発注</h1>
+		<h1 class="page-title">{t('purchasing.newOrder')}</h1>
 	</div>
 
-	<Card title="発注情報">
+	<Card title={t('purchasing.orderInfo')}>
 		<form method="POST" action="?/create" class="form">
 			<input type="hidden" name="details" value={JSON.stringify(details)} />
 
 			<div class="form-grid">
 				<div class="field">
-					<Label required>仕入先</Label>
+					<Label required>{t('purchasing.supplier')}</Label>
 					<SearchableSelect
 						name="supplier_id"
 						options={supplierOptions}
-						placeholder="仕入先を選択"
+						placeholder={t('purchasing.selectSupplier')}
 						bind:value={supplierId}
 					/>
 				</div>
 				<div class="field">
-					<Label required>発注日</Label>
+					<Label required>{t('purchasing.orderedAt')}</Label>
 					<input class="date-input" type="date" name="ordered_at" bind:value={orderedAt} required />
 				</div>
 				<div class="field">
-					<Label>入荷予定日</Label>
+					<Label>{t('purchasing.expectedAt')}</Label>
 					<input class="date-input" type="date" name="expected_at" bind:value={expectedAt} />
 				</div>
 				<div class="field full">
-					<Label>備考</Label>
-					<Textarea name="note" placeholder="備考欄" bind:value={note} />
+					<Label>{t('purchasing.note')}</Label>
+					<Textarea name="note" placeholder={t('purchasing.notesPlaceholder')} bind:value={note} />
 				</div>
 			</div>
 
 			<div class="details-section">
 				<div class="details-header">
-					<span class="details-title">発注明細</span>
+					<span class="details-title">{t('purchasing.orderDetails')}</span>
 					<Button type="button" variant="secondary" size="sm" onclick={addDetail}>
 						<Plus size={14} />
-						行追加
+						{t('purchasing.addItem')}
 					</Button>
 				</div>
 
 				<div class="details-table">
 					<div class="details-head">
-						<span class="col-product">商品</span>
-						<span class="col-qty">数量</span>
+						<span class="col-product">{t('purchasing.productName')}</span>
+						<span class="col-qty">{t('purchasing.quantity')}</span>
 						<span class="col-del"></span>
 					</div>
 					{#each details as detail, i (i)}
@@ -88,7 +89,7 @@
 							<div class="col-product">
 								<SearchableSelect
 									options={productOptions}
-									placeholder="商品を選択"
+									placeholder={t('purchasing.selectProduct')}
 									bind:value={detail.product_id}
 								/>
 							</div>
@@ -109,9 +110,9 @@
 
 			<div class="form-actions">
 				<Button type="button" variant="secondary" onclick={() => goto('/purchasing')}>
-					キャンセル
+					{t('common.cancel')}
 				</Button>
-				<Button type="submit">登録</Button>
+				<Button type="submit">{t('common.register')}</Button>
 			</div>
 		</form>
 	</Card>

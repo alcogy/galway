@@ -3,6 +3,7 @@
 	import { Button, Table, Pagination, SlipCsvImportDialog } from '$lib/ui';
 	import { goto, invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
+	import { t } from '$lib/i18n';
 	let { data }: { data: PageData } = $props();
 
 	let page = $state(1);
@@ -14,30 +15,30 @@
 		data.slips.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
 	);
 
-	const columns = [
-		{ key: 'slip_number', label: '伝票番号', width: '140px' },
-		{ key: 'shipped_at', label: '出荷日', width: '120px' },
-		{ key: 'customer_name', label: '出荷先', width: '160px' },
-		{ key: 'item_count', label: '品目数', width: '80px', numeric: true },
-		{ key: 'user_name', label: '担当者', width: '120px' }
-	];
+	const columns = $derived([
+		{ key: 'slip_number', label: t('shipping.slipNumber'), width: '140px' },
+		{ key: 'shipped_at', label: t('shipping.shippedAt'), width: '120px' },
+		{ key: 'customer_name', label: t('shipping.customer'), width: '160px' },
+		{ key: 'item_count', label: t('shipping.itemCount'), width: '80px', numeric: true },
+		{ key: 'user_name', label: t('shipping.person'), width: '120px' }
+	]);
 </script>
 
 <svelte:head>
-	<title>出荷管理 — Galway</title>
+	<title>{t('shipping.pageTitle')}</title>
 </svelte:head>
 
 <div class="page">
 	<div class="page-header">
-		<h1 class="page-title">出荷管理</h1>
+		<h1 class="page-title">{t('shipping.title')}</h1>
 		<div class="page-actions">
 			<Button variant="secondary" size="sm" onclick={() => (showImportDialog = true)}>
 				<Upload size={14} />
-				CSVインポート
+				{t('common.csvImport')}
 			</Button>
 			<Button size="sm" onclick={() => goto('/shipping/new')}>
 				<Plus size={16} />
-				新規登録
+				{t('shipping.newSlip')}
 			</Button>
 		</div>
 	</div>
@@ -51,7 +52,7 @@
 	<div class="table-with-pagination">
 		<Table {columns} rows={pagedSlips} onrowclick={(row) => goto(`/shipping/${row.id}`)}>
 			{#snippet empty()}
-				<span>出荷伝票が登録されていません</span>
+				<span>{t('shipping.empty')}</span>
 			{/snippet}
 		</Table>
 		<Pagination
@@ -65,8 +66,8 @@
 
 <SlipCsvImportDialog
 	bind:open={showImportDialog}
-	title="出荷伝票CSVインポート"
-	dateLabel="出荷日"
+	title={t('shipping.importTitle')}
+	dateLabel={t('shipping.shippedAt')}
 	onimport={async (file, date) => {
 		const formData = new FormData();
 		formData.append('file', file);
@@ -77,15 +78,15 @@
 				headers: { Accept: 'application/json' },
 				body: formData
 			});
-			const json = await res.json();
+			const json = await res.json() as any;
 			if (json.type === 'success') {
 				await invalidateAll();
-				importNotification = { type: 'success', message: `${json.data?.count ?? ''}件の出荷伝票データをインポートしました` };
+				importNotification = { type: 'success', message: `${json.data?.count ?? ''} ${t('common.items')} imported` };
 			} else {
-				importNotification = { type: 'error', message: json.data?.error || 'インポートに失敗しました' };
+				importNotification = { type: 'error', message: json.data?.error || t('common.error') };
 			}
 		} catch {
-			importNotification = { type: 'error', message: 'インポートに失敗しました' };
+			importNotification = { type: 'error', message: t('common.error') };
 		}
 		setTimeout(() => { importNotification = null; }, 6000);
 	}}

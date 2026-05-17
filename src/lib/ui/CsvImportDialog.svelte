@@ -2,6 +2,7 @@
 	import Modal from './Modal.svelte';
 	import Button from './Button.svelte';
 	import { Upload, FileText, X } from '@lucide/svelte';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		open: boolean;
@@ -12,10 +13,12 @@
 
 	let {
 		open = $bindable(false),
-		title = 'CSVインポート',
+		title,
 		onimport,
 		onclose
 	}: Props = $props();
+
+	const resolvedTitle = $derived(title ?? t('csvDialog.defaultTitle'));
 
 	const MAX_SIZE = 1 * 1024 * 1024 * 1024; // 1GB
 
@@ -36,10 +39,10 @@
 
 	function validateFile(file: File): string {
 		if (!file.name.toLowerCase().endsWith('.csv')) {
-			return 'CSVファイル（.csv）を選択してください。';
+			return t('csvDialog.invalidFile');
 		}
 		if (file.size > MAX_SIZE) {
-			return 'ファイルサイズが1GBを超えています。';
+			return t('csvDialog.fileTooLarge');
 		}
 		return '';
 	}
@@ -96,7 +99,7 @@
 	}
 </script>
 
-<Modal bind:open {title} onclose={handleClose} size="md">
+<Modal bind:open title={resolvedTitle} onclose={handleClose} size="md">
 	<div class="import-dialog">
 		<!-- Drop zone -->
 		<div
@@ -106,7 +109,7 @@
 			class:has-error={!!errorMessage}
 			role="button"
 			tabindex="0"
-			aria-label="ファイルをドロップするかクリックして選択"
+			aria-label={t('csvDialog.dropFile')}
 			ondragover={onDragOver}
 			ondragleave={onDragLeave}
 			ondrop={onDrop}
@@ -123,7 +126,7 @@
 					<button
 						class="clear-btn"
 						onclick={(e) => { e.stopPropagation(); clearFile(); }}
-						aria-label="ファイルを削除"
+						aria-label={t('csvDialog.deleteFile')}
 					>
 						<X size={16} />
 					</button>
@@ -131,9 +134,9 @@
 			{:else}
 				<div class="drop-prompt">
 					<Upload size={32} class="upload-icon" />
-					<p class="drop-primary">ファイルをここにドロップ</p>
-					<p class="drop-secondary">またはクリックしてファイルを選択</p>
-					<p class="drop-hint">.csv形式 · 最大 1 GB</p>
+					<p class="drop-primary">{t('csvDialog.dropFile')}</p>
+					<p class="drop-secondary">{t('csvDialog.orClick')}</p>
+					<p class="drop-hint">{t('csvDialog.hint')}</p>
 				</div>
 			{/if}
 		</div>
@@ -152,20 +155,20 @@
 
 		<!-- Import mode -->
 		<div class="mode-section">
-			<p class="mode-label">インポート方法</p>
+			<p class="mode-label">{t('csvDialog.importMode')}</p>
 			<div class="mode-options">
 				<label class="mode-option" class:selected={importMode === 'append'}>
 					<input type="radio" bind:group={importMode} value="append" />
 					<div class="mode-content">
-						<span class="mode-title">追加・更新</span>
-						<span class="mode-desc">既存データを残したままデータを追加・更新します</span>
+						<span class="mode-title">{t('csvDialog.append')}</span>
+						<span class="mode-desc">{t('csvDialog.appendDesc')}</span>
 					</div>
 				</label>
 				<label class="mode-option" class:selected={importMode === 'replace'}>
 					<input type="radio" bind:group={importMode} value="replace" />
 					<div class="mode-content">
-						<span class="mode-title">入れ替え</span>
-						<span class="mode-desc">既存データをすべて削除して新しいデータに置き換えます</span>
+						<span class="mode-title">{t('csvDialog.replace')}</span>
+						<span class="mode-desc">{t('csvDialog.replaceDesc')}</span>
 					</div>
 				</label>
 			</div>
@@ -173,10 +176,10 @@
 
 		<!-- Footer -->
 		<div class="footer">
-			<Button variant="secondary" onclick={handleClose}>キャンセル</Button>
+			<Button variant="secondary" onclick={handleClose}>{t('csvDialog.cancel')}</Button>
 			<Button variant="primary" disabled={!selectedFile} onclick={handleImport}>
 				<Upload size={14} />
-				インポート
+				{t('csvDialog.import')}
 			</Button>
 		</div>
 	</div>

@@ -198,7 +198,7 @@
 	}
 
 	.col-name {
-		/* flex */
+		flex: 1;
 	}
 
 	.col-qty {

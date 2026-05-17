@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { Button, Card, Input, Label } from '$lib/ui';
+	import { t, getLocale, setLocale, type Locale } from '$lib/i18n';
 	import type { PageData, ActionData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -16,31 +17,63 @@
 		alertEmailEnabled = data.settings.alert_email_enabled;
 		slackWebhookUrl = data.settings.slack_webhook_url;
 	});
+
+	function handleLocale(l: Locale) {
+		setLocale(l);
+	}
 </script>
 
 <svelte:head>
-	<title>設定 — Galway</title>
+	<title>{t('settings.pageTitle')}</title>
 </svelte:head>
 
 <div class="page">
-	<h1 class="page-title">設定</h1>
+	<h1 class="page-title">{t('settings.title')}</h1>
 
 	{#if form?.success}
-		<div class="notice notice-success">設定を保存しました。</div>
+		<div class="notice notice-success">{t('settings.saved')}</div>
 	{:else if form?.error}
 		<div class="notice notice-error">{form.error}</div>
 	{/if}
 
+	<!-- Language -->
+	<Card title={t('settings.language')}>
+		<div class="settings-group">
+			<div class="setting-row">
+				<div class="setting-info">
+					<span class="setting-label">{t('settings.language')}</span>
+					<span class="setting-desc">{t('settings.languageDesc')}</span>
+				</div>
+				<div class="lang-switcher">
+					<button
+						class="lang-btn"
+						class:active={getLocale() === 'en'}
+						onclick={() => handleLocale('en')}
+					>
+						English
+					</button>
+					<button
+						class="lang-btn"
+						class:active={getLocale() === 'ja'}
+						onclick={() => handleLocale('ja')}
+					>
+						日本語
+					</button>
+				</div>
+			</div>
+		</div>
+	</Card>
+
 	<form method="POST" action="?/save" use:enhance class="settings-form">
-		<!-- 在庫アラート -->
-		<Card title="在庫アラート">
+		<!-- Stock alert -->
+		<Card title={t('settings.stockAlert')}>
 			<div class="settings-group">
 				<div class="setting-row">
 					<div class="setting-info">
-						<span class="setting-label">低在庫アラート</span>
+						<span class="setting-label">{t('settings.lowStockAlert')}</span>
 						<span class="setting-desc">
-							在庫数が商品ごとの「最低在庫数」を下回った場合にダッシュボードで警告を表示します。
-							各商品の最低在庫数は<a href="/products">商品管理</a>から設定できます。
+							{t('settings.lowStockDescPre')}
+							<a href="/products">{t('settings.lowStockDescLink')}</a>.
 						</span>
 					</div>
 					<label class="toggle">
@@ -58,17 +91,17 @@
 			</div>
 		</Card>
 
-		<!-- 通知設定（将来実装） -->
-		<Card title="通知設定">
+		<!-- Notifications -->
+		<Card title={t('settings.notifications')}>
 			<div class="settings-group">
 				<div class="coming-soon-banner">
-					メール・Slack 通知は今後実装予定です。現在は設定値を保存するのみです。
+					{t('settings.notificationsSoon')}
 				</div>
 
 				<div class="setting-row">
 					<div class="setting-info">
-						<span class="setting-label">メール通知</span>
-						<span class="setting-desc">低在庫アラートや入荷・出荷の通知をメールで受け取ります。</span>
+						<span class="setting-label">{t('settings.emailNotification')}</span>
+						<span class="setting-desc">{t('settings.emailNotificationDesc')}</span>
 					</div>
 					<label class="toggle">
 						<input
@@ -84,7 +117,7 @@
 				</div>
 
 				<div class="setting-field" class:disabled={!alertEmailEnabled}>
-					<Label>通知先メールアドレス</Label>
+					<Label>{t('settings.notificationEmail')}</Label>
 					<Input
 						name="notification_email"
 						type="email"
@@ -95,19 +128,19 @@
 				</div>
 
 				<div class="setting-field">
-					<Label>Slack Webhook URL</Label>
+					<Label>{t('settings.slackWebhookUrl')}</Label>
 					<Input
 						name="slack_webhook_url"
 						bind:value={slackWebhookUrl}
 						placeholder="https://hooks.slack.com/services/..."
 					/>
-					<span class="field-hint">設定すると Slack チャンネルへの通知が有効になります（実装予定）。</span>
+					<span class="field-hint">{t('settings.slackDesc')}</span>
 				</div>
 			</div>
 		</Card>
 
 		<div class="form-actions">
-			<Button type="submit">保存</Button>
+			<Button type="submit">{t('settings.save')}</Button>
 		</div>
 	</form>
 </div>
@@ -212,6 +245,41 @@
 	.field-hint {
 		font-size: 0.75rem;
 		color: var(--color-text-tertiary);
+	}
+
+	/* Language switcher */
+	.lang-switcher {
+		display: flex;
+		gap: 2px;
+		background-color: var(--color-bg-sunken);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+		padding: 2px;
+		flex-shrink: 0;
+	}
+
+	.lang-btn {
+		padding: 4px 14px;
+		border: none;
+		border-radius: calc(var(--radius-md) - 2px);
+		background: transparent;
+		color: var(--color-text-secondary);
+		font-size: 0.8125rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition:
+			background-color var(--transition-fast),
+			color var(--transition-fast);
+
+		&:hover {
+			color: var(--color-text);
+		}
+
+		&.active {
+			background-color: var(--color-bg-elevated);
+			color: var(--color-text);
+			box-shadow: var(--shadow-sm);
+		}
 	}
 
 	/* Toggle switch */

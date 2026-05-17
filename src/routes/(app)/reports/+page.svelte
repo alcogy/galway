@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import { t } from '$lib/i18n';
 
 	let { data }: { data: PageData } = $props();
 
@@ -10,16 +11,16 @@
 </script>
 
 <svelte:head>
-	<title>レポート — Galway</title>
+	<title>{t('reports.pageTitle')}</title>
 </svelte:head>
 
 <div class="page">
-	<h1 class="page-title">レポート・分析</h1>
+	<h1 class="page-title">{t('reports.title')}</h1>
 
 	<div class="charts-grid">
-		<!-- 入荷推移 -->
+		<!-- receiving trend -->
 		<div class="chart-card">
-			<h2 class="chart-title">月別入荷数量（直近6ヶ月）</h2>
+			<h2 class="chart-title">{t('reports.receivingTrend')}</h2>
 			<div class="bar-chart">
 				{#each data.receivingByMonth as m (m.label)}
 					<div class="bar-col">
@@ -33,9 +34,9 @@
 			</div>
 		</div>
 
-		<!-- 出荷推移 -->
+		<!-- shipping trend -->
 		<div class="chart-card">
-			<h2 class="chart-title">月別出荷数量（直近6ヶ月）</h2>
+			<h2 class="chart-title">{t('reports.shippingTrend')}</h2>
 			<div class="bar-chart">
 				{#each data.shippingByMonth as m (m.label)}
 					<div class="bar-col">
@@ -51,11 +52,11 @@
 	</div>
 
 	<div class="tables-grid">
-		<!-- 出荷数量トップ商品 -->
+		<!-- top shipping products -->
 		<div class="rank-card">
-			<h2 class="chart-title">出荷数量トップ商品</h2>
+			<h2 class="chart-title">{t('reports.topShippingProducts')}</h2>
 			{#if data.topProducts.length === 0}
-				<p class="empty-text">データがありません</p>
+				<p class="empty-text">{t('reports.noData')}</p>
 			{:else}
 				<div class="rank-list">
 					{#each data.topProducts as p, i (p.product_code)}
@@ -75,11 +76,11 @@
 			{/if}
 		</div>
 
-		<!-- 仕入先別入荷件数 -->
+		<!-- supplier ranking -->
 		<div class="rank-card">
-			<h2 class="chart-title">仕入先別入荷件数</h2>
+			<h2 class="chart-title">{t('reports.supplierRanking')}</h2>
 			{#if data.supplierRanking.length === 0}
-				<p class="empty-text">データがありません</p>
+				<p class="empty-text">{t('reports.noData')}</p>
 			{:else}
 				<div class="rank-list">
 					{#each data.supplierRanking as s, i (s.supplier_name)}
@@ -91,7 +92,7 @@
 							<div class="rank-bar-wrap">
 								<div class="rank-bar rank-bar-receiving" style:width="{(Number(s.slip_count) / maxSlipCount) * 100}%"></div>
 							</div>
-							<span class="rank-value">{s.slip_count} 件</span>
+							<span class="rank-value">{s.slip_count} {t('reports.slipCount')}</span>
 						</div>
 					{/each}
 				</div>

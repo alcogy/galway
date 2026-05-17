@@ -3,6 +3,7 @@
 	import { Pencil } from '@lucide/svelte';
 	import { invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
+	import { t } from '$lib/i18n';
 
 	let { data }: { data: PageData } = $props();
 
@@ -14,7 +15,7 @@
 	}
 
 	function formatDate(dateString: string): string {
-		return new Date(dateString).toLocaleDateString('ja-JP', {
+		return new Date(dateString).toLocaleDateString(undefined, {
 			year: 'numeric',
 			month: 'long',
 			day: 'numeric'
@@ -23,41 +24,41 @@
 </script>
 
 <svelte:head>
-	<title>プロフィール — Galway</title>
+	<title>{t('profile.pageTitle')}</title>
 </svelte:head>
 
 <div class="page">
 	<div class="page-header">
-		<h1 class="page-title">プロフィール</h1>
+		<h1 class="page-title">{t('profile.title')}</h1>
 		<Button variant="secondary" size="sm" onclick={() => (showEditor = true)}>
 			<Pencil size={14} />
-			編集
+			{t('common.edit')}
 		</Button>
 	</div>
 
 	{#if data.account}
 		<Card>
 			<div class="profile-section">
-				<h2 class="section-title">アカウント情報</h2>
+				<h2 class="section-title">{t('profile.accountInfo')}</h2>
 
 				<div class="detail-grid">
 					<div class="detail-item">
-						<span class="detail-label">名前</span>
+						<span class="detail-label">{t('profile.name')}</span>
 						<span class="detail-value">{data.account.name}</span>
 					</div>
 
 					<div class="detail-item">
-						<span class="detail-label">メールアドレス</span>
+						<span class="detail-label">{t('profile.email')}</span>
 						<span class="detail-value">{data.account.email}</span>
 					</div>
 
 					<div class="detail-item">
-						<span class="detail-label">権限</span>
+						<span class="detail-label">{t('profile.role')}</span>
 						<span class="detail-value role-{data.account.role}">{data.account.role}</span>
 					</div>
 
 					<div class="detail-item">
-						<span class="detail-label">登録日</span>
+						<span class="detail-label">{t('profile.createdAt')}</span>
 						<span class="detail-value">{formatDate(data.account.created_at)}</span>
 					</div>
 				</div>

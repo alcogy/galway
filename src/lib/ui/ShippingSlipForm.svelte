@@ -4,6 +4,7 @@
 	import Label from './Label.svelte';
 	import SearchableSelect from './SearchableSelect.svelte';
 	import Textarea from './Textarea.svelte';
+	import { t } from '$lib/i18n';
 
 	interface DetailItem {
 		product_id: string;
@@ -32,14 +33,14 @@
 
 	const isEdit = $derived(!!initialData?.id);
 	const action = $derived(isEdit ? '?/update' : '?/create');
-	const submitLabel = $derived(isEdit ? '更新' : '登録');
+	const submitLabel = $derived(isEdit ? t('common.update') : t('common.register'));
 
 	const productOptions = $derived(
 		products.map((p) => ({ value: p.id, label: `${p.code} ${p.name}` }))
 	);
 	const accountOptions = $derived(accounts.map((a) => ({ value: a.id, label: a.name })));
 	const customerOptions = $derived([
-		{ value: '', label: '未設定' },
+		{ value: '', label: t('slipForm.notAssigned') },
 		...customers.map((c) => ({ value: c.id, label: c.name })),
 	]);
 
@@ -81,50 +82,50 @@
 	<input type="hidden" name="details" value={JSON.stringify(details)} />
 
 	<div class="field">
-		<Label required>出荷日</Label>
+		<Label required>{t('slipForm.shippedAt')}</Label>
 		<input class="date-input" type="date" name="shipped_at" bind:value={date} required />
 	</div>
 
 	<div class="field">
-		<Label>出荷先</Label>
+		<Label>{t('slipForm.customer')}</Label>
 		<SearchableSelect
 			name="customer_id"
 			options={customerOptions}
-			placeholder="出荷先を選択（任意）"
+			placeholder={t('slipForm.selectCustomer')}
 			bind:value={customerId}
 		/>
 	</div>
 
 	{#if isAdmin}
 		<div class="field">
-			<Label required>担当者</Label>
+			<Label required>{t('slipForm.person')}</Label>
 			<SearchableSelect
 				name="account_id"
 				options={accountOptions}
-				placeholder="担当者を選択"
+				placeholder={t('slipForm.selectPerson')}
 				bind:value={accountId}
 			/>
 		</div>
 	{/if}
 
 	<div class="field">
-		<Label>備考</Label>
-		<Textarea name="note" placeholder="備考欄" bind:value={note} />
+		<Label>{t('slipForm.note')}</Label>
+		<Textarea name="note" placeholder={t('slipForm.notesPlaceholder')} bind:value={note} />
 	</div>
 
 	<div class="details-section">
 		<div class="details-header">
-			<span class="details-title">明細</span>
+			<span class="details-title">{t('slipForm.details')}</span>
 			<Button type="button" variant="secondary" size="sm" onclick={addDetail}>
 				<Plus size={14} />
-				行追加
+				{t('slipForm.addRow')}
 			</Button>
 		</div>
 
 		<div class="details-table">
 			<div class="details-head">
-				<span class="col-product">商品</span>
-				<span class="col-qty">数量</span>
+				<span class="col-product">{t('slipForm.product')}</span>
+				<span class="col-qty">{t('slipForm.quantity')}</span>
 				<span class="col-del"></span>
 			</div>
 			{#each details as detail, i (i)}
@@ -132,7 +133,7 @@
 					<div class="col-product">
 						<SearchableSelect
 							options={productOptions}
-							placeholder="商品を選択"
+							placeholder={t('slipForm.selectProduct')}
 							bind:value={detail.product_id}
 						/>
 					</div>
@@ -146,7 +147,7 @@
 								variant="ghost"
 								size="sm"
 								onclick={() => removeDetail(i)}
-								aria-label="行を削除"
+								aria-label={t('slipForm.deleteRow')}
 							>
 								<Trash2 size={14} />
 							</Button>
@@ -158,7 +159,7 @@
 	</div>
 
 	<div class="form-actions">
-		<Button type="button" variant="secondary" onclick={oncancel}>キャンセル</Button>
+		<Button type="button" variant="secondary" onclick={oncancel}>{t('common.cancel')}</Button>
 		<Button type="submit">{submitLabel}</Button>
 	</div>
 </form>

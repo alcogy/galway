@@ -3,6 +3,7 @@
 	import { Button, Card, ConfirmDialog, Table } from '$lib/ui';
 	import type { PageData } from './$types';
 	import { goto } from '$app/navigation';
+	import { t } from '$lib/i18n';
 
 	let { data }: { data: PageData } = $props();
 
@@ -20,12 +21,12 @@
 		}
 	}
 
-	const columns = [
-		{ key: 'product_code', label: '商品コード', width: '160px' },
-		{ key: 'product_name', label: '商品名' },
-		{ key: 'quantity', label: '数量', width: '100px', numeric: true },
-		{ key: 'unit', label: '単位', width: '80px' }
-	];
+	const columns = $derived([
+		{ key: 'product_code', label: t('shipping.productCode'), width: '160px' },
+		{ key: 'product_name', label: t('shipping.productName') },
+		{ key: 'quantity', label: t('shipping.quantity'), width: '100px', numeric: true },
+		{ key: 'unit', label: t('shipping.unit'), width: '80px' }
+	]);
 </script>
 
 <svelte:head>
@@ -36,7 +37,7 @@
 	<div class="page-nav">
 		<a href="/shipping" class="back-link">
 			<ArrowLeft size={16} />
-			出荷管理へ戻る
+			{t('shipping.backToList')}
 		</a>
 	</div>
 
@@ -45,43 +46,43 @@
 		<div class="page-actions">
 			<a href="/shipping/{data.slip.id}/export" class="btn-download">
 				<Download size={14} />
-				CSVダウンロード
+				{t('common.csvDownload')}
 			</a>
 			<a href="/shipping/{data.slip.id}/print" target="_blank" class="btn-download">
 				<FileText size={14} />
-				PDF出力
+				{t('shipping.printPdf')}
 			</a>
 			<Button variant="secondary" size="sm" onclick={() => goto(`/shipping/${data.slip.id}/edit`)}>
 				<Pencil size={14} />
-				編集
+				{t('common.edit')}
 			</Button>
 		</div>
 	</div>
 
-	<Card title="伝票情報">
+	<Card title={t('shipping.slipInfo')}>
 		<dl class="info-grid">
 			<div class="info-item">
-				<dt class="info-label">伝票番号</dt>
+				<dt class="info-label">{t('shipping.slipNumber')}</dt>
 				<dd class="info-value">{data.slip.slip_number}</dd>
 			</div>
 			<div class="info-item">
-				<dt class="info-label">出荷日</dt>
+				<dt class="info-label">{t('shipping.shippedAt')}</dt>
 				<dd class="info-value">{data.slip.shipped_at}</dd>
 			</div>
 			<div class="info-item">
-				<dt class="info-label">出荷先</dt>
+				<dt class="info-label">{t('shipping.customer')}</dt>
 				<dd class="info-value">{data.slip.customer_name || '—'}</dd>
 			</div>
 			<div class="info-item">
-				<dt class="info-label">品目数</dt>
+				<dt class="info-label">{t('shipping.itemCount')}</dt>
 				<dd class="info-value">{data.slip.item_count}</dd>
 			</div>
 			<div class="info-item">
-				<dt class="info-label">担当者</dt>
+				<dt class="info-label">{t('shipping.person')}</dt>
 				<dd class="info-value">{data.slip.user_name}</dd>
 			</div>
 			<div class="info-item">
-				<dt class="info-label">備考</dt>
+				<dt class="info-label">{t('shipping.note')}</dt>
 				<dd class="info-value">{data.slip.note || '-'}</dd>
 			</div>
 		</dl>
@@ -89,12 +90,12 @@
 
 	<div class="section">
 		<div class="section-header">
-			<h2 class="section-title">明細</h2>
+			<h2 class="section-title">{t('shipping.slipDetails')}</h2>
 		</div>
 		<div class="table-container">
 			<Table {columns} rows={data.details}>
 				{#snippet empty()}
-					<span>明細がありません</span>
+					<span>{t('common.noData')}</span>
 				{/snippet}
 			</Table>
 		</div>
@@ -102,19 +103,17 @@
 
 	<div class="section danger-section">
 		<div class="section-header">
-			<h2 class="section-title">出荷伝票削除</h2>
+			<h2 class="section-title">{t('shipping.deleteConfirm')}</h2>
 		</div>
 		<div class="danger-zone-body">
 			<div class="danger-zone-item">
 				<div class="danger-zone-item-info">
-					<p class="danger-zone-item-label">この出荷伝票を削除する</p>
-					<p class="danger-zone-item-desc">
-						出荷伝票に紐づく全てのデータ（明細・在庫数）が完全に削除されます。この操作は取り消せません。
-					</p>
+					<p class="danger-zone-item-label">{t('shipping.deleteConfirm')}</p>
+					<p class="danger-zone-item-desc">{t('shipping.deleteMessage')}</p>
 				</div>
 				<Button variant="danger" size="sm" onclick={() => (showDeleteDialog = true)}>
 					<Trash2 size={14} />
-					出荷伝票を削除
+					{t('common.delete')}
 				</Button>
 			</div>
 		</div>
@@ -123,10 +122,10 @@
 
 <ConfirmDialog
 	bind:open={showDeleteDialog}
-	title="出荷伝票の削除"
-	message="この出荷伝票を削除しますか？在庫数も変更されます。"
-	confirmLabel="削除"
-	cancelLabel="キャンセル"
+	title={t('shipping.deleteConfirm')}
+	message={t('shipping.deleteMessage')}
+	confirmLabel={t('common.delete')}
+	cancelLabel={t('common.cancel')}
 	onconfirm={handleDeleteSlip}
 />
 

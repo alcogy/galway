@@ -1,23 +1,24 @@
 <script lang="ts">
 	import { Building2, Package, PackageCheck, Truck, AlertTriangle, PackageCheck as InIcon, Truck as OutIcon } from '@lucide/svelte';
+	import { t } from '$lib/i18n';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
 	const stats = $derived([
-		{ label: '仕入先数', value: data.supplierCount, icon: Building2, color: 'blue' },
-		{ label: '商品数', value: data.productCount, icon: Package, color: 'green' },
-		{ label: '今月の入荷件数', value: data.receivingCountThisMonth, icon: PackageCheck, color: 'orange' },
-		{ label: '今月の出荷件数', value: data.shippingCountThisMonth, icon: Truck, color: 'gray' }
+		{ label: t('dashboard.suppliers'), value: data.supplierCount, icon: Building2, color: 'blue' },
+		{ label: t('dashboard.products'), value: data.productCount, icon: Package, color: 'green' },
+		{ label: t('dashboard.receivingThisMonth'), value: data.receivingCountThisMonth, icon: PackageCheck, color: 'orange' },
+		{ label: t('dashboard.shippingThisMonth'), value: data.shippingCountThisMonth, icon: Truck, color: 'gray' }
 	]);
 </script>
 
 <svelte:head>
-	<title>ダッシュボード — Galway</title>
+	<title>{t('dashboard.pageTitle')}</title>
 </svelte:head>
 
 <div class="dashboard">
-	<h1 class="page-title">ダッシュボード</h1>
+	<h1 class="page-title">{t('dashboard.title')}</h1>
 
 	<div class="stats-grid">
 		{#each stats as stat (stat.label)}
@@ -33,25 +34,25 @@
 		{/each}
 	</div>
 
-	<!-- 本日の入荷予定・出荷予定 -->
+	<!-- Today's schedules -->
 	<div class="today-grid">
-		<!-- 本日の入荷予定 -->
+		<!-- Today's receiving -->
 		<div class="today-section">
 			<div class="today-header receiving">
 				<InIcon size={16} />
-				<h2 class="today-title">本日の入荷予定</h2>
-				<span class="today-count">{data.todayReceiving.length}件</span>
+				<h2 class="today-title">{t('dashboard.todayReceiving')}</h2>
+				<span class="today-count">{data.todayReceiving.length}{t('common.items')}</span>
 			</div>
 			{#if data.todayReceiving.length === 0}
-				<p class="today-empty">本日の入荷予定はありません</p>
+				<p class="today-empty">{t('dashboard.noTodayReceiving')}</p>
 			{:else}
 				<table class="today-table">
 					<thead>
 						<tr>
-							<th>発注番号</th>
-							<th>仕入先</th>
-							<th>商品</th>
-							<th class="num">数量</th>
+							<th>{t('dashboard.orderNumber')}</th>
+							<th>{t('dashboard.supplier')}</th>
+							<th>{t('dashboard.product')}</th>
+							<th class="num">{t('common.quantity')}</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -63,7 +64,7 @@
 									<span class="product-code">{item.product_code}</span>
 									{item.product_name}
 								</td>
-								<td class="num">{item.quantity.toLocaleString('ja-JP')} {item.unit}</td>
+								<td class="num">{item.quantity.toLocaleString()} {item.unit}</td>
 							</tr>
 						{/each}
 					</tbody>
@@ -71,23 +72,23 @@
 			{/if}
 		</div>
 
-		<!-- 本日の出荷予定 -->
+		<!-- Today's shipping -->
 		<div class="today-section">
 			<div class="today-header shipping">
 				<OutIcon size={16} />
-				<h2 class="today-title">本日の出荷予定</h2>
-				<span class="today-count">{data.todayShipping.length}件</span>
+				<h2 class="today-title">{t('dashboard.todayShipping')}</h2>
+				<span class="today-count">{data.todayShipping.length}{t('common.items')}</span>
 			</div>
 			{#if data.todayShipping.length === 0}
-				<p class="today-empty">本日の出荷予定はありません</p>
+				<p class="today-empty">{t('dashboard.noTodayShipping')}</p>
 			{:else}
 				<table class="today-table">
 					<thead>
 						<tr>
-							<th>伝票番号</th>
-							<th>出荷先</th>
-							<th>商品</th>
-							<th class="num">数量</th>
+							<th>{t('dashboard.slipNumber')}</th>
+							<th>{t('dashboard.customer')}</th>
+							<th>{t('dashboard.product')}</th>
+							<th class="num">{t('common.quantity')}</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -99,7 +100,7 @@
 									<span class="product-code">{item.product_code}</span>
 									{item.product_name}
 								</td>
-								<td class="num">{item.quantity.toLocaleString('ja-JP')} {item.unit}</td>
+								<td class="num">{item.quantity.toLocaleString()} {item.unit}</td>
 							</tr>
 						{/each}
 					</tbody>
@@ -108,21 +109,21 @@
 		</div>
 	</div>
 
-	<!-- 在庫不足アラート -->
+	<!-- Low stock alert -->
 	{#if data.lowStockItems.length > 0}
 		<div class="low-stock-section">
 			<div class="low-stock-header">
 				<AlertTriangle size={18} />
-				<h2 class="low-stock-title">在庫不足アラート（{data.lowStockItems.length}件）</h2>
+				<h2 class="low-stock-title">{t('dashboard.lowStockAlert')}（{data.lowStockItems.length}{t('common.items')}）</h2>
 			</div>
 			<div class="low-stock-table-wrap">
 				<table class="low-stock-table">
 					<thead>
 						<tr>
-							<th>商品コード</th>
-							<th>商品名</th>
-							<th class="num">現在庫</th>
-							<th class="num">最低在庫数</th>
+							<th>{t('dashboard.productCode')}</th>
+							<th>{t('dashboard.productName')}</th>
+							<th class="num">{t('dashboard.currentStock')}</th>
+							<th class="num">{t('dashboard.minStock')}</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -130,8 +131,8 @@
 							<tr>
 								<td><a href="/inventory?search={item.product_code}">{item.product_code}</a></td>
 								<td>{item.product_name}</td>
-								<td class="num low">{Number(item.quantity).toLocaleString('ja-JP')} {item.unit}</td>
-								<td class="num">{Number(item.min_quantity).toLocaleString('ja-JP')} {item.unit}</td>
+								<td class="num low">{Number(item.quantity).toLocaleString()} {item.unit}</td>
+								<td class="num">{Number(item.min_quantity).toLocaleString()} {item.unit}</td>
 							</tr>
 						{/each}
 					</tbody>
@@ -200,7 +201,6 @@
 		color: var(--color-text-secondary);
 	}
 
-	/* Today grid */
 	.today-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -305,7 +305,6 @@
 		tr:last-child td { border-bottom: none; }
 	}
 
-	/* Low stock */
 	.low-stock-section {
 		background-color: var(--color-bg-elevated);
 		border: 1px solid var(--color-danger, #f97316);

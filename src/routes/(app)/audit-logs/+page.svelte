@@ -3,6 +3,7 @@
 	import { page } from '$app/state';
 	import { Select, Pagination, Input, Button } from '$lib/ui';
 	import type { PageData } from './$types';
+	import { t } from '$lib/i18n';
 
 	let { data }: { data: PageData } = $props();
 
@@ -11,14 +12,52 @@
 	let filterTarget = $state(page.url.searchParams.get('target') || '');
 
 	const actionOptions = $derived([
-		{ value: '', label: '全アクション' },
-		...Object.entries(data.actionLabels).map(([k, v]) => ({ value: k, label: v })),
+		{ value: '', label: t('auditLogs.allActions') },
+		{ value: 'create', label: t('auditLogs.actionCreate') },
+		{ value: 'update', label: t('auditLogs.actionUpdate') },
+		{ value: 'delete', label: t('auditLogs.actionDelete') },
+		{ value: 'import', label: t('auditLogs.actionImport') },
+		{ value: 'status_change', label: t('auditLogs.actionStatusChange') },
+		{ value: 'stocktake', label: t('auditLogs.actionStocktake') },
+		{ value: 'settings_save', label: t('auditLogs.actionSettingsSave') },
 	]);
 
 	const targetOptions = $derived([
-		{ value: '', label: '全対象' },
-		...Object.entries(data.targetLabels).map(([k, v]) => ({ value: k, label: v })),
+		{ value: '', label: t('auditLogs.allTargets') },
+		{ value: 'product', label: t('auditLogs.targetProduct') },
+		{ value: 'supplier', label: t('auditLogs.targetSupplier') },
+		{ value: 'receiving_slip', label: t('auditLogs.targetReceivingSlip') },
+		{ value: 'shipping_slip', label: t('auditLogs.targetShippingSlip') },
+		{ value: 'inventory', label: t('auditLogs.targetInventory') },
+		{ value: 'purchase_order', label: t('auditLogs.targetPurchaseOrder') },
+		{ value: 'customer', label: t('auditLogs.targetCustomer') },
+		{ value: 'category', label: t('auditLogs.targetCategory') },
+		{ value: 'account', label: t('auditLogs.targetAccount') },
+		{ value: 'settings', label: t('auditLogs.targetSettings') },
 	]);
+
+	const actionLabelMap = $derived<Record<string, string>>({
+		create: t('auditLogs.actionCreate'),
+		update: t('auditLogs.actionUpdate'),
+		delete: t('auditLogs.actionDelete'),
+		import: t('auditLogs.actionImport'),
+		status_change: t('auditLogs.actionStatusChange'),
+		stocktake: t('auditLogs.actionStocktake'),
+		settings_save: t('auditLogs.actionSettingsSave'),
+	});
+
+	const targetLabelMap = $derived<Record<string, string>>({
+		product: t('auditLogs.targetProduct'),
+		supplier: t('auditLogs.targetSupplier'),
+		receiving_slip: t('auditLogs.targetReceivingSlip'),
+		shipping_slip: t('auditLogs.targetShippingSlip'),
+		inventory: t('auditLogs.targetInventory'),
+		purchase_order: t('auditLogs.targetPurchaseOrder'),
+		customer: t('auditLogs.targetCustomer'),
+		category: t('auditLogs.targetCategory'),
+		account: t('auditLogs.targetAccount'),
+		settings: t('auditLogs.targetSettings'),
+	});
 
 	function buildParams(p: number) {
 		const params = new URLSearchParams();
@@ -66,15 +105,15 @@
 </script>
 
 <svelte:head>
-	<title>操作ログ — Galway</title>
+	<title>{t('auditLogs.pageTitle')}</title>
 </svelte:head>
 
 <div class="page">
-	<h1 class="page-title">操作ログ</h1>
+	<h1 class="page-title">{t('auditLogs.title')}</h1>
 
 	<div class="filters">
 		<div class="filter-field">
-			<Input bind:value={filterUser} placeholder="ユーザー名で検索..." onkeydown={(e) => e.key === 'Enter' && handleFilter()} />
+			<Input bind:value={filterUser} placeholder={t('auditLogs.searchUserPlaceholder')} onkeydown={(e) => e.key === 'Enter' && handleFilter()} />
 		</div>
 		<div class="filter-select">
 			<Select options={actionOptions} bind:value={filterAction} onchange={handleFilter} />
@@ -82,27 +121,27 @@
 		<div class="filter-select">
 			<Select options={targetOptions} bind:value={filterTarget} onchange={handleFilter} />
 		</div>
-		<Button variant="secondary" size="sm" onclick={handleFilter}>検索</Button>
+		<Button variant="secondary" size="sm" onclick={handleFilter}>Search</Button>
 	</div>
 
-	<div class="log-count">全 {data.totalItems.toLocaleString('ja-JP')} 件</div>
+	<div class="log-count">{data.totalItems.toLocaleString()} {t('common.items')}</div>
 
 	<div class="table-wrap">
 		<table class="log-table">
 			<thead>
 				<tr>
-					<th class="col-date">日時</th>
-					<th class="col-user">ユーザー</th>
-					<th class="col-action">アクション</th>
-					<th class="col-target">対象種別</th>
-					<th class="col-label">対象</th>
-					<th class="col-detail">詳細</th>
+					<th class="col-date">{t('auditLogs.createdAt')}</th>
+					<th class="col-user">{t('auditLogs.user')}</th>
+					<th class="col-action">{t('auditLogs.action')}</th>
+					<th class="col-target">{t('auditLogs.target')}</th>
+					<th class="col-label">{t('auditLogs.target')}</th>
+					<th class="col-detail">{t('auditLogs.detail')}</th>
 				</tr>
 			</thead>
 			<tbody>
 				{#if data.logs.length === 0}
 					<tr>
-						<td colspan="6" class="empty-cell">ログがありません</td>
+						<td colspan="6" class="empty-cell">{t('auditLogs.empty')}</td>
 					</tr>
 				{:else}
 					{#each data.logs as log (log.id)}
@@ -111,10 +150,10 @@
 							<td class="col-user">{log.user_name ?? '—'}</td>
 							<td class="col-action">
 								<span class="action-badge action-{ACTION_COLOR[log.action] ?? 'gray'}">
-									{data.actionLabels[log.action as keyof typeof data.actionLabels] ?? log.action}
+									{actionLabelMap[log.action] ?? log.action}
 								</span>
 							</td>
-							<td class="col-target">{data.targetLabels[log.target_type as keyof typeof data.targetLabels] ?? log.target_type}</td>
+							<td class="col-target">{targetLabelMap[log.target_type] ?? log.target_type}</td>
 							<td class="col-label">{log.target_label ?? log.target_id ?? '—'}</td>
 							<td class="col-detail muted">{parseDetail(log.detail)}</td>
 						</tr>
@@ -204,7 +243,7 @@
 	.col-action { width: 110px; }
 	.col-target { width: 90px; }
 	.col-label { width: 200px; }
-	.col-detail { /* flex */ }
+	.col-detail { flex: 1; }
 
 	.mono {
 		font-variant-numeric: tabular-nums;

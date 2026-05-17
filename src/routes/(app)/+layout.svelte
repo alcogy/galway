@@ -1,18 +1,24 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { Sidebar, ConfirmDialog } from '$lib/ui';
 	import { getTheme, setTheme } from '$lib/theme.svelte';
+	import { initLocale, t } from '$lib/i18n';
 	import type { LayoutData } from './$types';
 
 	let { children, data }: { children: any; data: LayoutData } = $props();
 
 	let signoutOpen = $state(false);
+
+	onMount(() => {
+		initLocale();
+	});
 </script>
 
 <ConfirmDialog
 	bind:open={signoutOpen}
-	title="サインアウト"
-	message="サインアウトしてもよろしいですか？"
-	confirmLabel="サインアウト"
+	title={t('nav.signOut')}
+	message={t('nav.signOut') + '?'}
+	confirmLabel={t('nav.signOut')}
 	onconfirm={() => { window.location.href = '/logout'; }}
 />
 

@@ -3,6 +3,7 @@
 	import { Button, Table, Pagination } from '$lib/ui';
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
+	import { t } from '$lib/i18n';
 
 	let { data }: { data: PageData } = $props();
 
@@ -12,35 +13,35 @@
 		data.orders.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
 	);
 
-	const STATUS_LABELS: Record<string, string> = {
-		draft: '下書き',
-		ordered: '発注済',
-		received: '入荷済',
-		cancelled: 'キャンセル',
-	};
+	const STATUS_LABELS = $derived<Record<string, string>>({
+		draft: t('purchasing.statusDraft'),
+		ordered: t('purchasing.statusOrdered'),
+		received: t('purchasing.statusReceived'),
+		cancelled: t('purchasing.statusCancelled'),
+	});
 
-	const columns = [
-		{ key: 'order_number', label: '発注番号', width: '150px' },
-		{ key: 'ordered_at', label: '発注日', width: '110px' },
-		{ key: 'expected_at', label: '入荷予定日', width: '120px' },
-		{ key: 'supplier_name', label: '仕入先' },
-		{ key: 'item_count', label: '品目数', width: '80px', numeric: true },
-		{ key: 'status', label: 'ステータス', width: '110px' },
-		{ key: 'user_name', label: '担当者', width: '110px' },
-	];
+	const columns = $derived([
+		{ key: 'order_number', label: t('purchasing.orderNumber'), width: '150px' },
+		{ key: 'ordered_at', label: t('purchasing.orderedAt'), width: '110px' },
+		{ key: 'expected_at', label: t('purchasing.expectedAt'), width: '120px' },
+		{ key: 'supplier_name', label: t('purchasing.supplier') },
+		{ key: 'item_count', label: t('purchasing.itemCount'), width: '80px', numeric: true },
+		{ key: 'status', label: t('purchasing.status'), width: '110px' },
+		{ key: 'user_name', label: t('purchasing.person'), width: '110px' },
+	]);
 </script>
 
 <svelte:head>
-	<title>発注管理 — Galway</title>
+	<title>{t('purchasing.pageTitle')}</title>
 </svelte:head>
 
 <div class="page">
 	<div class="page-header">
-		<h1 class="page-title">発注管理</h1>
+		<h1 class="page-title">{t('purchasing.title')}</h1>
 		<div class="page-actions">
 			<Button size="sm" onclick={() => goto('/purchasing/new')}>
 				<Plus size={16} />
-				新規発注
+				{t('purchasing.newOrder')}
 			</Button>
 		</div>
 	</div>
@@ -57,7 +58,7 @@
 				{/if}
 			{/snippet}
 			{#snippet empty()}
-				<span>発注が登録されていません</span>
+				<span>{t('purchasing.empty')}</span>
 			{/snippet}
 		</Table>
 		<Pagination

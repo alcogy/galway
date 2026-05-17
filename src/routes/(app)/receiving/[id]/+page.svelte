@@ -3,6 +3,7 @@
 	import { Button, Card, ConfirmDialog, Table } from '$lib/ui';
 	import type { PageData } from './$types';
 	import { goto } from '$app/navigation';
+	import { t } from '$lib/i18n';
 
 	let { data }: { data: PageData } = $props();
 
@@ -20,12 +21,12 @@
 		}
 	}
 
-	const columns = [
-		{ key: 'product_code', label: '商品コード', width: '160px' },
-		{ key: 'product_name', label: '商品名' },
-		{ key: 'quantity', label: '数量', width: '100px', numeric: true },
-		{ key: 'unit', label: '単位', width: '80px' }
-	];
+	const columns = $derived([
+		{ key: 'product_code', label: t('receiving.productCode'), width: '160px' },
+		{ key: 'product_name', label: t('receiving.productName') },
+		{ key: 'quantity', label: t('receiving.quantity'), width: '100px', numeric: true },
+		{ key: 'unit', label: t('receiving.unit'), width: '80px' }
+	]);
 </script>
 
 <svelte:head>
@@ -36,7 +37,7 @@
 	<div class="page-nav">
 		<a href="/receiving" class="back-link">
 			<ArrowLeft size={16} />
-			入荷管理へ戻る
+			{t('receiving.backToList')}
 		</a>
 	</div>
 
@@ -45,39 +46,39 @@
 		<div class="page-actions">
 			<a href="/receiving/{data.slip.id}/export" class="btn-download">
 				<Download size={14} />
-				CSVダウンロード
+				{t('common.csvDownload')}
 			</a>
 			<Button variant="secondary" size="sm" onclick={() => goto(`/receiving/${data.slip.id}/edit`)}>
 				<Pencil size={14} />
-				編集
+				{t('common.edit')}
 			</Button>
 		</div>
 	</div>
 
-	<Card title="伝票情報">
+	<Card title={t('receiving.slipInfo')}>
 		<dl class="info-grid">
 			<div class="info-item">
-				<dt class="info-label">伝票番号</dt>
+				<dt class="info-label">{t('receiving.slipNumber')}</dt>
 				<dd class="info-value">{data.slip.slip_number}</dd>
 			</div>
 			<div class="info-item">
-				<dt class="info-label">入荷日</dt>
+				<dt class="info-label">{t('receiving.receivedAt')}</dt>
 				<dd class="info-value">{data.slip.received_at}</dd>
 			</div>
 			<div class="info-item">
-				<dt class="info-label">仕入先</dt>
+				<dt class="info-label">{t('receiving.supplier')}</dt>
 				<dd class="info-value">{data.slip.supplier_name}</dd>
 			</div>
 			<div class="info-item">
-				<dt class="info-label">品目数</dt>
+				<dt class="info-label">{t('receiving.itemCount')}</dt>
 				<dd class="info-value">{data.slip.item_count}</dd>
 			</div>
 			<div class="info-item">
-				<dt class="info-label">担当者</dt>
+				<dt class="info-label">{t('receiving.person')}</dt>
 				<dd class="info-value">{data.slip.user_name}</dd>
 			</div>
 			<div class="info-item">
-				<dt class="info-label">備考</dt>
+				<dt class="info-label">{t('receiving.note')}</dt>
 				<dd class="info-value">{data.slip.note || '-'}</dd>
 			</div>
 		</dl>
@@ -85,12 +86,12 @@
 
 	<div class="section">
 		<div class="section-header">
-			<h2 class="section-title">明細</h2>
+			<h2 class="section-title">{t('receiving.slipDetails')}</h2>
 		</div>
 		<div class="table-container">
 			<Table {columns} rows={data.details}>
 				{#snippet empty()}
-					<span>明細がありません</span>
+					<span>{t('common.noData')}</span>
 				{/snippet}
 			</Table>
 		</div>
@@ -98,19 +99,17 @@
 
 	<div class="section danger-section">
 		<div class="section-header">
-			<h2 class="section-title">入荷伝票削除</h2>
+			<h2 class="section-title">{t('receiving.deleteConfirm')}</h2>
 		</div>
 		<div class="danger-zone-body">
 			<div class="danger-zone-item">
 				<div class="danger-zone-item-info">
-					<p class="danger-zone-item-label">この入荷伝票を削除する</p>
-					<p class="danger-zone-item-desc">
-						入荷伝票に紐づく全てのデータ（明細・在庫数）が完全に削除されます。この操作は取り消せません。
-					</p>
+					<p class="danger-zone-item-label">{t('receiving.deleteConfirm')}</p>
+					<p class="danger-zone-item-desc">{t('receiving.deleteMessage')}</p>
 				</div>
 				<Button variant="danger" size="sm" onclick={() => (showDeleteDialog = true)}>
 					<Trash2 size={14} />
-					入荷伝票を削除
+					{t('common.delete')}
 				</Button>
 			</div>
 		</div>
@@ -119,10 +118,10 @@
 
 <ConfirmDialog
 	bind:open={showDeleteDialog}
-	title="入荷伝票の削除"
-	message="この入荷伝票を削除しますか？在庫数も変更されます。"
-	confirmLabel="削除"
-	cancelLabel="キャンセル"
+	title={t('receiving.deleteConfirm')}
+	message={t('receiving.deleteMessage')}
+	confirmLabel={t('common.delete')}
+	cancelLabel={t('common.cancel')}
 	onconfirm={handleDeleteSlip}
 />
 

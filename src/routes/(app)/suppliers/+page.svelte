@@ -5,6 +5,7 @@
 	import { Button, Input, Label, Modal, ConfirmDialog, Table, SearchBar, Pagination, CsvImportDialog } from '$lib/ui';
 	import type { PageData } from './$types';
 	import type { Supplier } from './+page.server';
+	import { t } from '$lib/i18n';
 
 	let { data }: { data: PageData } = $props();
 
@@ -71,42 +72,42 @@
 		showDeleteDialog = true;
 	}
 
-	const columns = [
-		{ key: 'name', label: '仕入先名' },
-		{ key: 'tel', label: '電話番号', width: '140px' },
-		{ key: 'zipcode', label: '郵便番号', width: '100px' },
-		{ key: 'address', label: '住所' },
-		{ key: 'email', label: 'メールアドレス', width: '200px' }
-	];
+	const columns = $derived([
+		{ key: 'name', label: t('suppliers.supplierName') },
+		{ key: 'tel', label: t('common.phone'), width: '140px' },
+		{ key: 'zipcode', label: t('common.zipcode'), width: '100px' },
+		{ key: 'address', label: t('common.address') },
+		{ key: 'email', label: t('common.email'), width: '200px' }
+	]);
 </script>
 
 <svelte:head>
-	<title>仕入先管理 — Galway</title>
+	<title>{t('suppliers.pageTitle')}</title>
 </svelte:head>
 
 <div class="page">
 	<div class="page-header">
-		<h1 class="page-title">仕入先管理</h1>
+		<h1 class="page-title">{t('suppliers.title')}</h1>
 		<div class="page-actions">
 			<a href={getExportUrl()} download>
 				<Button variant="secondary" size="sm">
 					<Download size={14} />
-					CSVダウンロード
+					{t('common.csvDownload')}
 				</Button>
 			</a>
 			<Button variant="secondary" size="sm" onclick={() => (showImportDialog = true)}>
 				<Upload size={14} />
-				CSVインポート
+				{t('common.csvImport')}
 			</Button>
 			<Button size="sm" onclick={openCreate}>
 				<Plus size={16} />
-				新規登録
+				{t('common.new')}
 			</Button>
 		</div>
 	</div>
 
 	<div class="filters">
-		<SearchBar bind:value={searchQuery} placeholder="仕入先名で検索..." onsubmit={handleSearch} />
+		<SearchBar bind:value={searchQuery} placeholder={t('suppliers.searchPlaceholder')} onsubmit={handleSearch} />
 	</div>
 
 	<div class="table-with-pagination">
@@ -122,7 +123,7 @@
 				</div>
 			{/snippet}
 			{#snippet empty()}
-				<span>仕入先が登録されていません</span>
+				<span>{t('suppliers.empty')}</span>
 			{/snippet}
 		</Table>
 		<Pagination
@@ -135,7 +136,7 @@
 </div>
 
 <!-- Create / Edit Modal -->
-<Modal bind:open={showModal} title={editing ? '仕入先編集' : '仕入先登録'} size="md">
+<Modal bind:open={showModal} title={editing ? t('suppliers.editTitle') : t('suppliers.createTitle')} size="md">
 	<form method="POST" action={editing ? '?/update' : '?/create'} class="form">
 		{#if editing}
 			<input type="hidden" name="id" value={editing.id} />
@@ -143,36 +144,36 @@
 
 		<div class="form-grid">
 			<div class="field full">
-				<Label required>仕入先名</Label>
-				<Input name="name" bind:value={name} placeholder="株式会社〇〇" required />
+				<Label required>{t('suppliers.supplierName')}</Label>
+				<Input name="name" bind:value={name} required />
 			</div>
 			<div class="field">
-				<Label>電話番号</Label>
+				<Label>{t('common.phone')}</Label>
 				<Input name="tel" bind:value={tel} placeholder="03-0000-0000" type="tel" />
 			</div>
 			<div class="field">
-				<Label>FAX</Label>
+				<Label>{t('common.fax')}</Label>
 				<Input name="fax" bind:value={fax} placeholder="03-0000-0001" type="tel" />
 			</div>
 			<div class="field">
-				<Label>郵便番号</Label>
+				<Label>{t('common.zipcode')}</Label>
 				<Input name="zipcode" bind:value={zipcode} placeholder="000-0000" />
 			</div>
 			<div class="field">
-				<Label>メールアドレス</Label>
+				<Label>{t('common.email')}</Label>
 				<Input name="email" bind:value={email} placeholder="contact@example.com" type="email" />
 			</div>
 			<div class="field full">
-				<Label>住所</Label>
-				<Input name="address" bind:value={address} placeholder="東京都〇〇区..." />
+				<Label>{t('common.address')}</Label>
+				<Input name="address" bind:value={address} />
 			</div>
 		</div>
 
 		<div class="form-actions">
 			<Button type="button" variant="secondary" onclick={() => (showModal = false)}>
-				キャンセル
+				{t('common.cancel')}
 			</Button>
-			<Button type="submit">{editing ? '更新' : '登録'}</Button>
+			<Button type="submit">{editing ? t('common.update') : t('common.register')}</Button>
 		</div>
 	</form>
 </Modal>
@@ -180,10 +181,10 @@
 <!-- Delete Confirm -->
 <ConfirmDialog
 	bind:open={showDeleteDialog}
-	title="仕入先の削除"
-	message="この仕入先を削除しますか？関連する商品との紐付けも削除されます。"
-	confirmLabel="削除"
-	cancelLabel="キャンセル"
+	title={t('suppliers.deleteConfirm')}
+	message={t('suppliers.deleteConfirm')}
+	confirmLabel={t('common.delete')}
+	cancelLabel={t('common.cancel')}
 	onconfirm={() => {
 		const form = document.createElement('form');
 		form.method = 'POST';
@@ -201,7 +202,6 @@
 <!-- CSV Import -->
 <CsvImportDialog
 	bind:open={showImportDialog}
-	title="仕入先CSVインポート"
 	onimport={async (file, mode) => {
 		const formData = new FormData();
 		formData.append('file', file);
@@ -215,12 +215,12 @@
 			const json = await res.json() as any;
 			if (json.type === 'success') {
 				await invalidateAll();
-				importNotification = { type: 'success', message: `${json.data?.count ?? ''}件の仕入先データをインポートしました` };
+				importNotification = { type: 'success', message: `${json.data?.count ?? ''} ${t('common.items')} imported` };
 			} else {
-				importNotification = { type: 'error', message: json.data?.error || 'インポートに失敗しました' };
+				importNotification = { type: 'error', message: json.data?.error || t('common.error') };
 			}
 		} catch {
-			importNotification = { type: 'error', message: 'インポートに失敗しました' };
+			importNotification = { type: 'error', message: t('common.error') };
 		}
 		setTimeout(() => { importNotification = null; }, 6000);
 	}}

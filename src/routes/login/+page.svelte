@@ -3,6 +3,7 @@
 	import { getTheme, setTheme, type Theme } from '$lib/theme.svelte';
 	import { Sun, Moon, Monitor } from '@lucide/svelte';
 	import type { ActionData } from './$types';
+	import { t } from '$lib/i18n';
 
 	let { form }: { form: ActionData } = $props();
 
@@ -17,7 +18,7 @@
 </script>
 
 <svelte:head>
-	<title>サインイン — Galway</title>
+	<title>{t('login.pageTitle')}</title>
 </svelte:head>
 
 <div class="login-page">
@@ -28,7 +29,7 @@
 	<div class="login-card">
 		<div class="login-header">
 			<h1 class="login-title">Galway</h1>
-			<p class="login-subtitle">Sign in to your account</p>
+			<p class="login-subtitle">{t('login.subtitle')}</p>
 		</div>
 
 		<form method="POST" class="login-form">
@@ -37,7 +38,7 @@
 			{/if}
 
 			<div class="field">
-				<Label for="email" required>メールアドレス</Label>
+				<Label for="email" required>{t('login.email')}</Label>
 				<Input
 					id="email"
 					type="email"
@@ -49,7 +50,7 @@
 			</div>
 
 			<div class="field">
-				<Label for="password" required>パスワード</Label>
+				<Label for="password" required>{t('login.password')}</Label>
 				<Input
 					id="password"
 					type="password"
@@ -60,7 +61,7 @@
 				/>
 			</div>
 
-			<Button type="submit" variant="primary" size="lg">サインイン</Button>
+			<Button type="submit" variant="primary" size="lg">{t('login.signIn')}</Button>
 		</form>
 	</div>
 </div>

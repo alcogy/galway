@@ -4,6 +4,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
 	import type { InventorySchedule } from './+page.server';
+	import { t } from '$lib/i18n';
 
 	let { data }: { data: PageData } = $props();
 
@@ -14,17 +15,17 @@
 	let scheduledAt = $state('');
 	let note = $state('');
 
-	const STATUS_LABELS: Record<string, string> = {
-		planned: '予定',
-		in_progress: '実施中',
-		completed: '完了',
-		cancelled: 'キャンセル',
-	};
+	const STATUS_LABELS = $derived<Record<string, string>>({
+		planned: t('inventorySchedules.statusPlanned'),
+		in_progress: t('inventorySchedules.statusInProgress'),
+		completed: t('inventorySchedules.statusCompleted'),
+		cancelled: t('inventorySchedules.statusCancelled'),
+	});
 
-	const STATUS_NEXT: Record<string, { label: string; next: string }> = {
-		planned: { label: '実施開始', next: 'in_progress' },
-		in_progress: { label: '完了にする', next: 'completed' },
-	};
+	const STATUS_NEXT = $derived<Record<string, { label: string; next: string }>>({
+		planned: { label: t('inventorySchedules.actionStart'), next: 'in_progress' },
+		in_progress: { label: t('inventorySchedules.actionComplete'), next: 'completed' },
+	});
 
 	function openCreate() {
 		title = '';
@@ -46,25 +47,25 @@
 		await invalidateAll();
 	}
 
-	const columns = [
-		{ key: 'scheduled_at', label: '予定日', width: '120px' },
-		{ key: 'title', label: 'タイトル' },
-		{ key: 'status', label: 'ステータス', width: '110px' },
-		{ key: 'note', label: '備考' },
-	];
+	const columns = $derived([
+		{ key: 'scheduled_at', label: t('inventorySchedules.scheduledAt'), width: '120px' },
+		{ key: 'title', label: t('inventorySchedules.scheduleTitle') },
+		{ key: 'status', label: t('inventorySchedules.status'), width: '110px' },
+		{ key: 'note', label: t('inventorySchedules.note') },
+	]);
 </script>
 
 <svelte:head>
-	<title>棚卸スケジュール — Galway</title>
+	<title>{t('inventorySchedules.pageTitle')}</title>
 </svelte:head>
 
 <div class="page">
 	<div class="page-header">
-		<h1 class="page-title">棚卸スケジュール</h1>
+		<h1 class="page-title">{t('inventorySchedules.title')}</h1>
 		<div class="page-actions">
 			<Button size="sm" onclick={openCreate}>
 				<Plus size={16} />
-				新規登録
+				{t('common.new')}
 			</Button>
 		</div>
 	</div>
@@ -80,9 +81,9 @@
 		{#snippet actions(row: InventorySchedule)}
 			<div class="row-actions">
 				{#if STATUS_NEXT[row.status]}
-					{@const t = STATUS_NEXT[row.status]}
-					<Button variant="secondary" size="sm" onclick={() => changeStatus(row.id, t.next)}>
-						{t.label}
+					{@const next = STATUS_NEXT[row.status]}
+					<Button variant="secondary" size="sm" onclick={() => changeStatus(row.id, next.next)}>
+						{next.label}
 					</Button>
 				{/if}
 				{#if row.status === 'planned' || row.status === 'cancelled'}
@@ -93,32 +94,32 @@
 			</div>
 		{/snippet}
 		{#snippet empty()}
-			<span>棚卸スケジュールが登録されていません</span>
+			<span>{t('inventorySchedules.empty')}</span>
 		{/snippet}
 	</Table>
 </div>
 
 <!-- Create Modal -->
-<Modal bind:open={showModal} title="棚卸スケジュール登録" size="sm">
+<Modal bind:open={showModal} title={t('inventorySchedules.createTitle')} size="sm">
 	<form method="POST" action="?/create" class="form">
 		<div class="field">
-			<Label required>タイトル</Label>
-			<Input name="title" bind:value={title} placeholder="例: 月次棚卸" required />
+			<Label required>{t('inventorySchedules.titleLabel')}</Label>
+			<Input name="title" bind:value={title} placeholder={t('inventorySchedules.titlePlaceholder')} required />
 		</div>
 		<div class="field">
-			<Label required>予定日</Label>
+			<Label required>{t('inventorySchedules.scheduledAtLabel')}</Label>
 			<input class="date-input" type="date" name="scheduled_at" bind:value={scheduledAt} required />
 		</div>
 		<div class="field">
-			<Label>備考</Label>
-			<Textarea name="note" bind:value={note} placeholder="備考（任意）" rows={3} />
+			<Label>{t('inventorySchedules.noteLabel')}</Label>
+			<Textarea name="note" bind:value={note} rows={3} />
 		</div>
 
 		<div class="form-actions">
 			<Button type="button" variant="secondary" onclick={() => (showModal = false)}>
-				キャンセル
+				{t('common.cancel')}
 			</Button>
-			<Button type="submit">登録</Button>
+			<Button type="submit">{t('common.register')}</Button>
 		</div>
 	</form>
 </Modal>
@@ -126,10 +127,10 @@
 <!-- Delete Confirm -->
 <ConfirmDialog
 	bind:open={showDeleteDialog}
-	title="スケジュールの削除"
-	message="この棚卸スケジュールを削除しますか？"
-	confirmLabel="削除"
-	cancelLabel="キャンセル"
+	title={t('inventorySchedules.deleteConfirm')}
+	message={t('inventorySchedules.deleteConfirm')}
+	confirmLabel={t('common.delete')}
+	cancelLabel={t('common.cancel')}
 	onconfirm={() => {
 		const form = document.createElement('form');
 		form.method = 'POST';
