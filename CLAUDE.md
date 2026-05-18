@@ -384,10 +384,10 @@ Dashboard → Suppliers → Products → Categories → Purchasing → Receiving
 ### EN/JA Language Switching
 - `src/lib/i18n/en.ts`: English dictionary (source of truth); `Dict` type defined as `{ [K in keyof typeof en]: { [J in keyof typeof en[K]]: string } }` — allows Japanese values in `ja.ts` without literal type errors
 - `src/lib/i18n/ja.ts`: Japanese dictionary (`const ja: Dict = { ... }`)
-- `src/lib/i18n/index.svelte.ts`: reactive `locale` state (`$state`), `t(key)`, `setLocale()`, `initLocale()`
+- `src/lib/i18n/index.svelte.ts`: reactive `locale` state (`$state`), `t(key)`, `setLocale()`, `initLocale()` (no-op, kept for compatibility)
 - `src/lib/i18n/index.ts`: barrel re-export (`export * from './index.svelte.js'`) so `$lib/i18n` resolves correctly via TypeScript module resolution
 - All `.svelte` files and UI components import `{ t } from '$lib/i18n'` and use `t('section.key')` for all UI strings
-- Language persisted in `localStorage` under key `galway-locale`; initialized on mount via `initLocale()` in `(app)/+layout.svelte`
+- Language persisted in `localStorage` under key `galway-locale` **and** in cookie `galway-locale` (set by `setLocale()`)
 - Language switcher: Settings page (`/settings`) → Language card with EN / JA toggle buttons
 - Default locale: `en`
 - README.md and CLAUDE.md fully translated to English
@@ -404,7 +404,98 @@ Dashboard → Suppliers → Products → Categories → Purchasing → Receiving
 - **No auto-print**: removed `onMount(() => { window.print(); })`; a "Print / 印刷" button is shown on screen (hidden in print mode) so the user triggers printing manually
 - **Unit column**: widened from `40px` → `60px` in the print page items table; from `80px` → `120px` in the shipping slip detail page table
 
+## Plan 9 — Completed (2026-05-18)
+
+Polish and UX alignment with the Cork reference project.
+
+### Language FOUC Fix
+- **Root cause**: `initLocale()` was called inside `onMount`, causing a re-render after hydration when locale was Japanese
+- **Fix**: locale is now initialized at module load time in `index.svelte.ts` (reads `localStorage` immediately via `if (browser)` block); `initLocale()` is now a no-op kept for compatibility
+- `setLocale()` now also writes the `galway-locale` cookie (max-age 1 year, SameSite=Lax) so the server can read it on the next request
+- `src/hooks.server.ts`: reads `galway-locale` cookie → `event.locals.locale`
+- `src/app.d.ts`: `locale?: string` added to `App.Locals`
+- `src/routes/(app)/+layout.server.ts`: returns `locale` in page data
+- `src/routes/(app)/+layout.svelte`: calls `setLocale(data.locale as Locale)` directly (no `onMount`); locale is correct on SSR → no FOUC
+- `src/app.html`: inline script now also sets `document.documentElement.lang` before first paint (covers edge cases)
+
+### Sidebar — Settings Moved to Secondary Nav
+- `src/lib/ui/Sidebar.svelte`: `settings` removed from `primaryNavItems`; added to `secondaryNavItems` between Profile and Sign Out (with `adminOnly: true`)
+
+### Theme Switcher Moved to Settings Page
+- Removed theme switcher (`Sun/Moon/Monitor` buttons) from the Sidebar footer entirely
+- `src/lib/ui/Sidebar.svelte`: removed `theme` and `onthemechange` props; removed `sidebar-footer` with theme UI
+- `src/routes/(app)/+layout.svelte`: no longer passes `theme`/`onthemechange` to Sidebar
+- `src/routes/(app)/settings/+page.svelte`: new Appearance card added with Light / Dark / System toggle buttons
+- i18n keys added: `settings.appearance`, `settings.theme`, `settings.themeDesc`, `settings.themeLight`, `settings.themeDark`, `settings.themeSystem`
+
+### Profile Page Redesign (Cork-style)
+- Replaced modal-based profile page with cork-style two-column inline form
+- Left card: name field + email (read-only, disabled) + Change Password section (current / new password)
+- Right card: Account Details (role badge + member-since date)
+- `src/routes/(app)/profile/+page.server.ts`: removed email update; simplified to name + optional password change; returns `{ success: true }` for `use:enhance`
+- i18n keys added: `profile.accountDetails`, `profile.memberSince`, `profile.namePlaceholder`, `profile.emailNote`, `profile.changePassword`, `profile.currentPasswordHint`, `profile.newPasswordHint`, `profile.savedSuccessfully`, `common.saving`, `common.saveChanges`
+
+### Directory Structure — types/ and services/ Added
+- `src/lib/types/shared.ts`: common TypeScript types (`User`, `Role`, `PaginationParams`, `PaginationMeta`)
+- `src/lib/services/index.ts`: `ServiceCtx` type + `makeCtx()` factory function (mirrors Cork architecture)
+- **Next**: migrate existing `+page.server.ts` business logic into service functions (see TODO below)
+
+### UI Components — i18n Fixes
+- `src/lib/ui/Pagination.svelte`: hardcoded Japanese info text and aria-labels replaced with `t('pagination.*')` keys; info string uses `{start}`, `{end}`, `{total}`, `{current}`, `{pages}` placeholders
+- `src/lib/ui/SearchBar.svelte`: hardcoded「検索」button replaced with `t('common.search')`
+- `src/lib/ui/Table.svelte`: hardcoded「操作」actions column header replaced with `t('common.actions')`
+- i18n keys added: `pagination.info/first/previous/next/last`, `common.search`, `common.actions`
+
 ## TODO — Future Features (not yet implemented)
+
+### Types & Services Refactoring (Next Session — Plan 10)
+
+Migrate domain types and business logic out of `+page.server.ts` files into the `src/lib/types/` and `src/lib/services/` layers, mirroring the Cork architecture.
+
+**Types to extract** (`src/lib/types/`):
+- `supplier.ts` — Supplier
+- `product.ts` — Product, ProductCategory
+- `receiving.ts` — ReceivingSlip, ReceivingSlipDetail
+- `shipping.ts` — ShippingSlip, ShippingSlipDetail, Customer
+- `inventory.ts` — Inventory, InventorySchedule
+- `purchasing.ts` — PurchaseOrder, PurchaseOrderDetail
+- `account.ts` — Account (extend `shared.ts` User)
+
+**Services to create** (`src/lib/services/`):
+- `supplier.ts` — listSuppliers, createSupplier, updateSupplier, deleteSupplier, importSuppliers
+- `product.ts` — listProducts, createProduct, updateProduct, deleteProduct, importProducts
+- `receiving.ts` — listReceivingSlips, getReceivingSlip, createReceivingSlip, updateReceivingSlip, deleteReceivingSlip
+- `shipping.ts` — listShippingSlips, getShippingSlip, createShippingSlip, updateShippingSlip, deleteShippingSlip
+- `inventory.ts` — listInventory, stocktake, importInventory
+- `purchasing.ts` — listPurchaseOrders, getPurchaseOrder, createPurchaseOrder, updatePurchaseOrder, updateStatus
+- `account.ts` — listAccounts, createAccount, updateAccount, deleteAccount
+- `category.ts` — listCategories, createCategory, updateCategory, deleteCategory
+- `customer.ts` — listCustomers, createCustomer, updateCustomer, deleteCustomer
+
+**Pattern** (same as Cork):
+```ts
+// +page.server.ts — thin glue
+export const actions = {
+  create: async ({ request, platform, locals }) => {
+    const f = await request.formData();
+    return createSupplier(makeCtx(platform!, locals, request), {
+      name: f.get('name')?.toString().trim() ?? '',
+    });
+  }
+};
+
+// $lib/services/supplier.ts — business logic
+export async function createSupplier(ctx: ServiceCtx, data: {...}) {
+  const { db, user } = ctx;
+  // DB operations, audit logging
+}
+```
+
+**Rules**:
+- All write operations call `writeAuditLog()` via `ctx`
+- Services import only from `$lib/server/` (no client-side code)
+- Validation errors: `fail()` in service; missing resources: `error()` throw
+- Transaction logic stays in services (not page.server.ts)
 
 ### Email Notifications (Next Phase)
 - **Decided**: Use Cloudflare Email Workers (Send Email binding)
