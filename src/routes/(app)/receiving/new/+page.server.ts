@@ -1,46 +1,17 @@
-import { redirect, fail } from '@sveltejs/kit';
-import { like, desc, asc } from 'drizzle-orm';
-import { sql } from 'drizzle-orm';
-import { getDb } from '$lib/server/db';
-import { logAudit } from '$lib/server/audit';
-import * as schema from '$lib/server/db/schema';
+import { fail } from '@sveltejs/kit';
+import { makeCtx } from '$lib/services';
+import { listReceivingSlips, createReceivingSlip } from '$lib/services/receiving';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ platform }) => {
-	const db = getDb(platform!.env.DB);
-
-	const [suppliers, products] = await Promise.all([
-		db
-			.select({ id: schema.suppliers.id, name: schema.suppliers.name })
-			.from(schema.suppliers)
-			.orderBy(asc(schema.suppliers.name)),
-		db
-			.select({
-				id: schema.products.id,
-				code: schema.products.code,
-				name: schema.products.name,
-				unit: schema.products.unit,
-			})
-			.from(schema.products)
-			.orderBy(asc(schema.products.code)),
-	]);
-
+export const load: PageServerLoad = async ({ platform, locals }) => {
+	const { suppliers, products } = await listReceivingSlips(makeCtx(platform!, locals));
 	return { suppliers, products };
 };
 
 export const actions = {
 	create: async ({ request, platform, locals }) => {
-		const db = getDb(platform!.env.DB);
-		const account_id = locals.user!.id;
-		const data = await request.formData();
-
-		const received_at = data.get('received_at')?.toString();
-		const supplier_id = data.get('supplier_id')?.toString();
-		const detailsJson = data.get('details')?.toString();
-		const note = data.get('note')?.toString() ?? '';
-
-		if (!received_at) return fail(400, { error: '入荷日は必須です' });
-		if (!supplier_id) return fail(400, { error: '仕入先は必須です' });
+		const f = await request.formData();
+		const detailsJson = f.get('details')?.toString();
 		if (!detailsJson) return fail(400, { error: '明細が必要です' });
 
 		let details: { product_id: string; quantity: number }[];
@@ -50,60 +21,11 @@ export const actions = {
 			return fail(400, { error: '明細データが不正です' });
 		}
 
-		const validDetails = details.filter((d) => d.product_id && d.quantity > 0);
-		if (validDetails.length === 0) return fail(400, { error: '有効な明細が必要です' });
-
-		try {
-			await db.transaction(async (tx) => {
-				const year = new Date(received_at).getFullYear();
-				const [last] = await tx
-					.select({ n: schema.receivingSlips.slip_number })
-					.from(schema.receivingSlips)
-					.where(like(schema.receivingSlips.slip_number, `RCV-${year}-%`))
-					.orderBy(desc(schema.receivingSlips.slip_number))
-					.limit(1);
-				const lastNum = last ? parseInt(last.n.split('-')[2], 10) : 0;
-				const slip_number = `RCV-${year}-${String(lastNum + 1).padStart(3, '0')}`;
-
-				const now = new Date().toISOString();
-
-				const [slip] = await tx
-					.insert(schema.receivingSlips)
-					.values({ slip_number, received_at, supplier_id, account_id, note })
-					.returning({ id: schema.receivingSlips.id });
-
-				for (let i = 0; i < validDetails.length; i++) {
-					const d = validDetails[i];
-					await tx.insert(schema.receivingSlipDetails).values({
-						slip_id: slip.id,
-						product_id: d.product_id,
-						line_no: i + 1,
-						quantity: d.quantity,
-					});
-				}
-
-				for (const d of validDetails) {
-					await tx
-						.insert(schema.inventory)
-						.values({ product_id: d.product_id, quantity: d.quantity, updated_at: now })
-						.onConflictDoUpdate({
-							target: schema.inventory.product_id,
-							set: {
-								quantity: sql`${schema.inventory.quantity} + ${d.quantity}`,
-								updated_at: now,
-							},
-						});
-				}
-			});
-		} catch (err) {
-			const message = String(err);
-			if (message.includes('UNIQUE constraint failed') && message.includes('slip_number')) {
-				return fail(409, { error: '伝票番号が競合しました。再度お試しください。' });
-			}
-			throw err;
-		}
-
-		await logAudit({ db, user_id: locals.user!.id, user_name: locals.user!.name, action: 'create', target_type: 'receiving_slip', detail: { supplier_id, received_at, item_count: validDetails.length } });
-		redirect(303, '/receiving');
+		return createReceivingSlip(makeCtx(platform!, locals), {
+			received_at: f.get('received_at')?.toString() ?? '',
+			supplier_id: f.get('supplier_id')?.toString() ?? '',
+			note: f.get('note')?.toString() ?? '',
+			details,
+		});
 	},
 } satisfies Actions;

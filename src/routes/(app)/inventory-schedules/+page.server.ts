@@ -1,87 +1,34 @@
-import { fail } from '@sveltejs/kit';
-import { eq, desc } from 'drizzle-orm';
-import { getDb } from '$lib/server/db';
-import * as schema from '$lib/server/db/schema';
+import { makeCtx } from '$lib/services';
+import { listInventorySchedules, createInventorySchedule, updateInventoryScheduleStatus, deleteInventorySchedule } from '$lib/services/inventory_schedule';
 import type { Actions, PageServerLoad } from './$types';
+import type { InventorySchedule } from '$lib/types/inventory';
 
-export interface InventorySchedule {
-	id: string;
-	scheduled_at: string;
-	title: string;
-	note: string | null;
-	status: 'planned' | 'in_progress' | 'completed' | 'cancelled';
-}
+export type { InventorySchedule };
 
-export const load: PageServerLoad = async ({ platform }) => {
-	const db = getDb(platform!.env.DB);
-
-	const schedules = await db
-		.select()
-		.from(schema.inventorySchedules)
-		.orderBy(desc(schema.inventorySchedules.scheduled_at));
-
-	return { schedules: schedules as InventorySchedule[] };
-};
+export const load: PageServerLoad = async ({ platform, locals }) =>
+	listInventorySchedules(makeCtx(platform!, locals));
 
 export const actions = {
-	create: async ({ request, platform }) => {
-		const db = getDb(platform!.env.DB);
-		const data = await request.formData();
-		const title = data.get('title')?.toString().trim();
-		const scheduled_at = data.get('scheduled_at')?.toString();
-
-		if (!title) return fail(400, { error: 'Title is required.' });
-		if (!scheduled_at) return fail(400, { error: 'Scheduled date is required.' });
-
-		try {
-			await db.insert(schema.inventorySchedules).values({
-				title,
-				scheduled_at,
-				note: data.get('note')?.toString().trim() || null,
-			});
-			return { success: true };
-		} catch (error) {
-			console.error('Failed to create schedule:', error);
-			return fail(500, { error: 'Failed to create stocktake schedule.' });
-		}
+	create: async ({ request, platform, locals }) => {
+		const f = await request.formData();
+		return createInventorySchedule(makeCtx(platform!, locals), {
+			title: f.get('title')?.toString().trim() ?? '',
+			scheduled_at: f.get('scheduled_at')?.toString() ?? '',
+			note: f.get('note')?.toString().trim() || null,
+		});
 	},
 
-	updateStatus: async ({ request, platform }) => {
-		const db = getDb(platform!.env.DB);
-		const data = await request.formData();
-		const id = data.get('id')?.toString();
-		const status = data.get('status')?.toString() as InventorySchedule['status'] | undefined;
-
-		if (!id) return fail(400, { error: 'ID is required.' });
-		if (!status) return fail(400, { error: 'Status is required.' });
-
-		const allowed: InventorySchedule['status'][] = ['in_progress', 'completed', 'cancelled'];
-		if (!allowed.includes(status)) return fail(400, { error: 'Invalid status.' });
-
-		try {
-			await db
-				.update(schema.inventorySchedules)
-				.set({ status })
-				.where(eq(schema.inventorySchedules.id, id));
-			return { success: true };
-		} catch (error) {
-			console.error('Failed to update schedule status:', error);
-			return fail(500, { error: 'Failed to update status.' });
-		}
+	updateStatus: async ({ request, platform, locals }) => {
+		const f = await request.formData();
+		return updateInventoryScheduleStatus(
+			makeCtx(platform!, locals),
+			f.get('id')?.toString() ?? '',
+			f.get('status')?.toString() as InventorySchedule['status']
+		);
 	},
 
-	delete: async ({ request, platform }) => {
-		const db = getDb(platform!.env.DB);
-		const data = await request.formData();
-		const id = data.get('id')?.toString();
-		if (!id) return fail(400, { error: 'ID is required.' });
-
-		try {
-			await db.delete(schema.inventorySchedules).where(eq(schema.inventorySchedules.id, id));
-			return { success: true };
-		} catch (error) {
-			console.error('Failed to delete schedule:', error);
-			return fail(500, { error: 'Failed to delete stocktake schedule.' });
-		}
+	delete: async ({ request, platform, locals }) => {
+		const f = await request.formData();
+		return deleteInventorySchedule(makeCtx(platform!, locals), f.get('id')?.toString() ?? '');
 	},
 } satisfies Actions;

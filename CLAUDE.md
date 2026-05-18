@@ -438,7 +438,7 @@ Polish and UX alignment with the Cork reference project.
 ### Directory Structure — types/ and services/ Added
 - `src/lib/types/shared.ts`: common TypeScript types (`User`, `Role`, `PaginationParams`, `PaginationMeta`)
 - `src/lib/services/index.ts`: `ServiceCtx` type + `makeCtx()` factory function (mirrors Cork architecture)
-- **Next**: migrate existing `+page.server.ts` business logic into service functions (see TODO below)
+- **Next**: ✅ Completed in Plan 10
 
 ### UI Components — i18n Fixes
 - `src/lib/ui/Pagination.svelte`: hardcoded Japanese info text and aria-labels replaced with `t('pagination.*')` keys; info string uses `{start}`, `{end}`, `{total}`, `{current}`, `{pages}` placeholders
@@ -446,56 +446,42 @@ Polish and UX alignment with the Cork reference project.
 - `src/lib/ui/Table.svelte`: hardcoded「操作」actions column header replaced with `t('common.actions')`
 - i18n keys added: `pagination.info/first/previous/next/last`, `common.search`, `common.actions`
 
-## TODO — Future Features (not yet implemented)
+## Plan 10 — Completed (2026-05-19)
 
-### Types & Services Refactoring (Next Session — Plan 10)
+### Types & Services Refactoring
 
-Migrate domain types and business logic out of `+page.server.ts` files into the `src/lib/types/` and `src/lib/services/` layers, mirroring the Cork architecture.
+Migrated all domain types and business logic out of `+page.server.ts` files into `src/lib/types/` and `src/lib/services/` layers, mirroring the Cork architecture.
 
-**Types to extract** (`src/lib/types/`):
+#### Type files created (`src/lib/types/`)
 - `supplier.ts` — Supplier
 - `product.ts` — Product, ProductCategory
-- `receiving.ts` — ReceivingSlip, ReceivingSlipDetail
-- `shipping.ts` — ShippingSlip, ShippingSlipDetail, Customer
-- `inventory.ts` — Inventory, InventorySchedule
+- `receiving.ts` — ReceivingSlip, ReceivingDetail
+- `shipping.ts` — ShippingSlip, ShippingDetail, Customer
+- `inventory.ts` — InventoryItem, InventorySchedule
 - `purchasing.ts` — PurchaseOrder, PurchaseOrderDetail
-- `account.ts` — Account (extend `shared.ts` User)
+- `account.ts` — Account (alias for User from shared.ts)
 
-**Services to create** (`src/lib/services/`):
+#### Service files created (`src/lib/services/`)
 - `supplier.ts` — listSuppliers, createSupplier, updateSupplier, deleteSupplier, importSuppliers
 - `product.ts` — listProducts, createProduct, updateProduct, deleteProduct, importProducts
-- `receiving.ts` — listReceivingSlips, getReceivingSlip, createReceivingSlip, updateReceivingSlip, deleteReceivingSlip
-- `shipping.ts` — listShippingSlips, getShippingSlip, createShippingSlip, updateShippingSlip, deleteShippingSlip
+- `receiving.ts` — listReceivingSlips, getReceivingSlip, getReceivingSlipForEdit, createReceivingSlip, updateReceivingSlip, deleteReceivingSlip, importReceivingSlips
+- `shipping.ts` — listShippingSlips, getShippingSlip, getShippingSlipForEdit, getShippingSlipForNew, createShippingSlip, updateShippingSlip, deleteShippingSlip, importShippingSlips
 - `inventory.ts` — listInventory, stocktake, importInventory
-- `purchasing.ts` — listPurchaseOrders, getPurchaseOrder, createPurchaseOrder, updatePurchaseOrder, updateStatus
-- `account.ts` — listAccounts, createAccount, updateAccount, deleteAccount
+- `inventory_schedule.ts` — listInventorySchedules, createInventorySchedule, updateInventoryScheduleStatus, deleteInventorySchedule
+- `purchasing.ts` — listPurchaseOrders, getPurchaseOrderForNew, getPurchaseOrder, getPurchaseOrderForEdit, createPurchaseOrder, updatePurchaseOrder, updatePurchaseOrderStatus, deletePurchaseOrder
+- `account.ts` — listAccounts, createAccount, updateAccount, deleteAccount, getProfile, updateProfile
 - `category.ts` — listCategories, createCategory, updateCategory, deleteCategory
 - `customer.ts` — listCustomers, createCustomer, updateCustomer, deleteCustomer
+- `settings.ts` — loadSettings, saveSettings
 
-**Pattern** (same as Cork):
-```ts
-// +page.server.ts — thin glue
-export const actions = {
-  create: async ({ request, platform, locals }) => {
-    const f = await request.formData();
-    return createSupplier(makeCtx(platform!, locals, request), {
-      name: f.get('name')?.toString().trim() ?? '',
-    });
-  }
-};
+#### `services/index.ts` update
+- `DB` type changed to `ReturnType<typeof getDb>` (was `DrizzleD1Database<typeof schema>`) to correctly include `$client` for logAudit compatibility
+- `makeCtx()` now calls `getDb()` instead of `drizzle()` directly
 
-// $lib/services/supplier.ts — business logic
-export async function createSupplier(ctx: ServiceCtx, data: {...}) {
-  const { db, user } = ctx;
-  // DB operations, audit logging
-}
-```
+#### All +page.server.ts files slimmed to thin glue
+All 18+ server files now just parse FormData and delegate to the appropriate service function. Business logic, validation, DB operations, and audit logging all live in the service layer.
 
-**Rules**:
-- All write operations call `writeAuditLog()` via `ctx`
-- Services import only from `$lib/server/` (no client-side code)
-- Validation errors: `fail()` in service; missing resources: `error()` throw
-- Transaction logic stays in services (not page.server.ts)
+## TODO — Future Features (not yet implemented)
 
 ### Email Notifications (Next Phase)
 - **Decided**: Use Cloudflare Email Workers (Send Email binding)
