@@ -6,11 +6,15 @@
 		<meta name="robots" content="noindex, nofollow" />
 		<script>
 			(function () {
-				var t = localStorage.getItem('theme');
-				document.documentElement.setAttribute(
-					'data-theme',
-					t === 'light' || t === 'dark' || t === 'system' ? t : 'system'
-				);
+				try {
+					var t = localStorage.getItem('theme');
+					document.documentElement.setAttribute(
+						'data-theme',
+						t === 'light' || t === 'dark' || t === 'system' ? t : 'system'
+					);
+					var lang = localStorage.getItem('galway-locale') || 'en';
+					document.documentElement.lang = lang;
+				} catch (_) {}
 			})();
 		</script>
 		%sveltekit.head%

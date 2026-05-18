@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { Button, Card, Input, Label } from '$lib/ui';
+	import { Sun, Moon, Monitor } from '@lucide/svelte';
 	import { t, getLocale, setLocale, type Locale } from '$lib/i18n';
+	import { getTheme, setTheme } from '$lib/theme.svelte';
 	import type { PageData, ActionData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -35,6 +37,47 @@
 	{:else if form?.error}
 		<div class="notice notice-error">{form.error}</div>
 	{/if}
+
+	<!-- Appearance -->
+	<Card title={t('settings.appearance')}>
+		<div class="settings-group">
+			<div class="setting-row">
+				<div class="setting-info">
+					<span class="setting-label">{t('settings.theme')}</span>
+					<span class="setting-desc">{t('settings.themeDesc')}</span>
+				</div>
+				<div class="theme-switcher">
+					<button
+						class="theme-btn"
+						class:active={getTheme() === 'light'}
+						onclick={() => setTheme('light')}
+						aria-label={t('settings.themeLight')}
+					>
+						<Sun size={14} />
+						{t('settings.themeLight')}
+					</button>
+					<button
+						class="theme-btn"
+						class:active={getTheme() === 'dark'}
+						onclick={() => setTheme('dark')}
+						aria-label={t('settings.themeDark')}
+					>
+						<Moon size={14} />
+						{t('settings.themeDark')}
+					</button>
+					<button
+						class="theme-btn"
+						class:active={getTheme() === 'system'}
+						onclick={() => setTheme('system')}
+						aria-label={t('settings.themeSystem')}
+					>
+						<Monitor size={14} />
+						{t('settings.themeSystem')}
+					</button>
+				</div>
+			</div>
+		</div>
+	</Card>
 
 	<!-- Language -->
 	<Card title={t('settings.language')}>
@@ -245,6 +288,45 @@
 	.field-hint {
 		font-size: 0.75rem;
 		color: var(--color-text-tertiary);
+	}
+
+	/* Theme switcher */
+	.theme-switcher {
+		display: flex;
+		gap: 2px;
+		background-color: var(--color-bg-sunken);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+		padding: 2px;
+		flex-shrink: 0;
+	}
+
+	.theme-btn {
+		display: flex;
+		align-items: center;
+		gap: var(--space-xs);
+		padding: 4px 12px;
+		border: none;
+		border-radius: calc(var(--radius-md) - 2px);
+		background: transparent;
+		color: var(--color-text-secondary);
+		font-size: 0.8125rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition:
+			background-color var(--transition-fast),
+			color var(--transition-fast);
+		font-family: inherit;
+
+		&:hover {
+			color: var(--color-text);
+		}
+
+		&.active {
+			background-color: var(--color-bg-elevated);
+			color: var(--color-text);
+			box-shadow: var(--shadow-sm);
+		}
 	}
 
 	/* Language switcher */

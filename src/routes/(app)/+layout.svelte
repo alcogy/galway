@@ -1,17 +1,13 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { Sidebar, ConfirmDialog } from '$lib/ui';
-	import { getTheme, setTheme } from '$lib/theme.svelte';
-	import { initLocale, t } from '$lib/i18n';
+	import { setLocale, t, type Locale } from '$lib/i18n';
 	import type { LayoutData } from './$types';
 
 	let { children, data }: { children: any; data: LayoutData } = $props();
 
-	let signoutOpen = $state(false);
+	setLocale(data.locale as Locale);
 
-	onMount(() => {
-		initLocale();
-	});
+	let signoutOpen = $state(false);
 </script>
 
 <ConfirmDialog
@@ -24,8 +20,6 @@
 
 <div class="app-shell">
 	<Sidebar
-		theme={getTheme()}
-		onthemechange={setTheme}
 		role={data.user?.role as 'admin' | 'general' | undefined}
 		onsignout={() => (signoutOpen = true)}
 	/>

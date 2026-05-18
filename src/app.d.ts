@@ -18,6 +18,7 @@ declare global {
 				role: string;
 				created_at: string;
 			};
+			locale?: string;
 		}
 		// interface PageData {}
 		// interface PageState {}

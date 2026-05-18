@@ -21,5 +21,8 @@ export const handle: Handle = async ({ event, resolve }) => {
 		};
 	}
 
+	const lang = event.cookies.get('galway-locale');
+	event.locals.locale = lang === 'en' || lang === 'ja' ? lang : 'en';
+
 	return resolve(event);
 };

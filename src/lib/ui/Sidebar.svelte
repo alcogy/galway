@@ -19,9 +19,6 @@
 		Shield,
 		PanelLeftClose,
 		PanelLeftOpen,
-		Sun,
-		Moon,
-		Monitor,
 		LogOut
 	} from '@lucide/svelte';
 	import { t } from '$lib/i18n';
@@ -36,13 +33,11 @@
 
 	interface Props {
 		role?: 'admin' | 'general';
-		theme?: 'light' | 'dark' | 'system';
-		onthemechange?: (theme: 'light' | 'dark' | 'system') => void;
 		onsignout?: () => void;
 		logo?: Snippet;
 	}
 
-	let { role = 'general', theme = 'system', onthemechange, onsignout, logo }: Props = $props();
+	let { role = 'general', onsignout, logo }: Props = $props();
 
 	let collapsed = $state(false);
 	let mobileOpen = $state(false);
@@ -60,20 +55,14 @@
 		{ href: '/inventory-schedules', label: t('nav.inventorySchedules'), icon: CalendarCheck },
 		{ href: '/reports', label: t('nav.reports'), icon: BarChart3 },
 		{ href: '/accounts', label: t('nav.accounts'), icon: Shield, adminOnly: true },
-		{ href: '/audit-logs', label: t('nav.auditLogs'), icon: ScrollText, adminOnly: true },
-		{ href: '/settings', label: t('nav.settings'), icon: Settings, adminOnly: true }
+		{ href: '/audit-logs', label: t('nav.auditLogs'), icon: ScrollText, adminOnly: true }
 	]);
 
 	const secondaryNavItems = $derived<NavItem[]>([
 		{ href: '/profile', label: t('nav.profile'), icon: CircleUser },
+		{ href: '/settings', label: t('nav.settings'), icon: Settings, adminOnly: true },
 		{ href: '/logout', label: t('nav.signOut'), icon: LogOut, onclick: onsignout }
 	]);
-
-	const themeOptions = [
-		{ value: 'light' as const, icon: Sun, label: 'Light' },
-		{ value: 'dark' as const, icon: Moon, label: 'Dark' },
-		{ value: 'system' as const, icon: Monitor, label: 'System' }
-	];
 
 	function isActive(href: string): boolean {
 		if (href === '/') return page.url.pathname === href;
@@ -153,24 +142,6 @@
 			{/each}
 		</div>
 	</nav>
-
-	<!-- Footer -->
-	<div class="sidebar-footer">
-		<!-- Theme switcher -->
-		<div class="theme-switcher">
-			{#each themeOptions as opt (opt.value)}
-				<button
-					class="theme-btn"
-					class:active={theme === opt.value}
-					onclick={() => onthemechange?.(opt.value)}
-					aria-label="{opt.label} theme"
-					title={opt.label}
-				>
-					<opt.icon size={14} />
-				</button>
-			{/each}
-		</div>
-	</div>
 </aside>
 
 <style lang="scss">
@@ -201,10 +172,6 @@
 			.nav-item {
 				justify-content: center;
 				padding: var(--space-sm);
-			}
-
-			.theme-switcher {
-				flex-direction: column;
 			}
 		}
 	}
@@ -279,69 +246,6 @@
 		transition: opacity var(--transition-base);
 	}
 
-	.sidebar-footer {
-		padding: var(--space-sm) var(--space-md);
-		border-top: 1px solid var(--sidebar-border);
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-sm);
-		flex-shrink: 0;
-	}
-
-	.theme-switcher {
-		display: flex;
-		gap: 2px;
-		background-color: var(--sidebar-switcher-bg);
-		border-radius: var(--radius-md);
-		padding: 2px;
-		transition: flex-direction var(--transition-base);
-	}
-
-	.theme-btn {
-		flex: 1;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		height: 26px;
-		border: none;
-		border-radius: var(--radius-sm);
-		background: transparent;
-		color: var(--sidebar-text);
-		cursor: pointer;
-		transition:
-			background-color var(--transition-fast),
-			color var(--transition-fast);
-
-		&:hover {
-			color: var(--sidebar-text-active);
-		}
-
-		&.active {
-			background-color: var(--sidebar-switcher-active);
-			color: var(--sidebar-text-active);
-		}
-	}
-
-	.collapse-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		height: 28px;
-		border: none;
-		border-radius: var(--radius-sm);
-		background: transparent;
-		color: var(--sidebar-text);
-		cursor: pointer;
-		transition:
-			background-color var(--transition-fast),
-			color var(--transition-fast);
-
-		&:hover {
-			background-color: var(--sidebar-hover);
-			color: var(--sidebar-text-active);
-		}
-	}
-
 	/* --- Mobile --- */
 	.mobile-toggle {
 		display: none;
@@ -387,10 +291,6 @@
 					opacity: 1;
 					width: auto;
 				}
-
-				.theme-switcher {
-					flex-direction: row;
-				}
 			}
 		}
 
@@ -404,10 +304,6 @@
 
 		.sidebar-overlay {
 			display: block;
-		}
-
-		.collapse-btn {
-			display: none;
 		}
 	}
 </style>
