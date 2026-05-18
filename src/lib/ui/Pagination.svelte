@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
+
 	interface Props {
 		totalItems: number;
 		itemsPerPage: number;
@@ -17,35 +19,36 @@
 	const canGoFirst = $derived(currentPage > 1);
 	const canGoLast = $derived(currentPage < totalPages);
 
+	const infoText = $derived(
+		t('pagination.info')
+			.replace('{total}', String(totalItems))
+			.replace('{start}', String(startItem))
+			.replace('{end}', String(endItem))
+			.replace('{current}', String(currentPage))
+			.replace('{pages}', String(totalPages))
+	);
+
 	function handleFirst() {
-		if (canGoFirst) {
-			onPageChange(1);
-		}
+		if (canGoFirst) onPageChange(1);
 	}
 
 	function handlePrevious() {
-		if (canGoPrevious) {
-			onPageChange(currentPage - 1);
-		}
+		if (canGoPrevious) onPageChange(currentPage - 1);
 	}
 
 	function handleNext() {
-		if (canGoNext) {
-			onPageChange(currentPage + 1);
-		}
+		if (canGoNext) onPageChange(currentPage + 1);
 	}
 
 	function handleLast() {
-		if (canGoLast) {
-			onPageChange(totalPages);
-		}
+		if (canGoLast) onPageChange(totalPages);
 	}
 </script>
 
 {#if totalItems > 0}
 	<div class="pagination">
 		<div class="pagination-info">
-			全 {totalItems} 件中 {startItem}-{endItem} 件目 / {currentPage} ページ目（全 {totalPages} ページ）
+			{infoText}
 		</div>
 		<div class="pagination-controls">
 			<button
@@ -53,7 +56,7 @@
 				class="pagination-button"
 				disabled={!canGoFirst}
 				onclick={handleFirst}
-				aria-label="最初のページへ"
+				aria-label={t('pagination.first')}
 			>
 				&lt;&lt;
 			</button>
@@ -62,7 +65,7 @@
 				class="pagination-button"
 				disabled={!canGoPrevious}
 				onclick={handlePrevious}
-				aria-label="前のページへ"
+				aria-label={t('pagination.previous')}
 			>
 				&lt;
 			</button>
@@ -72,7 +75,7 @@
 				class="pagination-button"
 				disabled={!canGoNext}
 				onclick={handleNext}
-				aria-label="次のページへ"
+				aria-label={t('pagination.next')}
 			>
 				&gt;
 			</button>
@@ -81,7 +84,7 @@
 				class="pagination-button"
 				disabled={!canGoLast}
 				onclick={handleLast}
-				aria-label="最後のページへ"
+				aria-label={t('pagination.last')}
 			>
 				&gt;&gt;
 			</button>

@@ -240,8 +240,8 @@
 
 	.col-date { width: 160px; }
 	.col-user { width: 100px; }
-	.col-action { width: 110px; }
-	.col-target { width: 90px; }
+	.col-action { width: 125px; }
+	.col-target { width: 120px; }
 	.col-label { width: 200px; }
 	.col-detail { flex: 1; }
 

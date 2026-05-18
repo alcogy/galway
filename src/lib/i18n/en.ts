@@ -47,6 +47,8 @@ const en = {
 		email: 'Email',
 		noData: 'No data',
 		error: 'Error',
+		search: 'Search',
+		actions: 'Actions',
 	},
 	login: {
 		pageTitle: 'Sign In — Galway',
@@ -373,6 +375,13 @@ const en = {
 		newPasswordHint: 'Leave blank to keep current',
 		save: 'Save',
 		savedSuccessfully: 'Profile saved successfully.',
+	},
+	pagination: {
+		info: '{start}-{end} of {total} items · Page {current} of {pages}',
+		first: 'First page',
+		previous: 'Previous page',
+		next: 'Next page',
+		last: 'Last page',
 	},
 	slipForm: {
 		receivedAt: 'Received Date',

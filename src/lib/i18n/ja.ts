@@ -49,6 +49,8 @@ const ja: Dict = {
 		email: 'メールアドレス',
 		noData: 'データなし',
 		error: 'エラー',
+		search: '検索',
+		actions: '操作',
 	},
 	login: {
 		pageTitle: 'サインイン — Galway',
@@ -375,6 +377,13 @@ const ja: Dict = {
 		newPasswordHint: '変更しない場合は空欄',
 		save: '保存',
 		savedSuccessfully: '保存しました。',
+	},
+	pagination: {
+		info: '全 {total} 件中 {start}-{end} 件目 / {current} ページ目（全 {pages} ページ）',
+		first: '最初のページへ',
+		previous: '前のページへ',
+		next: '次のページへ',
+		last: '最後のページへ',
 	},
 	slipForm: {
 		receivedAt: '入荷日',

@@ -1,5 +1,6 @@
 <script lang="ts" generics="T">
 	import type { Snippet } from 'svelte';
+	import { t } from '$lib/i18n';
 
 	interface Column {
 		key: string;
@@ -36,7 +37,7 @@
 					<th style:width={col.width} style:text-align={col.numeric ? 'right' : undefined}>{col.label}</th>
 				{/each}
 				{#if actions}
-					<th class="actions-header" style:width="100px">操作</th>
+					<th class="actions-header" style:width="100px">{t('common.actions')}</th>
 				{/if}
 			</tr>
 		</thead>
