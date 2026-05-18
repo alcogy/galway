@@ -302,8 +302,8 @@ New features added on top of Plan 5:
 
 ### A. Shipping Slip PDF Export
 - `/shipping/[id]/print` dedicated print page — A4 layout with slip info, details table, signature boxes
-- Auto-triggers `window.print()` on mount; sidebar hidden via `:global()` CSS
-- "Print PDF" button on shipping slip detail page (opens in new tab)
+- Sidebar hidden via `:global()` CSS; "Print PDF" button on shipping slip detail page (opens in new tab)
+- Print is triggered manually via a Print button on the print page (not auto-triggered on mount)
 
 ### E. Purchase Order Management
 - `purchase_orders` + `purchase_order_details` tables added (migration 0004)
@@ -317,7 +317,7 @@ New features added on top of Plan 5:
 
 ### G. Stocktake Schedule
 - `inventory_schedules` table added (migration 0005)
-- `/inventory-schedules` page: list, create, status transitions (planned → in_progress → completed)
+- `/inventory-schedules` page: list, create, status transitions (planned → in_progress → completed / cancelled)
 
 ### DB Migrations Added
 - `0001_clammy_swordsman.sql` — products.min_quantity
@@ -382,14 +382,27 @@ Dashboard → Suppliers → Products → Categories → Purchasing → Receiving
 ## Plan 8 — Completed (2026-05-18)
 
 ### EN/JA Language Switching
-- `src/lib/i18n/en.ts`: English dictionary (source of truth; defines `Dict` type)
-- `src/lib/i18n/ja.ts`: Japanese dictionary (implements `Dict`)
+- `src/lib/i18n/en.ts`: English dictionary (source of truth); `Dict` type defined as `{ [K in keyof typeof en]: { [J in keyof typeof en[K]]: string } }` — allows Japanese values in `ja.ts` without literal type errors
+- `src/lib/i18n/ja.ts`: Japanese dictionary (`const ja: Dict = { ... }`)
 - `src/lib/i18n/index.svelte.ts`: reactive `locale` state (`$state`), `t(key)`, `setLocale()`, `initLocale()`
-- `src/lib/i18n/index.ts`: barrel re-export so `$lib/i18n` resolves correctly
+- `src/lib/i18n/index.ts`: barrel re-export (`export * from './index.svelte.js'`) so `$lib/i18n` resolves correctly via TypeScript module resolution
 - All `.svelte` files and UI components import `{ t } from '$lib/i18n'` and use `t('section.key')` for all UI strings
 - Language persisted in `localStorage` under key `galway-locale`; initialized on mount via `initLocale()` in `(app)/+layout.svelte`
 - Language switcher: Settings page (`/settings`) → Language card with EN / JA toggle buttons
 - Default locale: `en`
+- README.md and CLAUDE.md fully translated to English
+
+### Stocktake Schedule — Cancel Action
+- Added `actionCancel` / `cancelConfirm` i18n keys to both dictionaries
+- Cancel button shown for `planned` and `in_progress` statuses; opens a confirmation dialog before transitioning to `cancelled`
+- `updateStatus` action now validates that only `in_progress`, `completed`, `cancelled` are accepted as target statuses
+- Cancelled schedules can only be deleted (no further status transition)
+- Status flow: planned → in_progress → completed; planned / in_progress → cancelled
+
+### Shipping Print Page Improvements
+- **Localization**: all hardcoded Japanese labels replaced with `t()` calls; number/date formatting uses `getLocale() === 'ja' ? 'ja-JP' : 'en-US'`
+- **No auto-print**: removed `onMount(() => { window.print(); })`; a "Print / 印刷" button is shown on screen (hidden in print mode) so the user triggers printing manually
+- **Unit column**: widened from `40px` → `60px` in the print page items table; from `80px` → `120px` in the shipping slip detail page table
 
 ## TODO — Future Features (not yet implemented)
 
