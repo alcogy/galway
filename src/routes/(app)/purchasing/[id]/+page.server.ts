@@ -1,5 +1,5 @@
 import { makeCtx } from '$lib/services';
-import { getPurchaseOrder, updatePurchaseOrderStatus, deletePurchaseOrder } from '$lib/services/purchasing';
+import { getPurchaseOrder, updatePurchaseOrderStatus, deletePurchaseOrder, convertToReceivingSlip } from '$lib/services/purchasing';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, platform, locals }) =>
@@ -14,6 +14,9 @@ export const actions = {
 			f.get('status')?.toString() as 'draft' | 'ordered' | 'received' | 'cancelled'
 		);
 	},
+
+	convertToReceiving: async ({ params, platform, locals }) =>
+		convertToReceivingSlip(makeCtx(platform!, locals), params.id),
 
 	delete: async ({ params, platform, locals }) =>
 		deletePurchaseOrder(makeCtx(platform!, locals), params.id),

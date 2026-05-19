@@ -94,6 +94,9 @@ const ja: Dict = {
 		deleteConfirm: 'この仕入先を削除しますか？',
 		empty: '仕入先が登録されていません',
 		searchPlaceholder: '仕入先名で検索...',
+		manageProducts: '取扱商品',
+		linkedProducts: '取扱商品',
+		productsSaved: '取扱商品を更新しました。',
 	},
 	products: {
 		pageTitle: '商品管理 — Galway',
@@ -158,6 +161,9 @@ const ja: Dict = {
 		selectProduct: '商品を選択',
 		notesPlaceholder: '備考欄',
 		addItem: '行追加',
+		createReceivingSlip: '入荷伝票を作成',
+		createReceivingSlipConfirm: 'この発注から入荷伝票を作成し、入荷済にしますか？',
+		createReceivingSlipSuccess: '入荷伝票を作成しました。',
 	},
 	receiving: {
 		pageTitle: '入荷管理 — Galway',

@@ -2,8 +2,12 @@ import { makeCtx } from '$lib/services';
 import { listReceivingSlips, importReceivingSlips } from '$lib/services/receiving';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ platform, locals }) =>
-	listReceivingSlips(makeCtx(platform!, locals));
+export const load: PageServerLoad = async ({ platform, locals, url }) =>
+	listReceivingSlips(
+		makeCtx(platform!, locals),
+		url.searchParams.get('search') || '',
+		parseInt(url.searchParams.get('page') || '1')
+	);
 
 export const actions = {
 	import: async ({ request, platform, locals }) => {

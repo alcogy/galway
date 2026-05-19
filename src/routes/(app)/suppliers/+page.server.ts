@@ -1,6 +1,6 @@
 import { makeCtx } from '$lib/services';
 export type { Supplier } from '$lib/types/supplier';
-import { listSuppliers, createSupplier, updateSupplier, deleteSupplier, importSuppliers } from '$lib/services/supplier';
+import { listSuppliers, createSupplier, updateSupplier, deleteSupplier, importSuppliers, setSupplierProducts } from '$lib/services/supplier';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ platform, locals, url }) =>
@@ -42,5 +42,12 @@ export const actions = {
 		const file = f.get('file') as File | null;
 		if (!file) return { success: false, error: 'ファイルが選択されていません' };
 		return importSuppliers(makeCtx(platform!, locals), await file.text(), f.get('mode')?.toString() ?? '');
+	},
+
+	setProducts: async ({ request, platform, locals }) => {
+		const f = await request.formData();
+		const supplierId = f.get('supplier_id')?.toString() ?? '';
+		const productIds = f.getAll('product_ids').map((v) => v.toString());
+		return setSupplierProducts(makeCtx(platform!, locals), supplierId, productIds);
 	},
 } satisfies Actions;

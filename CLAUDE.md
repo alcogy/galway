@@ -481,6 +481,44 @@ Migrated all domain types and business logic out of `+page.server.ts` files into
 #### All +page.server.ts files slimmed to thin glue
 All 18+ server files now just parse FormData and delegate to the appropriate service function. Business logic, validation, DB operations, and audit logging all live in the service layer.
 
+## Plan 11 — Completed (2026-05-19)
+
+### #6 — Export endpoints & Reports moved to service layer
+- All export `+server.ts` files now use `makeCtx` + service query functions
+- Added `getExportData()` to `supplier.ts`, `product.ts`, `inventory.ts`
+- Added `getSlipExportData()` to `receiving.ts`, `shipping.ts`
+- Created `src/lib/services/reports.ts` with `loadReports()`
+- `reports/+page.server.ts` slimmed to thin glue
+
+### #1 — Receiving/Shipping lists: server-side search + pagination
+- `listReceivingSlips(ctx, search, page)` and `listShippingSlips(ctx, search, page)` extended
+- Server now returns `{ slips, totalItems, itemsPerPage, currentPage, searchQuery }`
+- `receiving/+page.svelte` and `shipping/+page.svelte` updated: removed client-side slice, added `SearchBar`, URL-based page/search state
+- Search fields: receiving slip number or supplier name; shipping: slip number or customer name
+
+### #3 — PO → Receiving Slip auto-conversion
+- `convertToReceivingSlip(ctx, id)` added to `purchasing.ts` service
+  - Creates a receiving slip from the PO (supplier, products, quantities)
+  - Updates inventory (UPSERT add)
+  - Sets PO status → `received`
+  - Redirects to the new receiving slip
+- `purchasing/[id]/+page.server.ts`: added `convertToReceiving` action
+- `purchasing/[id]/+page.svelte`: "Create Receiving Slip" button shown when status = `ordered`; confirms via dialog before proceeding
+- i18n keys: `purchasing.createReceivingSlip`, `createReceivingSlipConfirm`, `createReceivingSlipSuccess`
+
+### #4 — Supplier-Product relationship management UI
+- `getSupplierProducts(ctx, supplierId)` and `setSupplierProducts(ctx, supplierId, productIds[])` added to `supplier.ts`
+- `listSuppliers` now returns `allProducts` and `supplierProductMap` (supplierId → productId[])
+- `suppliers/+page.server.ts`: added `setProducts` action
+- `suppliers/+page.svelte`: Package icon button per row opens a product selection modal (scrollable checkbox list); saved via `?/setProducts`
+- i18n keys: `suppliers.manageProducts`, `linkedProducts`, `productsSaved`
+
+### #5 — Service layer unit tests
+- `src/lib/services/supplier.test.ts` (8 tests): CRUD validation + DB integration via wrangler proxy
+- `src/lib/services/product.test.ts` (7 tests): Validation + updateProduct/deleteProduct (transaction-based functions tested at validation level only; D1 `getPlatformProxy` disallows `BEGIN TRANSACTION`)
+- **Total: 8 test files, 61 tests, all passing**
+- Known limitation: Services using `db.transaction()` cannot be fully integration-tested via `wrangler getPlatformProxy` (D1_ERROR on `BEGIN TRANSACTION`); validation paths and non-transactional operations are covered instead
+
 ## TODO — Future Features (not yet implemented)
 
 ### Email Notifications (Next Phase)

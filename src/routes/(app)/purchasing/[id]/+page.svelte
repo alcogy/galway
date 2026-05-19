@@ -8,6 +8,7 @@
 	let { data }: { data: PageData } = $props();
 
 	let showDeleteDialog = $state(false);
+	let showConvertDialog = $state(false);
 	let updatingStatus = $state(false);
 
 	const STATUS_LABELS = $derived<Record<string, string>>({
@@ -68,6 +69,11 @@
 					{tr.label}
 				</Button>
 			{/each}
+			{#if data.order.status === 'ordered'}
+				<Button size="sm" onclick={() => (showConvertDialog = true)}>
+					{t('purchasing.createReceivingSlip')}
+				</Button>
+			{/if}
 			{#if data.order.status === 'draft'}
 				<Button variant="secondary" size="sm" onclick={() => goto(`/purchasing/${data.order.id}/edit`)}>
 					<Pencil size={14} />
@@ -147,6 +153,21 @@
 		const form = document.createElement('form');
 		form.method = 'POST';
 		form.action = '?/delete';
+		document.body.appendChild(form);
+		form.submit();
+	}}
+/>
+
+<ConfirmDialog
+	bind:open={showConvertDialog}
+	title={t('purchasing.createReceivingSlip')}
+	message={t('purchasing.createReceivingSlipConfirm')}
+	confirmLabel={t('purchasing.createReceivingSlip')}
+	cancelLabel={t('common.cancel')}
+	onconfirm={() => {
+		const form = document.createElement('form');
+		form.method = 'POST';
+		form.action = '?/convertToReceiving';
 		document.body.appendChild(form);
 		form.submit();
 	}}

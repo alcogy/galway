@@ -92,6 +92,9 @@ const en = {
 		deleteConfirm: 'Delete this supplier?',
 		empty: 'No suppliers registered',
 		searchPlaceholder: 'Search suppliers...',
+		manageProducts: 'Manage Products',
+		linkedProducts: 'Linked Products',
+		productsSaved: 'Product list updated.',
 	},
 	products: {
 		pageTitle: 'Products — Galway',
@@ -156,6 +159,9 @@ const en = {
 		selectProduct: 'Select product',
 		notesPlaceholder: 'Notes...',
 		addItem: 'Add Row',
+		createReceivingSlip: 'Create Receiving Slip',
+		createReceivingSlipConfirm: 'Create a receiving slip from this order and mark it as received?',
+		createReceivingSlipSuccess: 'Receiving slip created.',
 	},
 	receiving: {
 		pageTitle: 'Receiving — Galway',

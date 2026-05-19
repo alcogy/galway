@@ -1,5 +1,6 @@
 import { error, redirect, fail } from '@sveltejs/kit';
 import { eq, desc, count, like, asc } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
 import { logAudit } from '$lib/server/audit';
 import type { ServiceCtx } from '$lib/services';
@@ -189,6 +190,73 @@ export async function updatePurchaseOrderStatus(ctx: ServiceCtx, id: string, sta
 		console.error('Failed to update status:', err);
 		return fail(500, { error: 'ステータスの更新に失敗しました。' });
 	}
+}
+
+export async function convertToReceivingSlip(ctx: ServiceCtx, id: string) {
+	const [orderRows, details] = await Promise.all([
+		ctx.db
+			.select({
+				supplier_id: schema.purchaseOrders.supplier_id,
+				expected_at: schema.purchaseOrders.expected_at,
+				ordered_at: schema.purchaseOrders.ordered_at,
+				status: schema.purchaseOrders.status,
+				order_number: schema.purchaseOrders.order_number,
+			})
+			.from(schema.purchaseOrders)
+			.where(eq(schema.purchaseOrders.id, id)),
+		ctx.db
+			.select({ product_id: schema.purchaseOrderDetails.product_id, quantity: schema.purchaseOrderDetails.quantity })
+			.from(schema.purchaseOrderDetails)
+			.where(eq(schema.purchaseOrderDetails.order_id, id))
+			.orderBy(asc(schema.purchaseOrderDetails.line_no)),
+	]);
+
+	if (!orderRows[0]) error(404, '発注が見つかりません');
+	if (orderRows[0].status !== 'ordered') return fail(400, { error: '発注済み状態の発注のみ入荷伝票を作成できます' });
+
+	const order = orderRows[0];
+	const received_at = order.expected_at ?? new Date().toISOString().slice(0, 10);
+	const now = new Date().toISOString();
+
+	let newSlipId = '';
+	try {
+		await ctx.db.transaction(async (tx) => {
+			const year = new Date(received_at).getFullYear();
+			const [last] = await tx
+				.select({ n: schema.receivingSlips.slip_number })
+				.from(schema.receivingSlips)
+				.where(like(schema.receivingSlips.slip_number, `RCV-${year}-%`))
+				.orderBy(desc(schema.receivingSlips.slip_number))
+				.limit(1);
+			const lastNum = last ? parseInt(last.n.split('-')[2], 10) : 0;
+			const slip_number = `RCV-${year}-${String(lastNum + 1).padStart(3, '0')}`;
+
+			const [slip] = await tx
+				.insert(schema.receivingSlips)
+				.values({ slip_number, received_at, supplier_id: order.supplier_id, account_id: ctx.user.id, note: `発注番号: ${order.order_number}` })
+				.returning({ id: schema.receivingSlips.id });
+
+			newSlipId = slip.id;
+
+			for (let i = 0; i < details.length; i++) {
+				await tx.insert(schema.receivingSlipDetails).values({ slip_id: slip.id, product_id: details[i].product_id, line_no: i + 1, quantity: details[i].quantity });
+			}
+			for (const d of details) {
+				await tx.insert(schema.inventory).values({ product_id: d.product_id, quantity: d.quantity, updated_at: now })
+					.onConflictDoUpdate({ target: schema.inventory.product_id, set: { quantity: sql`${schema.inventory.quantity} + ${d.quantity}`, updated_at: now } });
+			}
+
+			await tx.update(schema.purchaseOrders).set({ status: 'received' }).where(eq(schema.purchaseOrders.id, id));
+		});
+	} catch (err) {
+		const message = String(err);
+		if (message.includes('UNIQUE constraint failed') && message.includes('slip_number')) return fail(409, { error: '伝票番号が競合しました。再度お試しください。' });
+		console.error('Failed to convert PO to receiving slip:', err);
+		return fail(500, { error: '入荷伝票の作成に失敗しました。' });
+	}
+
+	await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'create', target_type: 'receiving_slip', target_id: newSlipId, detail: { from_purchase_order: id, order_number: order.order_number } });
+	redirect(303, `/receiving/${newSlipId}`);
 }
 
 export async function deletePurchaseOrder(ctx: ServiceCtx, id: string) {

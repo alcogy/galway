@@ -1,19 +1,29 @@
 <script lang="ts">
 	import { Plus, Upload } from '@lucide/svelte';
-	import { Button, Table, Pagination, SlipCsvImportDialog } from '$lib/ui';
+	import { Button, Table, Pagination, SlipCsvImportDialog, SearchBar } from '$lib/ui';
 	import { goto, invalidateAll } from '$app/navigation';
+	import { page } from '$app/state';
 	import type { PageData } from './$types';
 	import { t } from '$lib/i18n';
 	let { data }: { data: PageData } = $props();
 
-	let page = $state(1);
 	let showImportDialog = $state(false);
 	let importNotification = $state<{ type: 'success' | 'error'; message: string } | null>(null);
+	let searchQuery = $state(page.url.searchParams.get('search') || '');
 
-	const ITEMS_PER_PAGE = 20;
-	const pagedSlips = $derived(
-		data.slips.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
-	);
+	function handleSearch() {
+		const params = new URLSearchParams();
+		if (searchQuery) params.set('search', searchQuery);
+		params.set('page', '1');
+		goto(`?${params.toString()}`, { keepFocus: true });
+	}
+
+	function handlePageChange(newPage: number) {
+		const params = new URLSearchParams();
+		if (searchQuery) params.set('search', searchQuery);
+		params.set('page', newPage.toString());
+		goto(`?${params.toString()}`, { keepFocus: true });
+	}
 
 	const columns = $derived([
 		{ key: 'slip_number', label: t('receiving.slipNumber'), width: '180px' },
@@ -32,6 +42,7 @@
 	<div class="page-header">
 		<h1 class="page-title">{t('receiving.title')}</h1>
 		<div class="page-actions">
+			<SearchBar bind:value={searchQuery} onsubmit={handleSearch} />
 			<Button variant="secondary" size="sm" onclick={() => (showImportDialog = true)}>
 				<Upload size={14} />
 				{t('common.csvImport')}
@@ -50,16 +61,16 @@
 	{/if}
 
 	<div class="table-with-pagination">
-		<Table {columns} rows={pagedSlips} onrowclick={(row) => goto(`/receiving/${row.id}`)}>
+		<Table {columns} rows={data.slips} onrowclick={(row) => goto(`/receiving/${row.id}`)}>
 			{#snippet empty()}
 				<span>{t('receiving.empty')}</span>
 			{/snippet}
 		</Table>
 		<Pagination
-			totalItems={data.slips.length}
-			itemsPerPage={ITEMS_PER_PAGE}
-			currentPage={page}
-			onPageChange={(p) => (page = p)}
+			totalItems={data.totalItems}
+			itemsPerPage={data.itemsPerPage}
+			currentPage={data.currentPage}
+			onPageChange={handlePageChange}
 		/>
 	</div>
 </div>

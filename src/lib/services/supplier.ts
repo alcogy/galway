@@ -1,5 +1,5 @@
 import { fail } from '@sveltejs/kit';
-import { eq, asc, like, count } from 'drizzle-orm';
+import { eq, asc, like, count, inArray } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
 import { parseCSV } from '$lib/utils/csv';
 import { logAudit } from '$lib/server/audit';
@@ -11,7 +11,7 @@ export async function listSuppliers(ctx: ServiceCtx, search: string, page: numbe
 	const whereClause = search ? like(schema.suppliers.name, `%${search}%`) : undefined;
 	const offset = (currentPage - 1) * itemsPerPage;
 
-	const [countResult, suppliers] = await Promise.all([
+	const [countResult, suppliers, allProducts, supplierProductRows] = await Promise.all([
 		ctx.db.select({ count: count() }).from(schema.suppliers).where(whereClause),
 		ctx.db
 			.select({
@@ -28,10 +28,25 @@ export async function listSuppliers(ctx: ServiceCtx, search: string, page: numbe
 			.orderBy(asc(schema.suppliers.name))
 			.limit(itemsPerPage)
 			.offset(offset),
+		ctx.db
+			.select({ id: schema.products.id, code: schema.products.code, name: schema.products.name, unit: schema.products.unit })
+			.from(schema.products)
+			.orderBy(asc(schema.products.code)),
+		ctx.db
+			.select({ supplier_id: schema.supplierProducts.supplier_id, product_id: schema.supplierProducts.product_id })
+			.from(schema.supplierProducts),
 	]);
+
+	const supplierProductMap: Record<string, string[]> = {};
+	for (const row of supplierProductRows) {
+		if (!supplierProductMap[row.supplier_id]) supplierProductMap[row.supplier_id] = [];
+		supplierProductMap[row.supplier_id].push(row.product_id);
+	}
 
 	return {
 		suppliers,
+		allProducts,
+		supplierProductMap,
 		totalItems: countResult[0]?.count ?? 0,
 		itemsPerPage,
 		currentPage,
@@ -96,6 +111,41 @@ export async function deleteSupplier(ctx: ServiceCtx, id: string) {
 		console.error('Failed to delete supplier:', err);
 		return fail(500, { error: '仕入先の削除に失敗しました。' });
 	}
+}
+
+export async function getSupplierProducts(ctx: ServiceCtx, supplierId: string) {
+	const linked = await ctx.db
+		.select({ product_id: schema.supplierProducts.product_id })
+		.from(schema.supplierProducts)
+		.where(eq(schema.supplierProducts.supplier_id, supplierId));
+	const linkedIds = linked.map((r) => r.product_id);
+
+	const allProducts = await ctx.db
+		.select({ id: schema.products.id, code: schema.products.code, name: schema.products.name, unit: schema.products.unit })
+		.from(schema.products)
+		.orderBy(asc(schema.products.code));
+
+	return { linkedIds, allProducts };
+}
+
+export async function setSupplierProducts(ctx: ServiceCtx, supplierId: string, productIds: string[]) {
+	try {
+		await ctx.db.transaction(async (tx) => {
+			await tx.delete(schema.supplierProducts).where(eq(schema.supplierProducts.supplier_id, supplierId));
+			if (productIds.length > 0) {
+				await tx.insert(schema.supplierProducts).values(productIds.map((product_id) => ({ supplier_id: supplierId, product_id })));
+			}
+		});
+		return { success: true };
+	} catch (err) {
+		console.error('Failed to update supplier products:', err);
+		return fail(500, { error: '仕入先商品の更新に失敗しました。' });
+	}
+}
+
+export async function getExportData(ctx: ServiceCtx, search: string) {
+	const whereClause = search ? like(schema.suppliers.name, `%${search}%`) : undefined;
+	return ctx.db.select().from(schema.suppliers).where(whereClause).orderBy(asc(schema.suppliers.name));
 }
 
 export async function importSuppliers(ctx: ServiceCtx, csvText: string, mode: string) {

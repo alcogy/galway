@@ -131,6 +131,31 @@ export async function deleteProduct(ctx: ServiceCtx, id: string) {
 	}
 }
 
+export async function getExportData(ctx: ServiceCtx, search: string, category: string) {
+	const searchCondition = search
+		? or(like(schema.products.code, `%${search}%`), like(schema.products.name, `%${search}%`))
+		: undefined;
+	const categoryCondition = category ? eq(schema.products.category_id, category) : undefined;
+	const whereClause =
+		searchCondition && categoryCondition
+			? and(searchCondition, categoryCondition)
+			: searchCondition ?? categoryCondition;
+
+	return ctx.db
+		.select({
+			code: schema.products.code,
+			name: schema.products.name,
+			category_name: schema.productCategories.name,
+			unit: schema.products.unit,
+			description: schema.products.description,
+			min_quantity: schema.products.min_quantity,
+		})
+		.from(schema.products)
+		.leftJoin(schema.productCategories, eq(schema.products.category_id, schema.productCategories.id))
+		.where(whereClause)
+		.orderBy(asc(schema.products.code));
+}
+
 export async function importProducts(ctx: ServiceCtx, csvText: string, mode: string) {
 	if (mode !== 'append' && mode !== 'replace') return fail(400, { error: '無効なインポートモードです' });
 

@@ -1,13 +1,56 @@
 import { error, redirect, fail } from '@sveltejs/kit';
-import { eq, desc, count, like, asc } from 'drizzle-orm';
+import { eq, desc, count, like, asc, or } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
 import { parseCSV } from '$lib/utils/csv';
 import { logAudit } from '$lib/server/audit';
 import type { ServiceCtx } from '$lib/services';
 
-export async function listReceivingSlips(ctx: ServiceCtx) {
-	const [slips, suppliers, products] = await Promise.all([
+export async function getSlipExportData(ctx: ServiceCtx, id: string) {
+	const [slipRows, details] = await Promise.all([
+		ctx.db
+			.select({
+				slip_number: schema.receivingSlips.slip_number,
+				received_at: schema.receivingSlips.received_at,
+				supplier_name: schema.suppliers.name,
+			})
+			.from(schema.receivingSlips)
+			.leftJoin(schema.suppliers, eq(schema.receivingSlips.supplier_id, schema.suppliers.id))
+			.where(eq(schema.receivingSlips.id, id)),
+		ctx.db
+			.select({
+				product_code: schema.products.code,
+				product_name: schema.products.name,
+				quantity: schema.receivingSlipDetails.quantity,
+				unit: schema.products.unit,
+			})
+			.from(schema.receivingSlipDetails)
+			.leftJoin(schema.products, eq(schema.receivingSlipDetails.product_id, schema.products.id))
+			.where(eq(schema.receivingSlipDetails.slip_id, id))
+			.orderBy(schema.receivingSlipDetails.line_no),
+	]);
+	if (!slipRows[0]) error(404, '入荷伝票が見つかりません');
+	return { slip: slipRows[0], details };
+}
+
+export async function listReceivingSlips(ctx: ServiceCtx, search = '', page = 1) {
+	const itemsPerPage = 20;
+	const currentPage = Math.max(1, page);
+	const offset = (currentPage - 1) * itemsPerPage;
+
+	const whereClause = search
+		? or(
+				like(schema.receivingSlips.slip_number, `%${search}%`),
+				like(schema.suppliers.name, `%${search}%`)
+			)
+		: undefined;
+
+	const [countResult, slips, suppliers, products] = await Promise.all([
+		ctx.db
+			.select({ count: count() })
+			.from(schema.receivingSlips)
+			.leftJoin(schema.suppliers, eq(schema.receivingSlips.supplier_id, schema.suppliers.id))
+			.where(whereClause),
 		ctx.db
 			.select({
 				id: schema.receivingSlips.id,
@@ -22,8 +65,11 @@ export async function listReceivingSlips(ctx: ServiceCtx) {
 			.leftJoin(schema.suppliers, eq(schema.receivingSlips.supplier_id, schema.suppliers.id))
 			.leftJoin(schema.accounts, eq(schema.receivingSlips.account_id, schema.accounts.id))
 			.leftJoin(schema.receivingSlipDetails, eq(schema.receivingSlips.id, schema.receivingSlipDetails.slip_id))
+			.where(whereClause)
 			.groupBy(schema.receivingSlips.id)
-			.orderBy(desc(schema.receivingSlips.received_at)),
+			.orderBy(desc(schema.receivingSlips.received_at))
+			.limit(itemsPerPage)
+			.offset(offset),
 		ctx.db
 			.select({ id: schema.suppliers.id, name: schema.suppliers.name })
 			.from(schema.suppliers)
@@ -34,7 +80,15 @@ export async function listReceivingSlips(ctx: ServiceCtx) {
 			.orderBy(asc(schema.products.code)),
 	]);
 
-	return { slips, suppliers, products };
+	return {
+		slips,
+		suppliers,
+		products,
+		totalItems: countResult[0]?.count ?? 0,
+		itemsPerPage,
+		currentPage,
+		searchQuery: search,
+	};
 }
 
 export async function getReceivingSlip(ctx: ServiceCtx, id: string) {

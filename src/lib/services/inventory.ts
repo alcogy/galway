@@ -77,6 +77,40 @@ export async function listInventory(ctx: ServiceCtx, search: string, page: numbe
 	};
 }
 
+export async function getExportData(ctx: ServiceCtx, search: string, supplierId: string) {
+	let supplierProductIds: string[] | null = null;
+	if (supplierId) {
+		const spRows = await ctx.db
+			.select({ product_id: schema.supplierProducts.product_id })
+			.from(schema.supplierProducts)
+			.where(eq(schema.supplierProducts.supplier_id, supplierId));
+		supplierProductIds = spRows.map((r) => r.product_id);
+		if (supplierProductIds.length === 0) return [];
+	}
+
+	const searchCondition = search
+		? or(like(schema.products.code, `%${search}%`), like(schema.products.name, `%${search}%`))
+		: undefined;
+	const supplierCondition = supplierProductIds ? inArray(schema.products.id, supplierProductIds) : undefined;
+	const whereClause =
+		searchCondition && supplierCondition
+			? and(searchCondition, supplierCondition)
+			: searchCondition ?? supplierCondition;
+
+	return ctx.db
+		.select({
+			product_code: schema.products.code,
+			product_name: schema.products.name,
+			quantity: schema.inventory.quantity,
+			unit: schema.products.unit,
+			updated_at: schema.inventory.updated_at,
+		})
+		.from(schema.products)
+		.leftJoin(schema.inventory, eq(schema.products.id, schema.inventory.product_id))
+		.where(whereClause)
+		.orderBy(asc(schema.products.code));
+}
+
 export async function stocktake(ctx: ServiceCtx, product_id: string, quantity: number) {
 	if (!product_id) return fail(400, { error: '商品を選択してください' });
 	if (isNaN(quantity) || quantity < 0) return fail(400, { error: '数量は0以上の数値で入力してください' });
