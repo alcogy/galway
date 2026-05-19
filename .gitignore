@@ -27,3 +27,7 @@ test-results
 /worker-configuration.d.ts
 # SQLite
 *.db
+
+# Claude Code
+CLAUDE.md
+.claude/
