@@ -57,6 +57,13 @@
       "when": 1778833441361,
       "tag": "0007_careful_iron_man",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1779169754143,
+      "tag": "0008_mature_mandarin",
+      "breakpoints": true
     }
   ]
 }

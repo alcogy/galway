@@ -3,6 +3,7 @@ import { eq, asc, like, or, and, count } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
 import { parseCSV } from '$lib/utils/csv';
 import { logAudit } from '$lib/server/audit';
+import { productSchema } from '$lib/validation';
 import type { ServiceCtx } from '$lib/services';
 
 export async function listProducts(ctx: ServiceCtx, search: string, page: number, category: string) {
@@ -56,31 +57,27 @@ export async function listProducts(ctx: ServiceCtx, search: string, page: number
 	};
 }
 
-export async function createProduct(ctx: ServiceCtx, data: {
-	code: string;
-	name: string;
-	unit: string;
-	description: string | null;
-	category_id: string | null;
-	min_quantity: number;
-}) {
-	if (!data.code) return fail(400, { error: '商品コードは必須です' });
-	if (!data.name) return fail(400, { error: '商品名は必須です' });
-	if (!data.unit) return fail(400, { error: '単位は必須です' });
+export async function createProduct(
+	ctx: ServiceCtx,
+	data: { code: string; name: string; unit: string; description: string | null; category_id: string | null; min_quantity: number }
+) {
+	const parsed = productSchema.safeParse(data);
+	if (!parsed.success) return fail(400, { error: parsed.error.issues[0].message });
+	const { code, name, unit, description, category_id, min_quantity } = parsed.data;
 
 	const now = new Date().toISOString();
 	try {
 		await ctx.db.transaction(async (tx) => {
 			const [product] = await tx
 				.insert(schema.products)
-				.values(data)
+				.values({ code, name, unit, description, category_id: category_id ?? null, min_quantity })
 				.returning({ id: schema.products.id });
 			await tx
 				.insert(schema.inventory)
 				.values({ product_id: product.id, quantity: 0, updated_at: now })
 				.onConflictDoNothing();
 		});
-		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'create', target_type: 'product', target_label: `${data.code} ${data.name}` });
+		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'create', target_type: 'product', target_label: `${code} ${name}` });
 		return { success: true };
 	} catch (err: any) {
 		if (err?.message?.includes('UNIQUE')) return fail(409, { error: 'この商品コードはすでに使用されています' });
@@ -89,26 +86,21 @@ export async function createProduct(ctx: ServiceCtx, data: {
 	}
 }
 
-export async function updateProduct(ctx: ServiceCtx, data: {
-	id: string;
-	code: string;
-	name: string;
-	unit: string;
-	description: string | null;
-	category_id: string | null;
-	min_quantity: number;
-}) {
+export async function updateProduct(
+	ctx: ServiceCtx,
+	data: { id: string; code: string; name: string; unit: string; description: string | null; category_id: string | null; min_quantity: number }
+) {
 	if (!data.id) return fail(400, { error: 'IDが必要です' });
-	if (!data.code) return fail(400, { error: '商品コードは必須です' });
-	if (!data.name) return fail(400, { error: '商品名は必須です' });
-	if (!data.unit) return fail(400, { error: '単位は必須です' });
+	const parsed = productSchema.safeParse(data);
+	if (!parsed.success) return fail(400, { error: parsed.error.issues[0].message });
+	const { code, name, unit, description, category_id, min_quantity } = parsed.data;
 
 	try {
 		await ctx.db
 			.update(schema.products)
-			.set({ ...data, updated_at: new Date().toISOString() })
+			.set({ code, name, unit, description, category_id: category_id ?? null, min_quantity, updated_at: new Date().toISOString() })
 			.where(eq(schema.products.id, data.id));
-		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'update', target_type: 'product', target_id: data.id, target_label: `${data.code} ${data.name}` });
+		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'update', target_type: 'product', target_id: data.id, target_label: `${code} ${name}` });
 		return { success: true };
 	} catch (err: any) {
 		if (err?.message?.includes('UNIQUE')) return fail(409, { error: 'この商品コードはすでに使用されています' });

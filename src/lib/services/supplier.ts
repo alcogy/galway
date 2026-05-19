@@ -3,6 +3,7 @@ import { eq, asc, like, count, inArray } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
 import { parseCSV } from '$lib/utils/csv';
 import { logAudit } from '$lib/server/audit';
+import { supplierSchema } from '$lib/validation';
 import type { ServiceCtx } from '$lib/services';
 
 export async function listSuppliers(ctx: ServiceCtx, search: string, page: number) {
@@ -54,19 +55,17 @@ export async function listSuppliers(ctx: ServiceCtx, search: string, page: numbe
 	};
 }
 
-export async function createSupplier(ctx: ServiceCtx, data: {
-	name: string;
-	tel: string | null;
-	fax: string | null;
-	zipcode: string | null;
-	address: string | null;
-	email: string | null;
-}) {
-	if (!data.name) return fail(400, { error: '仕入先名は必須です' });
+export async function createSupplier(
+	ctx: ServiceCtx,
+	data: { name: string; tel: string | null; fax: string | null; zipcode: string | null; address: string | null; email: string | null }
+) {
+	const parsed = supplierSchema.safeParse(data);
+	if (!parsed.success) return fail(400, { error: parsed.error.issues[0].message });
+	const { name, tel, fax, zipcode, address, email } = parsed.data;
 
 	try {
-		await ctx.db.insert(schema.suppliers).values(data);
-		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'create', target_type: 'supplier', target_label: data.name });
+		await ctx.db.insert(schema.suppliers).values({ name, tel, fax, zipcode, address, email });
+		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'create', target_type: 'supplier', target_label: name });
 		return { success: true };
 	} catch (err) {
 		console.error('Failed to create supplier:', err);
@@ -74,24 +73,21 @@ export async function createSupplier(ctx: ServiceCtx, data: {
 	}
 }
 
-export async function updateSupplier(ctx: ServiceCtx, data: {
-	id: string;
-	name: string;
-	tel: string | null;
-	fax: string | null;
-	zipcode: string | null;
-	address: string | null;
-	email: string | null;
-}) {
+export async function updateSupplier(
+	ctx: ServiceCtx,
+	data: { id: string; name: string; tel: string | null; fax: string | null; zipcode: string | null; address: string | null; email: string | null }
+) {
 	if (!data.id) return fail(400, { error: 'IDが必要です' });
-	if (!data.name) return fail(400, { error: '仕入先名は必須です' });
+	const parsed = supplierSchema.safeParse(data);
+	if (!parsed.success) return fail(400, { error: parsed.error.issues[0].message });
+	const { name, tel, fax, zipcode, address, email } = parsed.data;
 
 	try {
 		await ctx.db
 			.update(schema.suppliers)
-			.set({ ...data, updated_at: new Date().toISOString() })
+			.set({ name, tel, fax, zipcode, address, email, updated_at: new Date().toISOString() })
 			.where(eq(schema.suppliers.id, data.id));
-		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'update', target_type: 'supplier', target_id: data.id, target_label: data.name });
+		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'update', target_type: 'supplier', target_id: data.id, target_label: name });
 		return { success: true };
 	} catch (err) {
 		console.error('Failed to update supplier:', err);

@@ -1,5 +1,6 @@
+import { dev } from '$app/environment';
 import { drizzle } from 'drizzle-orm/d1';
-import { eq } from 'drizzle-orm';
+import { and, eq, gt } from 'drizzle-orm';
 import * as schema from '../db/schema';
 import type { RequestEvent } from '@sveltejs/kit';
 
@@ -7,13 +8,13 @@ const ITERATIONS = 100_000;
 const KEY_LENGTH = 32;
 const ALGORITHM = 'PBKDF2';
 const HASH = 'SHA-256';
+const SESSION_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
-// Session cookie configuration
 export const SESSION_COOKIE_OPTIONS = {
 	path: '/',
 	httpOnly: true,
 	sameSite: 'lax',
-	secure: false, // Set to true in production with HTTPS
+	secure: !dev,
 	maxAge: 60 * 60 * 24 * 7 // 7 days
 } as const;
 
@@ -27,6 +28,15 @@ function fromHex(hex: string): Uint8Array {
 		bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
 	}
 	return bytes;
+}
+
+function timingSafeEqual(a: Uint8Array, b: Uint8Array): boolean {
+	if (a.length !== b.length) return false;
+	let diff = 0;
+	for (let i = 0; i < a.length; i++) {
+		diff |= a[i] ^ b[i];
+	}
+	return diff === 0;
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -48,6 +58,7 @@ export async function hashPassword(password: string): Promise<string> {
 
 export async function verifyPassword(password: string, stored: string): Promise<boolean> {
 	const [saltHex, hashHex] = stored.split(':');
+	if (!saltHex || !hashHex) return false;
 	const salt = fromHex(saltHex).buffer as ArrayBuffer;
 	const key = await crypto.subtle.importKey(
 		'raw',
@@ -61,19 +72,34 @@ export async function verifyPassword(password: string, stored: string): Promise<
 		key,
 		KEY_LENGTH * 8
 	);
-	return toHex(derived) === hashHex;
+	return timingSafeEqual(new Uint8Array(derived), fromHex(hashHex));
+}
+
+export async function createSession(d1: D1Database, accountId: string): Promise<string> {
+	const tokenBytes = crypto.getRandomValues(new Uint8Array(32));
+	const token = toHex(tokenBytes.buffer as ArrayBuffer);
+	const expiresAt = new Date(Date.now() + SESSION_EXPIRY_MS).toISOString();
+	const db = drizzle(d1, { schema });
+	await db.insert(schema.sessions).values({ id: token, account_id: accountId, expires_at: expiresAt });
+	return token;
+}
+
+export async function deleteSession(d1: D1Database, token: string): Promise<void> {
+	const db = drizzle(d1, { schema });
+	await db.delete(schema.sessions).where(eq(schema.sessions.id, token));
 }
 
 export async function getSession(event: RequestEvent) {
-	const sessionId = event.cookies.get('session');
-	if (!sessionId) {
-		return null;
-	}
+	const token = event.cookies.get('session');
+	if (!token || token.length !== 64) return null;
 
 	const db = drizzle(event.platform!.env.DB, { schema });
-	const account = await db.query.accounts.findFirst({
-		where: eq(schema.accounts.id, sessionId)
-	});
-
-	return account ?? null;
+	const now = new Date().toISOString();
+	const result = await db
+		.select({ account: schema.accounts })
+		.from(schema.sessions)
+		.innerJoin(schema.accounts, eq(schema.sessions.account_id, schema.accounts.id))
+		.where(and(eq(schema.sessions.id, token), gt(schema.sessions.expires_at, now)))
+		.limit(1);
+	return result[0]?.account ?? null;
 }

@@ -4,7 +4,7 @@ import { drizzle } from 'drizzle-orm/d1';
 import { eq } from 'drizzle-orm';
 
 import * as schema from '../db/schema';
-import { hashPassword, verifyPassword, getSession } from './index';
+import { hashPassword, verifyPassword, createSession, getSession } from './index';
 import type { RequestEvent } from '@sveltejs/kit';
 
 describe('Auth Functions', () => {
@@ -82,10 +82,13 @@ describe('Auth Functions', () => {
 				})
 				.returning();
 
+			// Create a real session token in the sessions table
+			const token = await createSession(proxy.env.DB, account.id);
+
 			const mockEvent = {
 				platform: { env: { DB: proxy.env.DB } },
 				cookies: {
-					get: () => account.id
+					get: () => token
 				}
 			} as unknown as RequestEvent;
 
@@ -96,7 +99,7 @@ describe('Auth Functions', () => {
 			expect(session?.name).toBe('Test Admin');
 			expect(session?.role).toBe('admin');
 
-			// Cleanup
+			// Cleanup (cascade deletes session)
 			await db.delete(schema.accounts).where(eq(schema.accounts.id, account.id));
 
 			expect.assertions(4);

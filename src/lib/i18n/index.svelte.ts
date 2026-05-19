@@ -25,7 +25,8 @@ export function setLocale(l: Locale) {
 	if (browser) {
 		localStorage.setItem(STORAGE_KEY, l);
 		document.documentElement.lang = l;
-		document.cookie = `${STORAGE_KEY}=${l}; path=/; max-age=31536000; SameSite=Lax`;
+		const secure = location.protocol === 'https:' ? '; Secure' : '';
+		document.cookie = `${STORAGE_KEY}=${l}; path=/; max-age=31536000; SameSite=Lax${secure}`;
 	}
 }
 

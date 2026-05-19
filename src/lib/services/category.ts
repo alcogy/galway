@@ -2,6 +2,7 @@ import { fail } from '@sveltejs/kit';
 import { eq, asc, count } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
 import { logAudit } from '$lib/server/audit';
+import { categorySchema } from '$lib/validation';
 import type { ServiceCtx } from '$lib/services';
 import type { ProductCategory } from '$lib/types/product';
 
@@ -22,11 +23,13 @@ export async function listCategories(ctx: ServiceCtx) {
 }
 
 export async function createCategory(ctx: ServiceCtx, data: { name: string; description: string | null }) {
-	if (!data.name) return fail(400, { error: 'カテゴリ名は必須です' });
+	const parsed = categorySchema.safeParse(data);
+	if (!parsed.success) return fail(400, { error: parsed.error.issues[0].message });
+	const { name, description } = parsed.data;
 
 	try {
-		await ctx.db.insert(schema.productCategories).values(data);
-		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'create', target_type: 'category', target_label: data.name });
+		await ctx.db.insert(schema.productCategories).values({ name, description });
+		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'create', target_type: 'category', target_label: name });
 		return { success: true };
 	} catch (err: any) {
 		if (err?.message?.includes('UNIQUE')) return fail(409, { error: 'このカテゴリ名はすでに使用されています' });
@@ -37,14 +40,16 @@ export async function createCategory(ctx: ServiceCtx, data: { name: string; desc
 
 export async function updateCategory(ctx: ServiceCtx, data: { id: string; name: string; description: string | null }) {
 	if (!data.id) return fail(400, { error: 'IDが必要です' });
-	if (!data.name) return fail(400, { error: 'カテゴリ名は必須です' });
+	const parsed = categorySchema.safeParse(data);
+	if (!parsed.success) return fail(400, { error: parsed.error.issues[0].message });
+	const { name, description } = parsed.data;
 
 	try {
 		await ctx.db
 			.update(schema.productCategories)
-			.set({ name: data.name, description: data.description })
+			.set({ name, description })
 			.where(eq(schema.productCategories.id, data.id));
-		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'update', target_type: 'category', target_id: data.id, target_label: data.name });
+		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'update', target_type: 'category', target_id: data.id, target_label: name });
 		return { success: true };
 	} catch (err: any) {
 		if (err?.message?.includes('UNIQUE')) return fail(409, { error: 'このカテゴリ名はすでに使用されています' });

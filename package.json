@@ -51,5 +51,8 @@
 		"db:seed:local": "wrangler d1 execute galway-db --local --file=./scripts/seed.sql",
 		"db:seed-plan6:local": "wrangler d1 execute galway-db --local --file=./scripts/seed-plan6.sql"
 	},
-	"type": "module"
+	"type": "module",
+	"dependencies": {
+		"zod": "^4.4.3"
+	}
 }

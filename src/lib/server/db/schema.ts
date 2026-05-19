@@ -283,3 +283,27 @@ export const inventory = sqliteTable('inventory', {
 		.notNull()
 		.$defaultFn(() => new Date().toISOString())
 });
+
+// -----------------------------------------------
+// セッションテーブル (Session)
+// -----------------------------------------------
+export const sessions = sqliteTable('sessions', {
+	id: text('id').primaryKey(), // 64-char random hex token
+	account_id: text('account_id')
+		.notNull()
+		.references(() => accounts.id, { onDelete: 'cascade' }),
+	created_at: text('created_at')
+		.notNull()
+		.$defaultFn(() => new Date().toISOString()),
+	expires_at: text('expires_at').notNull()
+});
+
+// -----------------------------------------------
+// ログイン試行制限 (Login Rate Limit)
+// -----------------------------------------------
+export const loginRateLimits = sqliteTable('login_rate_limits', {
+	ip: text('ip').primaryKey(),
+	attempts: int('attempts').notNull().default(0),
+	locked_until: text('locked_until'),
+	last_attempt_at: text('last_attempt_at')
+});

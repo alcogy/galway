@@ -2,6 +2,7 @@ import { fail } from '@sveltejs/kit';
 import { eq, asc, count } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
 import { logAudit } from '$lib/server/audit';
+import { customerSchema } from '$lib/validation';
 import type { ServiceCtx } from '$lib/services';
 import type { Customer } from '$lib/types/shipping';
 
@@ -25,20 +26,18 @@ export async function listCustomers(ctx: ServiceCtx) {
 	return { customers: rows as Customer[] };
 }
 
-export async function createCustomer(ctx: ServiceCtx, data: {
-	name: string;
-	tel: string | null;
-	zipcode: string | null;
-	address: string | null;
-	email: string | null;
-	note: string | null;
-}) {
-	if (!data.name) return fail(400, { error: '出荷先名は必須です' });
+export async function createCustomer(
+	ctx: ServiceCtx,
+	data: { name: string; tel: string | null; zipcode: string | null; address: string | null; email: string | null; note: string | null }
+) {
+	const parsed = customerSchema.safeParse(data);
+	if (!parsed.success) return fail(400, { error: parsed.error.issues[0].message });
+	const { name, tel, zipcode, address, email, note } = parsed.data;
 
 	const now = new Date().toISOString();
 	try {
-		await ctx.db.insert(schema.customers).values({ ...data, created_at: now, updated_at: now });
-		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'create', target_type: 'customer', target_label: data.name });
+		await ctx.db.insert(schema.customers).values({ name, tel, zipcode, address, email, note, created_at: now, updated_at: now });
+		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'create', target_type: 'customer', target_label: name });
 		return { success: true };
 	} catch (err) {
 		console.error('Failed to create customer:', err);
@@ -46,24 +45,21 @@ export async function createCustomer(ctx: ServiceCtx, data: {
 	}
 }
 
-export async function updateCustomer(ctx: ServiceCtx, data: {
-	id: string;
-	name: string;
-	tel: string | null;
-	zipcode: string | null;
-	address: string | null;
-	email: string | null;
-	note: string | null;
-}) {
+export async function updateCustomer(
+	ctx: ServiceCtx,
+	data: { id: string; name: string; tel: string | null; zipcode: string | null; address: string | null; email: string | null; note: string | null }
+) {
 	if (!data.id) return fail(400, { error: 'IDが必要です' });
-	if (!data.name) return fail(400, { error: '出荷先名は必須です' });
+	const parsed = customerSchema.safeParse(data);
+	if (!parsed.success) return fail(400, { error: parsed.error.issues[0].message });
+	const { name, tel, zipcode, address, email, note } = parsed.data;
 
 	try {
 		await ctx.db
 			.update(schema.customers)
-			.set({ ...data, updated_at: new Date().toISOString() })
+			.set({ name, tel, zipcode, address, email, note, updated_at: new Date().toISOString() })
 			.where(eq(schema.customers.id, data.id));
-		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'update', target_type: 'customer', target_id: data.id, target_label: data.name });
+		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'update', target_type: 'customer', target_id: data.id, target_label: name });
 		return { success: true };
 	} catch (err) {
 		console.error('Failed to update customer:', err);

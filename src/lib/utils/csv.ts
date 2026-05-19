@@ -1,4 +1,8 @@
 export function escapeCSV(value: string): string {
+	// Prevent formula injection in Excel/Google Sheets
+	if (value.length > 0 && '=+-@\t\r'.includes(value[0])) {
+		value = "'" + value;
+	}
 	if (value.includes(',') || value.includes('"') || value.includes('\n')) {
 		return `"${value.replace(/"/g, '""')}"`;
 	}
