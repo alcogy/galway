@@ -3,6 +3,7 @@ import { eq, desc, or, like, count } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
 import { hashPassword, verifyPassword } from '$lib/server/auth';
 import { accountCreateSchema, accountUpdateSchema, profileUpdateSchema } from '$lib/validation';
+import { sendWelcomeEmail, sendPasswordChangedEmail } from '$lib/services/email';
 import type { ServiceCtx } from '$lib/services';
 
 export async function listAccounts(ctx: ServiceCtx, search: string, page: number) {
@@ -57,7 +58,15 @@ export async function createAccount(
 		if (existing) return fail(400, { error: 'そのメールアドレスはすでに使用されています' });
 
 		const password_hash = await hashPassword(password);
-		await ctx.db.insert(schema.accounts).values({ name, email, password_hash, role });
+		const [inserted] = await ctx.db
+			.insert(schema.accounts)
+			.values({ name, email, password_hash, role })
+			.returning({ id: schema.accounts.id });
+
+		if (inserted && ctx.request) {
+			const loginUrl = new URL('/login', ctx.request.url).toString();
+			sendWelcomeEmail(ctx, inserted.id, loginUrl);
+		}
 		return { success: true };
 	} catch (err) {
 		console.error('Failed to create account:', err);
@@ -151,6 +160,9 @@ export async function updateProfile(
 
 	try {
 		await ctx.db.update(schema.accounts).set(updateData).where(eq(schema.accounts.id, ctx.user.id));
+		if (newPassword) {
+			sendPasswordChangedEmail(ctx, ctx.user.id);
+		}
 		return { success: true };
 	} catch (err) {
 		console.error('Failed to update profile:', err);

@@ -23,6 +23,8 @@
 	function handleLocale(l: Locale) {
 		setLocale(l);
 	}
+
+	const emailProvider = $derived(data.emailProvider);
 </script>
 
 <svelte:head>
@@ -134,13 +136,9 @@
 			</div>
 		</Card>
 
-		<!-- Notifications -->
+		<!-- Admin Alerts -->
 		<Card title={t('settings.notifications')}>
 			<div class="settings-group">
-				<div class="coming-soon-banner">
-					{t('settings.notificationsSoon')}
-				</div>
-
 				<div class="setting-row">
 					<div class="setting-info">
 						<span class="setting-label">{t('settings.emailNotification')}</span>
@@ -165,9 +163,10 @@
 						name="notification_email"
 						type="email"
 						bind:value={notificationEmail}
-						placeholder="notify@example.com"
+						placeholder="admin@example.com"
 						disabled={!alertEmailEnabled}
 					/>
+					<span class="field-hint">{t('settings.notificationEmailDesc')}</span>
 				</div>
 
 				<div class="setting-field">
@@ -179,6 +178,24 @@
 					/>
 					<span class="field-hint">{t('settings.slackDesc')}</span>
 				</div>
+			</div>
+		</Card>
+
+		<!-- Account Notifications (email provider status) -->
+		<Card title={t('settings.emailProvider')}>
+			<div class="settings-group">
+				<p class="setting-desc">{t('settings.emailProviderDesc')}</p>
+				<div class="provider-status">
+					<span class="provider-label">{t('settings.emailProviderLabel')}:</span>
+					{#if emailProvider}
+						<span class="provider-badge provider-badge--active">{emailProvider}</span>
+					{:else}
+						<span class="provider-badge provider-badge--none">—</span>
+					{/if}
+				</div>
+				{#if !emailProvider}
+					<p class="field-hint">{t('settings.emailProviderNotConfigured')}</p>
+				{/if}
 			</div>
 		</Card>
 
@@ -288,6 +305,39 @@
 	.field-hint {
 		font-size: 0.75rem;
 		color: var(--color-text-tertiary);
+	}
+
+	.provider-status {
+		display: flex;
+		align-items: center;
+		gap: var(--space-sm);
+		font-size: 0.875rem;
+	}
+
+	.provider-label {
+		color: var(--color-text-secondary);
+		font-weight: 500;
+	}
+
+	.provider-badge {
+		display: inline-block;
+		padding: 2px 10px;
+		border-radius: var(--radius-sm);
+		font-size: 0.8125rem;
+		font-weight: 600;
+		font-family: monospace;
+
+		&--active {
+			background-color: var(--color-success-light);
+			color: var(--color-success);
+			border: 1px solid var(--color-success);
+		}
+
+		&--none {
+			background-color: var(--color-bg-sunken);
+			color: var(--color-text-tertiary);
+			border: 1px solid var(--color-border);
+		}
 	}
 
 	/* Theme switcher */

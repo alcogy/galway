@@ -2,8 +2,11 @@ import { makeCtx } from '$lib/services';
 import { loadSettings, saveSettings } from '$lib/services/settings';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ platform, locals }) =>
-	loadSettings(makeCtx(platform!, locals));
+export const load: PageServerLoad = async ({ platform, locals }) => {
+	const settings = await loadSettings(makeCtx(platform!, locals));
+	const emailProvider = platform?.env.EMAIL_PROVIDER || null;
+	return { ...settings, emailProvider };
+};
 
 export const actions = {
 	save: async ({ request, platform, locals }) => {
