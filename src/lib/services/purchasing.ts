@@ -116,32 +116,30 @@ export async function createPurchaseOrder(ctx: ServiceCtx, data: {
 	const validDetails = data.details.filter((d) => d.product_id && d.quantity > 0);
 	if (validDetails.length === 0) return fail(400, { error: '有効な明細が必要です' });
 
+	const year = new Date(data.ordered_at).getFullYear();
+	const [last] = await ctx.db
+		.select({ n: schema.purchaseOrders.order_number })
+		.from(schema.purchaseOrders)
+		.where(like(schema.purchaseOrders.order_number, `PO-${year}-%`))
+		.orderBy(desc(schema.purchaseOrders.order_number))
+		.limit(1);
+	const lastNum = last ? parseInt(last.n.split('-')[2], 10) : 0;
+	const order_number = `PO-${year}-${String(lastNum + 1).padStart(3, '0')}`;
+
 	let newId = '';
 	try {
-		await ctx.db.transaction(async (tx) => {
-			const year = new Date(data.ordered_at).getFullYear();
-			const [last] = await tx
-				.select({ n: schema.purchaseOrders.order_number })
-				.from(schema.purchaseOrders)
-				.where(like(schema.purchaseOrders.order_number, `PO-${year}-%`))
-				.orderBy(desc(schema.purchaseOrders.order_number))
-				.limit(1);
-			const lastNum = last ? parseInt(last.n.split('-')[2], 10) : 0;
-			const order_number = `PO-${year}-${String(lastNum + 1).padStart(3, '0')}`;
-
-			const [order] = await tx
-				.insert(schema.purchaseOrders)
-				.values({ order_number, ordered_at: data.ordered_at, expected_at: data.expected_at, supplier_id: data.supplier_id, account_id: ctx.user.id, note: data.note })
-				.returning({ id: schema.purchaseOrders.id });
-
-			newId = order.id;
-			for (let i = 0; i < validDetails.length; i++) {
-				await tx.insert(schema.purchaseOrderDetails).values({ order_id: order.id, product_id: validDetails[i].product_id, line_no: i + 1, quantity: validDetails[i].quantity });
-			}
-		});
+		const [order] = await ctx.db
+			.insert(schema.purchaseOrders)
+			.values({ order_number, ordered_at: data.ordered_at, expected_at: data.expected_at, supplier_id: data.supplier_id, account_id: ctx.user.id, note: data.note })
+			.returning({ id: schema.purchaseOrders.id });
+		newId = order.id;
+		for (let i = 0; i < validDetails.length; i++) {
+			await ctx.db.insert(schema.purchaseOrderDetails).values({ order_id: order.id, product_id: validDetails[i].product_id, line_no: i + 1, quantity: validDetails[i].quantity });
+		}
 		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'create', target_type: 'purchase_order', target_id: newId, detail: { supplier_id: data.supplier_id, ordered_at: data.ordered_at, item_count: validDetails.length } });
 		redirect(303, `/purchasing/${newId}`);
 	} catch (err) {
+		if (newId) await ctx.db.delete(schema.purchaseOrders).where(eq(schema.purchaseOrders.id, newId)).catch(() => {});
 		const message = String(err);
 		if (message.includes('UNIQUE constraint failed') && message.includes('order_number')) return fail(409, { error: '発注番号が競合しました。再度お試しください。' });
 		throw err;
@@ -162,13 +160,11 @@ export async function updatePurchaseOrder(ctx: ServiceCtx, id: string, data: {
 	if (validDetails.length === 0) return fail(400, { error: '有効な明細が必要です' });
 
 	try {
-		await ctx.db.transaction(async (tx) => {
-			await tx.update(schema.purchaseOrders).set({ supplier_id: data.supplier_id, ordered_at: data.ordered_at, expected_at: data.expected_at, note: data.note }).where(eq(schema.purchaseOrders.id, id));
-			await tx.delete(schema.purchaseOrderDetails).where(eq(schema.purchaseOrderDetails.order_id, id));
-			for (let i = 0; i < validDetails.length; i++) {
-				await tx.insert(schema.purchaseOrderDetails).values({ order_id: id, product_id: validDetails[i].product_id, line_no: i + 1, quantity: validDetails[i].quantity });
-			}
-		});
+		await ctx.db.update(schema.purchaseOrders).set({ supplier_id: data.supplier_id, ordered_at: data.ordered_at, expected_at: data.expected_at, note: data.note }).where(eq(schema.purchaseOrders.id, id));
+		await ctx.db.delete(schema.purchaseOrderDetails).where(eq(schema.purchaseOrderDetails.order_id, id));
+		for (let i = 0; i < validDetails.length; i++) {
+			await ctx.db.insert(schema.purchaseOrderDetails).values({ order_id: id, product_id: validDetails[i].product_id, line_no: i + 1, quantity: validDetails[i].quantity });
+		}
 	} catch (err) {
 		console.error('Failed to update purchase order:', err);
 		return fail(500, { error: '発注の更新に失敗しました。' });
@@ -218,37 +214,34 @@ export async function convertToReceivingSlip(ctx: ServiceCtx, id: string) {
 	const received_at = order.expected_at ?? new Date().toISOString().slice(0, 10);
 	const now = new Date().toISOString();
 
+	const slipYear = new Date(received_at).getFullYear();
+	const [lastSlip] = await ctx.db
+		.select({ n: schema.receivingSlips.slip_number })
+		.from(schema.receivingSlips)
+		.where(like(schema.receivingSlips.slip_number, `RCV-${slipYear}-%`))
+		.orderBy(desc(schema.receivingSlips.slip_number))
+		.limit(1);
+	const lastSlipNum = lastSlip ? parseInt(lastSlip.n.split('-')[2], 10) : 0;
+	const slip_number = `RCV-${slipYear}-${String(lastSlipNum + 1).padStart(3, '0')}`;
+
 	let newSlipId = '';
 	try {
-		await ctx.db.transaction(async (tx) => {
-			const year = new Date(received_at).getFullYear();
-			const [last] = await tx
-				.select({ n: schema.receivingSlips.slip_number })
-				.from(schema.receivingSlips)
-				.where(like(schema.receivingSlips.slip_number, `RCV-${year}-%`))
-				.orderBy(desc(schema.receivingSlips.slip_number))
-				.limit(1);
-			const lastNum = last ? parseInt(last.n.split('-')[2], 10) : 0;
-			const slip_number = `RCV-${year}-${String(lastNum + 1).padStart(3, '0')}`;
+		const [slip] = await ctx.db
+			.insert(schema.receivingSlips)
+			.values({ slip_number, received_at, supplier_id: order.supplier_id, account_id: ctx.user.id, note: `発注番号: ${order.order_number}` })
+			.returning({ id: schema.receivingSlips.id });
+		newSlipId = slip.id;
 
-			const [slip] = await tx
-				.insert(schema.receivingSlips)
-				.values({ slip_number, received_at, supplier_id: order.supplier_id, account_id: ctx.user.id, note: `発注番号: ${order.order_number}` })
-				.returning({ id: schema.receivingSlips.id });
-
-			newSlipId = slip.id;
-
-			for (let i = 0; i < details.length; i++) {
-				await tx.insert(schema.receivingSlipDetails).values({ slip_id: slip.id, product_id: details[i].product_id, line_no: i + 1, quantity: details[i].quantity });
-			}
-			for (const d of details) {
-				await tx.insert(schema.inventory).values({ product_id: d.product_id, quantity: d.quantity, updated_at: now })
-					.onConflictDoUpdate({ target: schema.inventory.product_id, set: { quantity: sql`${schema.inventory.quantity} + ${d.quantity}`, updated_at: now } });
-			}
-
-			await tx.update(schema.purchaseOrders).set({ status: 'received' }).where(eq(schema.purchaseOrders.id, id));
-		});
+		for (let i = 0; i < details.length; i++) {
+			await ctx.db.insert(schema.receivingSlipDetails).values({ slip_id: slip.id, product_id: details[i].product_id, line_no: i + 1, quantity: details[i].quantity });
+		}
+		for (const d of details) {
+			await ctx.db.insert(schema.inventory).values({ product_id: d.product_id, quantity: d.quantity, updated_at: now })
+				.onConflictDoUpdate({ target: schema.inventory.product_id, set: { quantity: sql`${schema.inventory.quantity} + ${d.quantity}`, updated_at: now } });
+		}
+		await ctx.db.update(schema.purchaseOrders).set({ status: 'received' }).where(eq(schema.purchaseOrders.id, id));
 	} catch (err) {
+		if (newSlipId) await ctx.db.delete(schema.receivingSlips).where(eq(schema.receivingSlips.id, newSlipId)).catch(() => {});
 		const message = String(err);
 		if (message.includes('UNIQUE constraint failed') && message.includes('slip_number')) return fail(409, { error: '伝票番号が競合しました。再度お試しください。' });
 		console.error('Failed to convert PO to receiving slip:', err);

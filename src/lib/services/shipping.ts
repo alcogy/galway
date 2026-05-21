@@ -152,23 +152,23 @@ export async function createShippingSlip(ctx: ServiceCtx, data: {
 	const validDetails = data.details.filter((d) => d.product_id && d.quantity > 0);
 	if (validDetails.length === 0) return fail(400, { error: '有効な明細が必要です' });
 
+	const slip_number = await nextShippingSlipNumber(ctx.db, data.shipped_at);
+	const now = new Date().toISOString();
+	let slipId: string | null = null;
 	try {
-		await ctx.db.transaction(async (tx) => {
-			const slip_number = await nextShippingSlipNumber(tx, data.shipped_at);
-			const now = new Date().toISOString();
-			const [slip] = await tx
-				.insert(schema.shippingSlips)
-				.values({ slip_number, shipped_at: data.shipped_at, customer_id: data.customer_id, account_id: ctx.user.id, note: data.note })
-				.returning({ id: schema.shippingSlips.id });
-
-			for (let i = 0; i < validDetails.length; i++) {
-				await tx.insert(schema.shippingSlipDetails).values({ slip_id: slip.id, product_id: validDetails[i].product_id, line_no: i + 1, quantity: validDetails[i].quantity });
-			}
-			for (const d of validDetails) {
-				await tx.update(schema.inventory).set({ quantity: sql`${schema.inventory.quantity} - ${d.quantity}`, updated_at: now }).where(eq(schema.inventory.product_id, d.product_id));
-			}
-		});
+		const [slip] = await ctx.db
+			.insert(schema.shippingSlips)
+			.values({ slip_number, shipped_at: data.shipped_at, customer_id: data.customer_id, account_id: ctx.user.id, note: data.note })
+			.returning({ id: schema.shippingSlips.id });
+		slipId = slip.id;
+		for (let i = 0; i < validDetails.length; i++) {
+			await ctx.db.insert(schema.shippingSlipDetails).values({ slip_id: slip.id, product_id: validDetails[i].product_id, line_no: i + 1, quantity: validDetails[i].quantity });
+		}
+		for (const d of validDetails) {
+			await ctx.db.update(schema.inventory).set({ quantity: sql`${schema.inventory.quantity} - ${d.quantity}`, updated_at: now }).where(eq(schema.inventory.product_id, d.product_id));
+		}
 	} catch (err) {
+		if (slipId) await ctx.db.delete(schema.shippingSlips).where(eq(schema.shippingSlips.id, slipId)).catch(() => {});
 		if (isSlipNumberConflict(err)) return fail(409, { error: '伝票番号が競合しました。再度お試しください。' });
 		throw err;
 	}
@@ -194,25 +194,21 @@ export async function updateShippingSlip(ctx: ServiceCtx, id: string, data: {
 	if (data.account_id) updateFields.account_id = data.account_id;
 
 	try {
-		await ctx.db.transaction(async (tx) => {
-			const oldDetails = await tx
-				.select({ product_id: schema.shippingSlipDetails.product_id, quantity: schema.shippingSlipDetails.quantity })
-				.from(schema.shippingSlipDetails)
-				.where(eq(schema.shippingSlipDetails.slip_id, id));
-
-			await tx.update(schema.shippingSlips).set(updateFields).where(eq(schema.shippingSlips.id, id));
-			await tx.delete(schema.shippingSlipDetails).where(eq(schema.shippingSlipDetails.slip_id, id));
-
-			for (const d of oldDetails) {
-				await tx.update(schema.inventory).set({ quantity: sql`${schema.inventory.quantity} + ${d.quantity}`, updated_at: now }).where(eq(schema.inventory.product_id, d.product_id));
-			}
-			for (let i = 0; i < validDetails.length; i++) {
-				await tx.insert(schema.shippingSlipDetails).values({ slip_id: id, product_id: validDetails[i].product_id, line_no: i + 1, quantity: validDetails[i].quantity });
-			}
-			for (const d of validDetails) {
-				await tx.update(schema.inventory).set({ quantity: sql`${schema.inventory.quantity} - ${d.quantity}`, updated_at: now }).where(eq(schema.inventory.product_id, d.product_id));
-			}
-		});
+		const oldDetails = await ctx.db
+			.select({ product_id: schema.shippingSlipDetails.product_id, quantity: schema.shippingSlipDetails.quantity })
+			.from(schema.shippingSlipDetails)
+			.where(eq(schema.shippingSlipDetails.slip_id, id));
+		await ctx.db.update(schema.shippingSlips).set(updateFields).where(eq(schema.shippingSlips.id, id));
+		await ctx.db.delete(schema.shippingSlipDetails).where(eq(schema.shippingSlipDetails.slip_id, id));
+		for (const d of oldDetails) {
+			await ctx.db.update(schema.inventory).set({ quantity: sql`${schema.inventory.quantity} + ${d.quantity}`, updated_at: now }).where(eq(schema.inventory.product_id, d.product_id));
+		}
+		for (let i = 0; i < validDetails.length; i++) {
+			await ctx.db.insert(schema.shippingSlipDetails).values({ slip_id: id, product_id: validDetails[i].product_id, line_no: i + 1, quantity: validDetails[i].quantity });
+		}
+		for (const d of validDetails) {
+			await ctx.db.update(schema.inventory).set({ quantity: sql`${schema.inventory.quantity} - ${d.quantity}`, updated_at: now }).where(eq(schema.inventory.product_id, d.product_id));
+		}
 	} catch (err) {
 		console.error('Failed to update shipping slip:', err);
 		return fail(500, { error: '出荷伝票の更新に失敗しました。' });
@@ -225,16 +221,14 @@ export async function updateShippingSlip(ctx: ServiceCtx, id: string, data: {
 export async function deleteShippingSlip(ctx: ServiceCtx, id: string) {
 	const now = new Date().toISOString();
 	try {
-		await ctx.db.transaction(async (tx) => {
-			const oldDetails = await tx
-				.select({ product_id: schema.shippingSlipDetails.product_id, quantity: schema.shippingSlipDetails.quantity })
-				.from(schema.shippingSlipDetails)
-				.where(eq(schema.shippingSlipDetails.slip_id, id));
-			await tx.delete(schema.shippingSlips).where(eq(schema.shippingSlips.id, id));
-			for (const d of oldDetails) {
-				await tx.update(schema.inventory).set({ quantity: sql`${schema.inventory.quantity} + ${d.quantity}`, updated_at: now }).where(eq(schema.inventory.product_id, d.product_id));
-			}
-		});
+		const oldDetails = await ctx.db
+			.select({ product_id: schema.shippingSlipDetails.product_id, quantity: schema.shippingSlipDetails.quantity })
+			.from(schema.shippingSlipDetails)
+			.where(eq(schema.shippingSlipDetails.slip_id, id));
+		await ctx.db.delete(schema.shippingSlips).where(eq(schema.shippingSlips.id, id));
+		for (const d of oldDetails) {
+			await ctx.db.update(schema.inventory).set({ quantity: sql`${schema.inventory.quantity} + ${d.quantity}`, updated_at: now }).where(eq(schema.inventory.product_id, d.product_id));
+		}
 	} catch (err) {
 		console.error('Failed to delete shipping slip:', err);
 		return fail(500, { error: '出荷伝票の削除に失敗しました。' });
@@ -271,25 +265,25 @@ export async function importShippingSlips(ctx: ServiceCtx, csvText: string, date
 
 	if (detailRecords.length === 0) return fail(400, { error: '有効なデータがありません' });
 
+	const slip_number = await nextShippingSlipNumber(ctx.db, date);
+	const now = new Date().toISOString();
+	let slipId: string | null = null;
 	try {
-		await ctx.db.transaction(async (tx) => {
-			const slip_number = await nextShippingSlipNumber(tx, date);
-			const now = new Date().toISOString();
-			const [slip] = await tx
-				.insert(schema.shippingSlips)
-				.values({ slip_number, shipped_at: date, account_id: ctx.user.id, note: '' })
-				.returning({ id: schema.shippingSlips.id });
-
-			for (let i = 0; i < detailRecords.length; i++) {
-				await tx.insert(schema.shippingSlipDetails).values({ slip_id: slip.id, product_id: detailRecords[i].product_id, line_no: i + 1, quantity: detailRecords[i].quantity });
-			}
-			for (const d of detailRecords) {
-				await tx.update(schema.inventory).set({ quantity: sql`${schema.inventory.quantity} - ${d.quantity}`, updated_at: now }).where(eq(schema.inventory.product_id, d.product_id));
-			}
-		});
+		const [slip] = await ctx.db
+			.insert(schema.shippingSlips)
+			.values({ slip_number, shipped_at: date, account_id: ctx.user.id, note: '' })
+			.returning({ id: schema.shippingSlips.id });
+		slipId = slip.id;
+		for (let i = 0; i < detailRecords.length; i++) {
+			await ctx.db.insert(schema.shippingSlipDetails).values({ slip_id: slip.id, product_id: detailRecords[i].product_id, line_no: i + 1, quantity: detailRecords[i].quantity });
+		}
+		for (const d of detailRecords) {
+			await ctx.db.update(schema.inventory).set({ quantity: sql`${schema.inventory.quantity} - ${d.quantity}`, updated_at: now }).where(eq(schema.inventory.product_id, d.product_id));
+		}
 		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'import', target_type: 'shipping_slip', detail: { count: detailRecords.length, date } });
 		return { success: true, count: detailRecords.length };
 	} catch (err) {
+		if (slipId) await ctx.db.delete(schema.shippingSlips).where(eq(schema.shippingSlips.id, slipId)).catch(() => {});
 		if (isSlipNumberConflict(err)) return fail(409, { error: '伝票番号が競合しました。再度お試しください。' });
 		console.error('Failed to import shipping slips:', err);
 		return fail(500, { error: '出荷伝票のインポートに失敗しました。' });
@@ -297,9 +291,9 @@ export async function importShippingSlips(ctx: ServiceCtx, csvText: string, date
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function nextShippingSlipNumber(tx: any, date: string) {
+async function nextShippingSlipNumber(db: any, date: string) {
 	const year = new Date(date).getFullYear();
-	const [last] = await tx
+	const [last] = await db
 		.select({ n: schema.shippingSlips.slip_number })
 		.from(schema.shippingSlips)
 		.where(like(schema.shippingSlips.slip_number, `SHP-${year}-%`))
