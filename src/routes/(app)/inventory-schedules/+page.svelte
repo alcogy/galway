@@ -11,8 +11,10 @@
 	let showModal = $state(false);
 	let showDeleteDialog = $state(false);
 	let showCancelDialog = $state(false);
+	let showStatusDialog = $state(false);
 	let deletingId = $state<string | null>(null);
 	let cancellingId = $state<string | null>(null);
+	let pendingStatusChange = $state<{ id: string; label: string; next: string } | null>(null);
 	let title = $state('');
 	let scheduledAt = $state('');
 	let note = $state('');
@@ -44,6 +46,11 @@
 	function openCancel(id: string) {
 		cancellingId = id;
 		showCancelDialog = true;
+	}
+
+	function openStatusDialog(id: string, label: string, next: string) {
+		pendingStatusChange = { id, label, next };
+		showStatusDialog = true;
 	}
 
 	async function changeStatus(id: string, next: string) {
@@ -89,7 +96,7 @@
 			<div class="row-actions">
 				{#if STATUS_NEXT[row.status]}
 					{@const next = STATUS_NEXT[row.status]}
-					<Button variant="secondary" size="sm" onclick={() => changeStatus(row.id, next.next)}>
+					<Button variant="secondary" size="sm" onclick={() => openStatusDialog(row.id, next.label, next.next)}>
 						{next.label}
 					</Button>
 				{/if}
@@ -135,6 +142,16 @@
 		</div>
 	</form>
 </Modal>
+
+<!-- Status Change Confirm -->
+<ConfirmDialog
+	bind:open={showStatusDialog}
+	title={pendingStatusChange?.label ?? ''}
+	message={t('inventorySchedules.statusChangeConfirm').replace('{label}', pendingStatusChange?.label ?? '')}
+	confirmLabel={pendingStatusChange?.label ?? ''}
+	cancelLabel={t('common.cancel')}
+	onconfirm={() => changeStatus(pendingStatusChange?.id ?? '', pendingStatusChange?.next ?? '')}
+/>
 
 <!-- Cancel Confirm -->
 <ConfirmDialog

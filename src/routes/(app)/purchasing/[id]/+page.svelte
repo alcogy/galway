@@ -9,6 +9,8 @@
 
 	let showDeleteDialog = $state(false);
 	let showConvertDialog = $state(false);
+	let showStatusDialog = $state(false);
+	let pendingTransition = $state<{ label: string; next: string } | null>(null);
 	let updatingStatus = $state(false);
 
 	const STATUS_LABELS = $derived<Record<string, string>>({
@@ -27,13 +29,20 @@
 
 	const transitions = $derived(STATUS_TRANSITIONS[data.order.status] ?? []);
 
-	async function changeStatus(next: string) {
+	function openStatusDialog(tr: { label: string; next: string }) {
+		pendingTransition = tr;
+		showStatusDialog = true;
+	}
+
+	async function confirmStatusChange() {
+		if (!pendingTransition) return;
 		updatingStatus = true;
 		const fd = new FormData();
-		fd.append('status', next);
+		fd.append('status', pendingTransition.next);
 		await fetch('?/updateStatus', { method: 'POST', body: fd });
 		await invalidateAll();
 		updatingStatus = false;
+		pendingTransition = null;
 	}
 
 	const columns = $derived([
@@ -64,7 +73,7 @@
 					variant="secondary"
 					size="sm"
 					disabled={updatingStatus}
-					onclick={() => changeStatus(tr.next)}
+					onclick={() => openStatusDialog(tr)}
 				>
 					{tr.label}
 				</Button>
@@ -142,6 +151,15 @@
 		</section>
 	{/if}
 </div>
+
+<ConfirmDialog
+	bind:open={showStatusDialog}
+	title={pendingTransition?.label ?? ''}
+	message={t('purchasing.statusChangeConfirm').replace('{label}', pendingTransition?.label ?? '')}
+	confirmLabel={pendingTransition?.label ?? ''}
+	cancelLabel={t('common.cancel')}
+	onconfirm={confirmStatusChange}
+/>
 
 <ConfirmDialog
 	bind:open={showDeleteDialog}
