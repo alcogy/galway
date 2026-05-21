@@ -415,6 +415,13 @@ const ja: Dict = {
 		selectProduct: '商品を選択',
 		selectCustomer: '出荷先を選択（任意）',
 		deleteRow: '行を削除',
+		importCsv: 'CSVから取り込み',
+		csvFormat: 'CSVフォーマット: 商品コード, 数量',
+		csvImportSuccess: '{count}件を取り込みました。',
+		csvImportError: 'CSV取り込みエラー:',
+		csvNoValidRows: '有効なデータがありませんでした。',
+		csvUnknownCode: '不明な商品コード: {code}',
+		csvInvalidQty: '{row}行目の数量が無効です: {value}',
 	},
 	csvDialog: {
 		defaultTitle: 'CSVインポート',

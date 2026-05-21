@@ -136,14 +136,15 @@ export async function createPurchaseOrder(ctx: ServiceCtx, data: {
 		for (let i = 0; i < validDetails.length; i++) {
 			await ctx.db.insert(schema.purchaseOrderDetails).values({ order_id: order.id, product_id: validDetails[i].product_id, line_no: i + 1, quantity: validDetails[i].quantity });
 		}
-		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'create', target_type: 'purchase_order', target_id: newId, detail: { supplier_id: data.supplier_id, ordered_at: data.ordered_at, item_count: validDetails.length } });
-		redirect(303, `/purchasing/${newId}`);
 	} catch (err) {
 		if (newId) await ctx.db.delete(schema.purchaseOrders).where(eq(schema.purchaseOrders.id, newId)).catch(() => {});
 		const message = String(err);
 		if (message.includes('UNIQUE constraint failed') && message.includes('order_number')) return fail(409, { error: '発注番号が競合しました。再度お試しください。' });
 		throw err;
 	}
+
+	await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'create', target_type: 'purchase_order', target_id: newId, detail: { supplier_id: data.supplier_id, ordered_at: data.ordered_at, item_count: validDetails.length } });
+	redirect(303, `/purchasing/${newId}`);
 }
 
 export async function updatePurchaseOrder(ctx: ServiceCtx, id: string, data: {

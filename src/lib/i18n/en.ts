@@ -413,6 +413,13 @@ const en = {
 		selectProduct: 'Select product',
 		selectCustomer: 'Select customer (optional)',
 		deleteRow: 'Delete row',
+		importCsv: 'Import CSV',
+		csvFormat: 'CSV format: product code, quantity',
+		csvImportSuccess: '{count} rows imported.',
+		csvImportError: 'CSV import error:',
+		csvNoValidRows: 'No valid rows found in CSV.',
+		csvUnknownCode: 'Unknown product code: {code}',
+		csvInvalidQty: 'Invalid quantity on row {row}: {value}',
 	},
 	csvDialog: {
 		defaultTitle: 'CSV Import',

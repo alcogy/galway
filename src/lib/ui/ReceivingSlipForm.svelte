@@ -5,6 +5,7 @@
 	import Select from './Select.svelte';
 	import SearchableSelect from './SearchableSelect.svelte';
 	import Textarea from './Textarea.svelte';
+	import DetailCsvImport from './DetailCsvImport.svelte';
 	import { t } from '$lib/i18n';
 
 	interface DetailItem {
@@ -116,10 +117,13 @@
 	<div class="details-section">
 		<div class="details-header">
 			<span class="details-title">{t('slipForm.details')}</span>
-			<Button type="button" variant="secondary" size="sm" onclick={addDetail}>
-				<Plus size={14} />
-				{t('slipForm.addRow')}
-			</Button>
+			<div class="details-header-actions">
+				<DetailCsvImport {products} onimport={(rows) => (details = rows)} />
+				<Button type="button" variant="secondary" size="sm" onclick={addDetail}>
+					<Plus size={14} />
+					{t('slipForm.addRow')}
+				</Button>
+			</div>
 		</div>
 
 		<div class="details-table">
@@ -212,8 +216,16 @@
 
 	.details-header {
 		display: flex;
-		align-items: center;
+		align-items: flex-start;
 		justify-content: space-between;
+		gap: var(--space-sm);
+	}
+
+	.details-header-actions {
+		display: flex;
+		align-items: center;
+		gap: var(--space-xs);
+		flex-shrink: 0;
 	}
 
 	.details-title {

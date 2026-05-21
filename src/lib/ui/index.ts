@@ -19,4 +19,5 @@ export { default as CsvImportDialog } from './CsvImportDialog.svelte';
 export { default as SlipCsvImportDialog } from './SlipCsvImportDialog.svelte';
 export { default as ReceivingSlipForm } from './ReceivingSlipForm.svelte';
 export { default as ShippingSlipForm } from './ShippingSlipForm.svelte';
+export { default as DetailCsvImport } from './DetailCsvImport.svelte';
 export type { WBSFormData } from './WBSForm.svelte';

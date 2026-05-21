@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ArrowLeft, Plus, Trash2 } from '@lucide/svelte';
-	import { Button, Card, Label, SearchableSelect, Textarea } from '$lib/ui';
+	import { Button, Card, DetailCsvImport, Label, SearchableSelect, Textarea } from '$lib/ui';
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
 	import { t } from '$lib/i18n';
@@ -72,10 +72,13 @@
 			<div class="details-section">
 				<div class="details-header">
 					<span class="details-title">{t('purchasing.orderDetails')}</span>
-					<Button type="button" variant="secondary" size="sm" onclick={addDetail}>
-						<Plus size={14} />
-						{t('purchasing.addItem')}
-					</Button>
+					<div class="details-header-actions">
+						<DetailCsvImport products={data.products} onimport={(rows) => (details = rows)} />
+						<Button type="button" variant="secondary" size="sm" onclick={addDetail}>
+							<Plus size={14} />
+							{t('purchasing.addItem')}
+						</Button>
+					</div>
 				</div>
 
 				<div class="details-table">
@@ -204,8 +207,16 @@
 
 	.details-header {
 		display: flex;
-		align-items: center;
+		align-items: flex-start;
 		justify-content: space-between;
+		gap: var(--space-sm);
+	}
+
+	.details-header-actions {
+		display: flex;
+		align-items: center;
+		gap: var(--space-xs);
+		flex-shrink: 0;
 	}
 
 	.details-title {
