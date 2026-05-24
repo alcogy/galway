@@ -12,12 +12,14 @@
 	let lowStockAlertEnabled = $state(true);
 	let alertEmailEnabled = $state(false);
 	let slackWebhookUrl = $state('');
+	let emailLocale = $state<'en' | 'ja'>('en');
 
 	$effect(() => {
 		notificationEmail = data.settings.notification_email;
 		lowStockAlertEnabled = data.settings.low_stock_alert_enabled;
 		alertEmailEnabled = data.settings.alert_email_enabled;
 		slackWebhookUrl = data.settings.slack_webhook_url;
+		emailLocale = data.settings.email_locale;
 	});
 
 	function handleLocale(l: Locale) {
@@ -36,6 +38,8 @@
 
 	{#if form?.success}
 		<div class="notice notice-success">{t('settings.saved')}</div>
+	{:else if form?.testEmailSent}
+		<div class="notice notice-success">{t('settings.testEmailSent')}</div>
 	{:else if form?.error}
 		<div class="notice notice-error">{form.error}</div>
 	{/if}
@@ -178,6 +182,32 @@
 					/>
 					<span class="field-hint">{t('settings.slackDesc')}</span>
 				</div>
+
+				<div class="setting-row">
+					<div class="setting-info">
+						<span class="setting-label">{t('settings.emailLocale')}</span>
+						<span class="setting-desc">{t('settings.emailLocaleDesc')}</span>
+					</div>
+					<div class="lang-switcher">
+						<button
+							type="button"
+							class="lang-btn"
+							class:active={emailLocale === 'en'}
+							onclick={() => (emailLocale = 'en')}
+						>
+							English
+						</button>
+						<button
+							type="button"
+							class="lang-btn"
+							class:active={emailLocale === 'ja'}
+							onclick={() => (emailLocale = 'ja')}
+						>
+							日本語
+						</button>
+					</div>
+					<input type="hidden" name="email_locale" value={emailLocale} />
+				</div>
 			</div>
 		</Card>
 
@@ -201,6 +231,12 @@
 
 		<div class="form-actions">
 			<Button type="submit">{t('settings.save')}</Button>
+		</div>
+	</form>
+
+	<form method="POST" action="?/sendTestEmail" use:enhance>
+		<div class="form-actions">
+			<Button type="submit" variant="secondary">{t('settings.testEmail')}</Button>
 		</div>
 	</form>
 </div>

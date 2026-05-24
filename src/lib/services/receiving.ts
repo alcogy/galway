@@ -4,6 +4,7 @@ import { sql } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
 import { parseCSV } from '$lib/utils/csv';
 import { logAudit } from '$lib/server/audit';
+import { notifyLowStockForProducts } from '$lib/services/email';
 import type { ServiceCtx } from '$lib/services';
 
 export async function getSlipExportData(ctx: ServiceCtx, id: string) {
@@ -183,6 +184,7 @@ export async function createReceivingSlip(ctx: ServiceCtx, data: {
 	}
 
 	await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'create', target_type: 'receiving_slip', detail: { supplier_id: data.supplier_id, received_at: data.received_at, item_count: validDetails.length } });
+	notifyLowStockForProducts(ctx, validDetails.map((d) => d.product_id));
 	redirect(303, '/receiving');
 }
 
@@ -226,13 +228,15 @@ export async function updateReceivingSlip(ctx: ServiceCtx, id: string, data: {
 	}
 
 	await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'update', target_type: 'receiving_slip', target_id: id, detail: { item_count: validDetails.length } });
+	notifyLowStockForProducts(ctx, validDetails.map((d) => d.product_id));
 	redirect(303, `/receiving/${id}`);
 }
 
 export async function deleteReceivingSlip(ctx: ServiceCtx, id: string) {
 	const now = new Date().toISOString();
+	let oldDetails: { product_id: string; quantity: number }[] = [];
 	try {
-		const oldDetails = await ctx.db
+		oldDetails = await ctx.db
 			.select({ product_id: schema.receivingSlipDetails.product_id, quantity: schema.receivingSlipDetails.quantity })
 			.from(schema.receivingSlipDetails)
 			.where(eq(schema.receivingSlipDetails.slip_id, id));
@@ -246,6 +250,7 @@ export async function deleteReceivingSlip(ctx: ServiceCtx, id: string) {
 	}
 
 	await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'delete', target_type: 'receiving_slip', target_id: id });
+	notifyLowStockForProducts(ctx, oldDetails.map((d) => d.product_id));
 	redirect(303, '/receiving');
 }
 
@@ -294,6 +299,7 @@ export async function importReceivingSlips(ctx: ServiceCtx, csvText: string, dat
 				.onConflictDoUpdate({ target: schema.inventory.product_id, set: { quantity: sql`${schema.inventory.quantity} + ${d.quantity}`, updated_at: now } });
 		}
 		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'import', target_type: 'receiving_slip', detail: { count: detailRecords.length, date } });
+		notifyLowStockForProducts(ctx, detailRecords.map((d) => d.product_id));
 		return { success: true, count: detailRecords.length };
 	} catch (err) {
 		if (slipId) await ctx.db.delete(schema.receivingSlips).where(eq(schema.receivingSlips.id, slipId)).catch(() => {});

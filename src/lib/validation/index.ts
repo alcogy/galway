@@ -59,7 +59,8 @@ export const settingsSchema = z.object({
 		.max(500)
 		.refine((v) => !v || v.startsWith('https://hooks.slack.com/'), {
 			message: 'Slack webhook URLは https://hooks.slack.com/ で始まる必要があります'
-		})
+		}),
+	email_locale: z.enum(['en', 'ja']).default('en'),
 });
 
 export const supplierSchema = z.object({

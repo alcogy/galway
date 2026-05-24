@@ -1,10 +1,61 @@
+export type EmailLocale = 'en' | 'ja';
+
 function escape(s: string): string {
 	return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function base(title: string, body: string): string {
+const s = {
+	en: {
+		footer: '© Galway · This is an automated message, please do not reply.',
+		severity: { info: 'INFO', warning: 'WARNING', danger: 'DANGER' },
+		welcome: {
+			subject: 'Welcome to Galway',
+			heading: (name: string) => `Welcome, ${name}!`,
+			intro: 'Your Galway account has been created. You can now sign in with the email address below.',
+			emailLabel: 'Email:',
+			btn: 'Sign in to Galway',
+			ignore: 'If you did not request this account, you can safely ignore this email.',
+			text: (name: string, email: string, url: string) =>
+				`Welcome to Galway, ${name}!\n\nYour account has been created.\nEmail: ${email}\nSign in: ${url}\n`,
+		},
+		pwChanged: {
+			subject: 'Your Galway password was changed',
+			heading: 'Password changed',
+			hi: (name: string) => `Hi ${name},`,
+			body: (date: string) => `Your Galway account password was changed on <strong>${escape(date)}</strong>.`,
+			ignore: 'If you did not make this change, please contact your administrator immediately.',
+			text: (name: string, date: string) =>
+				`Hi ${name},\n\nYour Galway password was changed on ${date}.\n\nIf this wasn't you, contact your administrator.\n`,
+		},
+	},
+	ja: {
+		footer: '© Galway · このメールは自動送信です。返信はお受けできません。',
+		severity: { info: '情報', warning: '警告', danger: '危険' },
+		welcome: {
+			subject: 'Galwayへようこそ',
+			heading: (name: string) => `${name} さん、ようこそ！`,
+			intro: 'Galwayアカウントが作成されました。以下のメールアドレスでサインインできます。',
+			emailLabel: 'メールアドレス：',
+			btn: 'Galwayにサインイン',
+			ignore: 'アカウントの作成を依頼していない場合は、このメールを無視してください。',
+			text: (name: string, email: string, url: string) =>
+				`${name} さん、Galwayへようこそ！\n\nアカウントが作成されました。\nメールアドレス: ${email}\nサインイン: ${url}\n`,
+		},
+		pwChanged: {
+			subject: 'Galwayのパスワードが変更されました',
+			heading: 'パスワードの変更',
+			hi: (name: string) => `${name} さん`,
+			body: (date: string) => `${escape(date)} にGalwayアカウントのパスワードが変更されました。`,
+			ignore: '心当たりのない場合は、すぐに管理者にご連絡ください。',
+			text: (name: string, date: string) =>
+				`${name} さん\n\nGalwayのパスワードが ${date} に変更されました。\n\n心当たりのない場合は管理者にご連絡ください。\n`,
+		},
+	},
+} as const;
+
+function base(title: string, body: string, locale: EmailLocale = 'en'): string {
 	return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${locale}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -31,7 +82,7 @@ function base(title: string, body: string): string {
 <div class="wrap">
   <div class="header"><h1>Galway</h1></div>
   <div class="body">${body}</div>
-  <div class="footer">© Galway · This is an automated message, please do not reply.</div>
+  <div class="footer">${s[locale].footer}</div>
 </div>
 </body>
 </html>`;
@@ -43,17 +94,19 @@ export interface WelcomeEmailData {
 	loginUrl: string;
 }
 
-export function welcomeEmail(data: WelcomeEmailData): { subject: string; html: string; text: string } {
-	const subject = 'Welcome to Galway';
+export function welcomeEmail(data: WelcomeEmailData, locale: EmailLocale = 'en'): { subject: string; html: string; text: string } {
+	const ls = s[locale].welcome;
+	const subject = ls.subject;
 	const html = base(
 		subject,
-		`<h2>Welcome, ${escape(data.name)}!</h2>
-<p>Your Galway account has been created. You can now sign in with the email address below.</p>
-<p><strong>Email:</strong> ${escape(data.email)}</p>
-<p><a class="btn" href="${escape(data.loginUrl)}">Sign in to Galway</a></p>
-<p>If you did not request this account, you can safely ignore this email.</p>`
+		`<h2>${ls.heading(escape(data.name))}</h2>
+<p>${ls.intro}</p>
+<p><strong>${ls.emailLabel}</strong> ${escape(data.email)}</p>
+<p><a class="btn" href="${escape(data.loginUrl)}">${ls.btn}</a></p>
+<p>${ls.ignore}</p>`,
+		locale
 	);
-	const text = `Welcome to Galway, ${data.name}!\n\nYour account has been created.\nEmail: ${data.email}\nSign in: ${data.loginUrl}\n`;
+	const text = ls.text(data.name, data.email, data.loginUrl);
 	return { subject, html, text };
 }
 
@@ -62,16 +115,18 @@ export interface PasswordChangedEmailData {
 	changedAt: string;
 }
 
-export function passwordChangedEmail(data: PasswordChangedEmailData): { subject: string; html: string; text: string } {
-	const subject = 'Your Galway password was changed';
+export function passwordChangedEmail(data: PasswordChangedEmailData, locale: EmailLocale = 'en'): { subject: string; html: string; text: string } {
+	const ls = s[locale].pwChanged;
+	const subject = ls.subject;
 	const html = base(
 		subject,
-		`<h2>Password changed</h2>
-<p>Hi ${escape(data.name)},</p>
-<p>Your Galway account password was changed on <strong>${escape(data.changedAt)}</strong>.</p>
-<p>If you did not make this change, please contact your administrator immediately.</p>`
+		`<h2>${ls.heading}</h2>
+<p>${ls.hi(escape(data.name))}</p>
+<p>${ls.body(data.changedAt)}</p>
+<p>${ls.ignore}</p>`,
+		locale
 	);
-	const text = `Hi ${data.name},\n\nYour Galway password was changed on ${data.changedAt}.\n\nIf this wasn't you, contact your administrator.\n`;
+	const text = ls.text(data.name, data.changedAt);
 	return { subject, html, text };
 }
 
@@ -84,9 +139,9 @@ export interface AdminAlertEmailData {
 	details?: Record<string, string>;
 }
 
-export function adminAlertEmail(data: AdminAlertEmailData): { subject: string; html: string; text: string } {
+export function adminAlertEmail(data: AdminAlertEmailData, locale: EmailLocale = 'en'): { subject: string; html: string; text: string } {
 	const badgeClass = `alert-${data.severity}`;
-	const badgeLabel = data.severity.toUpperCase();
+	const badgeLabel = s[locale].severity[data.severity];
 
 	const detailsHtml = data.details
 		? Object.entries(data.details)
@@ -102,7 +157,8 @@ export function adminAlertEmail(data: AdminAlertEmailData): { subject: string; h
 		data.subject,
 		`<span class="alert-badge ${badgeClass}">${badgeLabel}</span>
 <h2 style="margin-top:12px">${escape(data.subject)}</h2>
-<p>${escape(data.summary)}</p>${detailsTable}`
+<p>${escape(data.summary)}</p>${detailsTable}`,
+		locale
 	);
 
 	const detailsText = data.details

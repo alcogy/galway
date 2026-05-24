@@ -4,6 +4,7 @@ import { sql } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
 import { parseCSV } from '$lib/utils/csv';
 import { logAudit } from '$lib/server/audit';
+import { notifyLowStockForProducts } from '$lib/services/email';
 import type { ServiceCtx } from '$lib/services';
 
 export async function getSlipExportData(ctx: ServiceCtx, id: string) {
@@ -174,6 +175,7 @@ export async function createShippingSlip(ctx: ServiceCtx, data: {
 	}
 
 	await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'create', target_type: 'shipping_slip', detail: { shipped_at: data.shipped_at, customer_id: data.customer_id, item_count: validDetails.length } });
+	notifyLowStockForProducts(ctx, validDetails.map((d) => d.product_id));
 	redirect(303, '/shipping');
 }
 
@@ -215,6 +217,7 @@ export async function updateShippingSlip(ctx: ServiceCtx, id: string, data: {
 	}
 
 	await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'update', target_type: 'shipping_slip', target_id: id, detail: { item_count: validDetails.length } });
+	notifyLowStockForProducts(ctx, validDetails.map((d) => d.product_id));
 	redirect(303, `/shipping/${id}`);
 }
 
@@ -281,6 +284,7 @@ export async function importShippingSlips(ctx: ServiceCtx, csvText: string, date
 			await ctx.db.update(schema.inventory).set({ quantity: sql`${schema.inventory.quantity} - ${d.quantity}`, updated_at: now }).where(eq(schema.inventory.product_id, d.product_id));
 		}
 		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'import', target_type: 'shipping_slip', detail: { count: detailRecords.length, date } });
+		notifyLowStockForProducts(ctx, detailRecords.map((d) => d.product_id));
 		return { success: true, count: detailRecords.length };
 	} catch (err) {
 		if (slipId) await ctx.db.delete(schema.shippingSlips).where(eq(schema.shippingSlips.id, slipId)).catch(() => {});
