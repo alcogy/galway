@@ -15,8 +15,20 @@ export const actions = {
 		);
 	},
 
-	convertToReceiving: async ({ params, platform, locals }) =>
-		convertToReceivingSlip(makeCtx(platform!, locals), params.id),
+	convertToReceiving: async ({ params, request, platform, locals }) => {
+		const f = await request.formData();
+		const detailsJson = f.get('details')?.toString();
+		let details: { product_id: string; quantity: number }[] = [];
+		try {
+			details = detailsJson ? JSON.parse(detailsJson) : [];
+		} catch {
+			return { error: '明細データが不正です' };
+		}
+		return convertToReceivingSlip(makeCtx(platform!, locals), params.id, {
+			received_at: f.get('received_at')?.toString() ?? '',
+			details,
+		});
+	},
 
 	delete: async ({ params, platform, locals }) =>
 		deletePurchaseOrder(makeCtx(platform!, locals), params.id),

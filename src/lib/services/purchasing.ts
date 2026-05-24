@@ -71,7 +71,21 @@ export async function getPurchaseOrder(ctx: ServiceCtx, id: string) {
 	]);
 
 	if (!orderRows[0]) error(404, '発注が見つかりません');
-	return { order: orderRows[0], details };
+
+	const receivingSlips = await ctx.db
+		.select({
+			id: schema.receivingSlips.id,
+			slip_number: schema.receivingSlips.slip_number,
+			received_at: schema.receivingSlips.received_at,
+			item_count: count(schema.receivingSlipDetails.id),
+		})
+		.from(schema.receivingSlips)
+		.leftJoin(schema.receivingSlipDetails, eq(schema.receivingSlips.id, schema.receivingSlipDetails.slip_id))
+		.where(like(schema.receivingSlips.note, `%発注番号: ${orderRows[0].order_number}%`))
+		.groupBy(schema.receivingSlips.id)
+		.orderBy(desc(schema.receivingSlips.received_at));
+
+	return { order: orderRows[0], details, receivingSlips };
 }
 
 export async function getPurchaseOrderForEdit(ctx: ServiceCtx, id: string) {
@@ -189,33 +203,29 @@ export async function updatePurchaseOrderStatus(ctx: ServiceCtx, id: string, sta
 	}
 }
 
-export async function convertToReceivingSlip(ctx: ServiceCtx, id: string) {
-	const [orderRows, details] = await Promise.all([
-		ctx.db
-			.select({
-				supplier_id: schema.purchaseOrders.supplier_id,
-				expected_at: schema.purchaseOrders.expected_at,
-				ordered_at: schema.purchaseOrders.ordered_at,
-				status: schema.purchaseOrders.status,
-				order_number: schema.purchaseOrders.order_number,
-			})
-			.from(schema.purchaseOrders)
-			.where(eq(schema.purchaseOrders.id, id)),
-		ctx.db
-			.select({ product_id: schema.purchaseOrderDetails.product_id, quantity: schema.purchaseOrderDetails.quantity })
-			.from(schema.purchaseOrderDetails)
-			.where(eq(schema.purchaseOrderDetails.order_id, id))
-			.orderBy(asc(schema.purchaseOrderDetails.line_no)),
-	]);
+export async function convertToReceivingSlip(
+	ctx: ServiceCtx,
+	id: string,
+	data: { received_at: string; details: { product_id: string; quantity: number }[] }
+) {
+	const [orderRows] = await ctx.db
+		.select({
+			supplier_id: schema.purchaseOrders.supplier_id,
+			status: schema.purchaseOrders.status,
+			order_number: schema.purchaseOrders.order_number,
+		})
+		.from(schema.purchaseOrders)
+		.where(eq(schema.purchaseOrders.id, id));
 
-	if (!orderRows[0]) error(404, '発注が見つかりません');
-	if (orderRows[0].status !== 'ordered') return fail(400, { error: '発注済み状態の発注のみ入荷伝票を作成できます' });
+	if (!orderRows) error(404, '発注が見つかりません');
+	if (orderRows.status !== 'ordered') return fail(400, { error: '発注済み状態の発注のみ入荷伝票を作成できます' });
+	if (!data.received_at) return fail(400, { error: '入荷日は必須です' });
 
-	const order = orderRows[0];
-	const received_at = order.expected_at ?? new Date().toISOString().slice(0, 10);
+	const validDetails = data.details.filter((d) => d.product_id && d.quantity > 0);
+	if (validDetails.length === 0) return fail(400, { error: '入荷数が1以上の明細が必要です' });
+
 	const now = new Date().toISOString();
-
-	const slipYear = new Date(received_at).getFullYear();
+	const slipYear = new Date(data.received_at).getFullYear();
 	const [lastSlip] = await ctx.db
 		.select({ n: schema.receivingSlips.slip_number })
 		.from(schema.receivingSlips)
@@ -229,18 +239,17 @@ export async function convertToReceivingSlip(ctx: ServiceCtx, id: string) {
 	try {
 		const [slip] = await ctx.db
 			.insert(schema.receivingSlips)
-			.values({ slip_number, received_at, supplier_id: order.supplier_id, account_id: ctx.user.id, note: `発注番号: ${order.order_number}` })
+			.values({ slip_number, received_at: data.received_at, supplier_id: orderRows.supplier_id, account_id: ctx.user.id, note: `発注番号: ${orderRows.order_number}` })
 			.returning({ id: schema.receivingSlips.id });
 		newSlipId = slip.id;
 
-		for (let i = 0; i < details.length; i++) {
-			await ctx.db.insert(schema.receivingSlipDetails).values({ slip_id: slip.id, product_id: details[i].product_id, line_no: i + 1, quantity: details[i].quantity });
+		for (let i = 0; i < validDetails.length; i++) {
+			await ctx.db.insert(schema.receivingSlipDetails).values({ slip_id: slip.id, product_id: validDetails[i].product_id, line_no: i + 1, quantity: validDetails[i].quantity });
 		}
-		for (const d of details) {
+		for (const d of validDetails) {
 			await ctx.db.insert(schema.inventory).values({ product_id: d.product_id, quantity: d.quantity, updated_at: now })
 				.onConflictDoUpdate({ target: schema.inventory.product_id, set: { quantity: sql`${schema.inventory.quantity} + ${d.quantity}`, updated_at: now } });
 		}
-		await ctx.db.update(schema.purchaseOrders).set({ status: 'received' }).where(eq(schema.purchaseOrders.id, id));
 	} catch (err) {
 		if (newSlipId) await ctx.db.delete(schema.receivingSlips).where(eq(schema.receivingSlips.id, newSlipId)).catch(() => {});
 		const message = String(err);
@@ -249,8 +258,8 @@ export async function convertToReceivingSlip(ctx: ServiceCtx, id: string) {
 		return fail(500, { error: '入荷伝票の作成に失敗しました。' });
 	}
 
-	await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'create', target_type: 'receiving_slip', target_id: newSlipId, detail: { from_purchase_order: id, order_number: order.order_number } });
-	redirect(303, `/receiving/${newSlipId}`);
+	await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'create', target_type: 'receiving_slip', target_id: newSlipId, detail: { from_purchase_order: id, order_number: orderRows.order_number } });
+	return { success: true, slipId: newSlipId };
 }
 
 export async function deletePurchaseOrder(ctx: ServiceCtx, id: string) {

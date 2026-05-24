@@ -1,6 +1,7 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { ArrowLeft, Pencil, Trash2 } from '@lucide/svelte';
-	import { Button, Card, ConfirmDialog, Table } from '$lib/ui';
+	import { Button, Card, ConfirmDialog, Modal, Table, Label, Input } from '$lib/ui';
 	import { goto, invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
 	import { t } from '$lib/i18n';
@@ -8,10 +9,35 @@
 	let { data }: { data: PageData } = $props();
 
 	let showDeleteDialog = $state(false);
-	let showConvertDialog = $state(false);
+	let showReceiveModal = $state(false);
 	let showStatusDialog = $state(false);
 	let pendingTransition = $state<{ label: string; next: string } | null>(null);
 	let updatingStatus = $state(false);
+
+	type ReceiveItem = {
+		product_id: string;
+		product_code: string | null;
+		product_name: string | null;
+		ordered_qty: number;
+		actual_qty: number;
+		unit: string | null;
+	};
+
+	let receiveDate = $state('');
+	let receiveItems = $state<ReceiveItem[]>([]);
+
+	function openReceiveModal() {
+		receiveDate = data.order.expected_at ?? new Date().toISOString().slice(0, 10);
+		receiveItems = data.details.map((d) => ({
+			product_id: d.product_id,
+			product_code: d.product_code,
+			product_name: d.product_name,
+			ordered_qty: d.quantity,
+			actual_qty: d.quantity,
+			unit: d.unit,
+		}));
+		showReceiveModal = true;
+	}
 
 	const STATUS_LABELS = $derived<Record<string, string>>({
 		draft: t('purchasing.statusDraft'),
@@ -79,7 +105,7 @@
 				</Button>
 			{/each}
 			{#if data.order.status === 'ordered'}
-				<Button size="sm" onclick={() => (showConvertDialog = true)}>
+				<Button size="sm" onclick={openReceiveModal}>
 					{t('purchasing.createReceivingSlip')}
 				</Button>
 			{/if}
@@ -140,6 +166,34 @@
 		</Table>
 	</section>
 
+	<section>
+		<h2 class="section-title">{t('purchasing.receivingHistory')}</h2>
+		{#if data.receivingSlips.length === 0}
+			<p class="empty-history">{t('purchasing.noReceivingHistory')}</p>
+		{:else}
+			<div class="history-table-wrap">
+				<table class="history-table">
+					<thead>
+						<tr>
+							<th>{t('receiving.slipNumber')}</th>
+							<th>{t('receiving.receivedAt')}</th>
+							<th class="num">{t('common.itemCount')}</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each data.receivingSlips as slip (slip.id)}
+							<tr onclick={() => goto(`/receiving/${slip.id}`)} class="history-row">
+								<td class="slip-number">{slip.slip_number}</td>
+								<td>{slip.received_at}</td>
+								<td class="num">{slip.item_count}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			</div>
+		{/if}
+	</section>
+
 	{#if data.order.status === 'draft' || data.order.status === 'cancelled'}
 		<section class="danger-zone">
 			<h2 class="danger-title">{t('common.delete')}</h2>
@@ -176,20 +230,72 @@
 	}}
 />
 
-<ConfirmDialog
-	bind:open={showConvertDialog}
-	title={t('purchasing.createReceivingSlip')}
-	message={t('purchasing.createReceivingSlipConfirm')}
-	confirmLabel={t('purchasing.createReceivingSlip')}
-	cancelLabel={t('common.cancel')}
-	onconfirm={() => {
-		const form = document.createElement('form');
-		form.method = 'POST';
-		form.action = '?/convertToReceiving';
-		document.body.appendChild(form);
-		form.submit();
-	}}
-/>
+<Modal bind:open={showReceiveModal} title={t('purchasing.createReceivingSlip')} size="lg">
+	<form
+		method="POST"
+		action="?/convertToReceiving"
+		use:enhance={() => async ({ update }) => {
+			await update({ reset: false });
+			showReceiveModal = false;
+		}}
+		class="receive-form"
+	>
+		<p class="receive-hint">{t('purchasing.createReceivingSlipHint')}</p>
+
+		<div class="receive-date-row">
+			<Label>{t('purchasing.receivedAt')}</Label>
+			<Input type="date" name="received_at" bind:value={receiveDate} required />
+		</div>
+
+		<div class="receive-table-wrap">
+			<table class="receive-table">
+				<thead>
+					<tr>
+						<th>{t('purchasing.productCode')}</th>
+						<th>{t('purchasing.productName')}</th>
+						<th class="num">{t('purchasing.orderedQty')}</th>
+						<th class="num">{t('purchasing.actualQty')}</th>
+						<th>{t('purchasing.unit')}</th>
+					</tr>
+				</thead>
+				<tbody>
+					{#each receiveItems as item, i (item.product_id)}
+						<tr>
+							<td class="code">{item.product_code ?? '—'}</td>
+							<td>{item.product_name ?? '—'}</td>
+							<td class="num ordered">{item.ordered_qty.toLocaleString('ja-JP')}</td>
+							<td class="num">
+								<input
+									class="qty-input"
+									type="number"
+									min="0"
+									step="any"
+									bind:value={receiveItems[i].actual_qty}
+								/>
+							</td>
+							<td class="unit">{item.unit ?? ''}</td>
+						</tr>
+					{/each}
+				</tbody>
+			</table>
+		</div>
+
+		<input
+			type="hidden"
+			name="details"
+			value={JSON.stringify(receiveItems.map((it) => ({ product_id: it.product_id, quantity: it.actual_qty })))}
+		/>
+
+		<div class="receive-actions">
+			<Button type="button" variant="secondary" onclick={() => (showReceiveModal = false)}>
+				{t('common.cancel')}
+			</Button>
+			<Button type="submit">
+				{t('purchasing.createReceivingSlip')}
+			</Button>
+		</div>
+	</form>
+</Modal>
 
 <style lang="scss">
 	.page {
@@ -304,6 +410,7 @@
 		padding: var(--space-xl);
 		display: flex;
 		flex-direction: column;
+		align-items: flex-start;
 		gap: var(--space-sm);
 	}
 
@@ -317,5 +424,169 @@
 		font-size: 0.8125rem;
 		color: var(--color-text-secondary);
 		margin: 0;
+	}
+
+	/* Receiving history */
+	.empty-history {
+		font-size: 0.8125rem;
+		color: var(--color-text-secondary);
+		margin: 0;
+	}
+
+	.history-table-wrap {
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+		overflow: hidden;
+	}
+
+	.history-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 0.875rem;
+
+		th {
+			padding: var(--space-sm) var(--space-md);
+			text-align: left;
+			font-size: 0.75rem;
+			font-weight: 600;
+			color: var(--color-text-secondary);
+			background-color: var(--color-bg-sunken);
+			border-bottom: 1px solid var(--color-border);
+
+			&.num {
+				text-align: right;
+			}
+		}
+
+		td {
+			padding: var(--space-sm) var(--space-md);
+			border-bottom: 1px solid var(--color-border-light);
+
+			&.num {
+				text-align: right;
+				font-variant-numeric: tabular-nums;
+			}
+
+			&.slip-number {
+				font-family: monospace;
+				font-size: 0.8125rem;
+				color: var(--color-primary);
+			}
+		}
+
+		tr:last-child td {
+			border-bottom: none;
+		}
+	}
+
+	.history-row {
+		cursor: pointer;
+		transition: background-color var(--transition-fast);
+
+		&:hover td {
+			background-color: var(--color-hover);
+		}
+	}
+
+	/* Receive modal */
+	.receive-form {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-lg);
+	}
+
+	.receive-hint {
+		font-size: 0.8125rem;
+		color: var(--color-text-secondary);
+		margin: 0;
+		line-height: 1.5;
+	}
+
+	.receive-date-row {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-xs);
+		max-width: 200px;
+	}
+
+	.receive-table-wrap {
+		overflow-x: auto;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+	}
+
+	.receive-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 0.875rem;
+
+		th {
+			padding: var(--space-sm) var(--space-md);
+			text-align: left;
+			font-size: 0.75rem;
+			font-weight: 600;
+			color: var(--color-text-secondary);
+			background-color: var(--color-bg-sunken);
+			border-bottom: 1px solid var(--color-border);
+
+			&.num {
+				text-align: right;
+			}
+		}
+
+		td {
+			padding: var(--space-sm) var(--space-md);
+			border-bottom: 1px solid var(--color-border-light);
+			vertical-align: middle;
+
+			&.num {
+				text-align: right;
+				font-variant-numeric: tabular-nums;
+				white-space: nowrap;
+			}
+
+			&.ordered {
+				color: var(--color-text-secondary);
+			}
+
+			&.code {
+				font-family: monospace;
+				font-size: 0.8125rem;
+			}
+
+			&.unit {
+				color: var(--color-text-secondary);
+				font-size: 0.8125rem;
+			}
+		}
+
+		tr:last-child td {
+			border-bottom: none;
+		}
+	}
+
+	.qty-input {
+		width: 80px;
+		padding: 4px 8px;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-sm);
+		background-color: var(--color-bg);
+		color: var(--color-text);
+		font-size: 0.875rem;
+		text-align: right;
+		font-family: inherit;
+		font-variant-numeric: tabular-nums;
+
+		&:focus {
+			outline: none;
+			border-color: var(--color-primary);
+			box-shadow: 0 0 0 2px var(--color-primary-light);
+		}
+	}
+
+	.receive-actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: var(--space-sm);
 	}
 </style>
