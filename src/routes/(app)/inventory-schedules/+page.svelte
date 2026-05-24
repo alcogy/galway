@@ -100,6 +100,11 @@
 						{next.label}
 					</Button>
 				{/if}
+				{#if row.status === 'in_progress'}
+					<Button variant="ghost" size="sm" onclick={() => openStatusDialog(row.id, t('inventorySchedules.actionRevertPlanned'), 'planned')}>
+						{t('inventorySchedules.actionRevertPlanned')}
+					</Button>
+				{/if}
 				{#if row.status === 'planned' || row.status === 'in_progress'}
 					<Button variant="ghost" size="sm" onclick={() => openCancel(row.id)}>
 						{t('inventorySchedules.actionCancel')}

@@ -274,6 +274,7 @@ const en = {
 		statusCancelled: 'Cancelled',
 		actionStart: 'Start',
 		actionComplete: 'Complete',
+		actionRevertPlanned: 'Revert to Planned',
 		actionCancel: 'Cancel Schedule',
 		cancelConfirm: 'Cancel this schedule?',
 		statusChangeConfirm: 'Change status to "{label}"?',

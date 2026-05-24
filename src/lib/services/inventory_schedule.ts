@@ -35,7 +35,7 @@ export async function createInventorySchedule(ctx: ServiceCtx, data: { title: st
 export async function updateInventoryScheduleStatus(ctx: ServiceCtx, id: string, status: InventorySchedule['status']) {
 	if (!id) return fail(400, { error: 'ID is required.' });
 
-	const allowed: InventorySchedule['status'][] = ['in_progress', 'completed', 'cancelled'];
+	const allowed: InventorySchedule['status'][] = ['planned', 'in_progress', 'completed', 'cancelled'];
 	if (!allowed.includes(status)) return fail(400, { error: 'Invalid status.' });
 
 	let schedule: InventorySchedule | undefined;

@@ -276,6 +276,7 @@ const ja: Dict = {
 		statusCancelled: 'キャンセル',
 		actionStart: '実施開始',
 		actionComplete: '完了にする',
+		actionRevertPlanned: '計画中に戻す',
 		actionCancel: 'キャンセルにする',
 		cancelConfirm: 'このスケジュールをキャンセルしますか？',
 		statusChangeConfirm: 'ステータスを「{label}」に変更しますか？',
