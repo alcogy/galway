@@ -15,7 +15,7 @@ export const accounts = sqliteTable('accounts', {
 });
 
 // -----------------------------------------------
-// 仕入先マスタ (Supplier Master)
+// Supplier Master
 // -----------------------------------------------
 export const suppliers = sqliteTable('suppliers', {
 	id: text('id')
@@ -36,7 +36,7 @@ export const suppliers = sqliteTable('suppliers', {
 });
 
 // -----------------------------------------------
-// 商品カテゴリ (Product Category)
+// Product Category
 // -----------------------------------------------
 export const productCategories = sqliteTable('product_categories', {
 	id: text('id')
@@ -50,7 +50,7 @@ export const productCategories = sqliteTable('product_categories', {
 });
 
 // -----------------------------------------------
-// 商品マスタ (Product Master)
+// Product Master
 // -----------------------------------------------
 export const products = sqliteTable('products', {
 	id: text('id')
@@ -71,7 +71,7 @@ export const products = sqliteTable('products', {
 });
 
 // -----------------------------------------------
-// 仕入先商品関係 (Supplier-Product Relationship)
+// Supplier-Product Relationship
 // -----------------------------------------------
 export const supplierProducts = sqliteTable(
 	'supplier_products',
@@ -90,7 +90,7 @@ export const supplierProducts = sqliteTable(
 );
 
 // -----------------------------------------------
-// 入荷伝票 (Receiving Slip)
+// Receiving Slip
 // -----------------------------------------------
 export const receivingSlips = sqliteTable('receiving_slips', {
 	id: text('id')
@@ -129,7 +129,7 @@ export const receivingSlipDetails = sqliteTable('receiving_slip_details', {
 });
 
 // -----------------------------------------------
-// 発注伝票 (Purchase Order)
+// Purchase Order
 // -----------------------------------------------
 export const purchaseOrders = sqliteTable('purchase_orders', {
 	id: text('id')
@@ -168,7 +168,7 @@ export const purchaseOrderDetails = sqliteTable('purchase_order_details', {
 });
 
 // -----------------------------------------------
-// 出荷先マスタ (Customer / Shipping Destination)
+// Customer / Shipping Destination
 // -----------------------------------------------
 export const customers = sqliteTable('customers', {
 	id: text('id')
@@ -189,7 +189,7 @@ export const customers = sqliteTable('customers', {
 });
 
 // -----------------------------------------------
-// 出荷伝票 (Shipping Slip)
+// Shipping Slip
 // -----------------------------------------------
 export const shippingSlips = sqliteTable('shipping_slips', {
 	id: text('id')
@@ -208,7 +208,7 @@ export const shippingSlips = sqliteTable('shipping_slips', {
 });
 
 // -----------------------------------------------
-// 出荷伝票明細 (Shipping Slip Detail)
+// Shipping Slip Detail
 // -----------------------------------------------
 export const shippingSlipDetails = sqliteTable('shipping_slip_details', {
 	id: text('id')
@@ -225,7 +225,7 @@ export const shippingSlipDetails = sqliteTable('shipping_slip_details', {
 });
 
 // -----------------------------------------------
-// 監査ログ (Audit Log)
+// Audit Log
 // -----------------------------------------------
 export const auditLogs = sqliteTable('audit_logs', {
 	id: text('id')
@@ -244,7 +244,7 @@ export const auditLogs = sqliteTable('audit_logs', {
 });
 
 // -----------------------------------------------
-// システム設定 (Settings)
+// System Settings
 // -----------------------------------------------
 export const settings = sqliteTable('settings', {
 	key: text('key').primaryKey(),
@@ -255,7 +255,7 @@ export const settings = sqliteTable('settings', {
 });
 
 // -----------------------------------------------
-// 棚卸スケジュール (Inventory Schedule)
+// Inventory Schedule
 // -----------------------------------------------
 export const inventorySchedules = sqliteTable('inventory_schedules', {
 	id: text('id')
@@ -273,7 +273,7 @@ export const inventorySchedules = sqliteTable('inventory_schedules', {
 });
 
 // -----------------------------------------------
-// 在庫テーブル (Inventory)
+// Inventory
 // -----------------------------------------------
 export const inventory = sqliteTable('inventory', {
 	product_id: text('product_id')
@@ -286,7 +286,7 @@ export const inventory = sqliteTable('inventory', {
 });
 
 // -----------------------------------------------
-// セッションテーブル (Session)
+// Sessions
 // -----------------------------------------------
 export const sessions = sqliteTable('sessions', {
 	id: text('id').primaryKey(), // 64-char random hex token
@@ -300,7 +300,7 @@ export const sessions = sqliteTable('sessions', {
 });
 
 // -----------------------------------------------
-// ログイン試行制限 (Login Rate Limit)
+// Login Rate Limit
 // -----------------------------------------------
 export const loginRateLimits = sqliteTable('login_rate_limits', {
 	ip: text('ip').primaryKey(),

@@ -80,9 +80,9 @@ export async function createProduct(
 		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'create', target_type: 'product', target_label: `${code} ${name}` });
 		return { success: true };
 	} catch (err: any) {
-		if (err?.message?.includes('UNIQUE')) return fail(409, { error: 'この商品コードはすでに使用されています' });
+		if (err?.message?.includes('UNIQUE')) return fail(409, { error: 'That product code is already in use' });
 		console.error('Failed to create product:', err);
-		return fail(500, { error: '商品の登録に失敗しました。' });
+		return fail(500, { error: 'Failed to create product' });
 	}
 }
 
@@ -90,7 +90,7 @@ export async function updateProduct(
 	ctx: ServiceCtx,
 	data: { id: string; code: string; name: string; unit: string; description: string | null; category_id: string | null; min_quantity: number }
 ) {
-	if (!data.id) return fail(400, { error: 'IDが必要です' });
+	if (!data.id) return fail(400, { error: 'ID is required' });
 	const parsed = productSchema.safeParse(data);
 	if (!parsed.success) return fail(400, { error: parsed.error.issues[0].message });
 	const { code, name, unit, description, category_id, min_quantity } = parsed.data;
@@ -103,14 +103,14 @@ export async function updateProduct(
 		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'update', target_type: 'product', target_id: data.id, target_label: `${code} ${name}` });
 		return { success: true };
 	} catch (err: any) {
-		if (err?.message?.includes('UNIQUE')) return fail(409, { error: 'この商品コードはすでに使用されています' });
+		if (err?.message?.includes('UNIQUE')) return fail(409, { error: 'That product code is already in use' });
 		console.error('Failed to update product:', err);
-		return fail(500, { error: '商品の更新に失敗しました。' });
+		return fail(500, { error: 'Failed to update product' });
 	}
 }
 
 export async function deleteProduct(ctx: ServiceCtx, id: string) {
-	if (!id) return fail(400, { error: 'IDが必要です' });
+	if (!id) return fail(400, { error: 'ID is required' });
 
 	try {
 		const [target] = await ctx.db.select({ code: schema.products.code, name: schema.products.name }).from(schema.products).where(eq(schema.products.id, id));
@@ -119,7 +119,7 @@ export async function deleteProduct(ctx: ServiceCtx, id: string) {
 		return { success: true };
 	} catch (err) {
 		console.error('Failed to delete product:', err);
-		return fail(500, { error: '商品の削除に失敗しました。' });
+		return fail(500, { error: 'Failed to delete product' });
 	}
 }
 
@@ -149,20 +149,21 @@ export async function getExportData(ctx: ServiceCtx, search: string, category: s
 }
 
 export async function importProducts(ctx: ServiceCtx, csvText: string, mode: string) {
-	if (mode !== 'append' && mode !== 'replace') return fail(400, { error: '無効なインポートモードです' });
+	if (mode !== 'append' && mode !== 'replace') return fail(400, { error: 'Invalid import mode' });
 
 	const rows = parseCSV(csvText);
-	if (rows.length < 2) return fail(400, { error: 'CSVにデータがありません（ヘッダー行 + 1件以上のデータが必要です）' });
+	if (rows.length < 2) return fail(400, { error: 'CSV has no data (requires a header row plus at least one data row)' });
 
 	const [header, ...dataRows] = rows;
-	const codeIdx = header.findIndex((h) => h.trim() === '商品コード');
-	const nameIdx = header.findIndex((h) => h.trim() === '商品名');
-	const unitIdx = header.findIndex((h) => h.trim() === '単位');
-	const descIdx = header.findIndex((h) => h.trim() === '説明');
+	const codeIdx = header.findIndex((h) => h.trim() === 'Product Code');
+	const nameIdx = header.findIndex((h) => h.trim() === 'Product Name');
+	const unitIdx = header.findIndex((h) => h.trim() === 'Unit');
+	const descIdx = header.findIndex((h) => h.trim() === 'Description');
 
-	if (codeIdx === -1) return fail(400, { error: 'CSVに「商品コード」列が必要です' });
-	if (nameIdx === -1) return fail(400, { error: 'CSVに「商品名」列が必要です' });
-	if (unitIdx === -1) return fail(400, { error: 'CSVに「単位」列が必要です' });
+	if (codeIdx === -1) return fail(400, { error: 'CSV must include a "Product Code" column' });
+	if (nameIdx === -1) return fail(400, { error: 'CSV must include a "Product Name" column' });
+	if (unitIdx === -1) return fail(400, { error: 'CSV must include a "Unit" column' });
+
 
 	const records = dataRows
 		.filter((row) => row[codeIdx]?.trim() && row[nameIdx]?.trim())
@@ -173,7 +174,7 @@ export async function importProducts(ctx: ServiceCtx, csvText: string, mode: str
 			description: descIdx >= 0 ? row[descIdx]?.trim() || null : null,
 		}));
 
-	if (records.length === 0) return fail(400, { error: '有効なデータがありません' });
+	if (records.length === 0) return fail(400, { error: 'No valid data found' });
 
 	const now = new Date().toISOString();
 	try {
@@ -187,8 +188,8 @@ export async function importProducts(ctx: ServiceCtx, csvText: string, mode: str
 		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'import', target_type: 'product', detail: { count: records.length, mode } });
 		return { success: true, count: records.length };
 	} catch (err: any) {
-		if (err?.message?.includes('UNIQUE')) return fail(409, { error: '重複する商品コードがあります' });
+		if (err?.message?.includes('UNIQUE')) return fail(409, { error: 'Duplicate product codes detected' });
 		console.error('Failed to import products:', err);
-		return fail(500, { error: '商品のインポートに失敗しました。' });
+		return fail(500, { error: 'Failed to import products' });
 	}
 }

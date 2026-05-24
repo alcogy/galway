@@ -47,7 +47,7 @@ export const actions = {
 	import: async ({ request, platform, locals }) => {
 		const f = await request.formData();
 		const file = f.get('file') as File | null;
-		if (!file) return { success: false, error: 'ファイルが選択されていません' };
+		if (!file) return { success: false, error: 'No file selected' };
 		return importProducts(makeCtx(platform!, locals), await file.text(), f.get('mode')?.toString() ?? '');
 	},
 } satisfies Actions;

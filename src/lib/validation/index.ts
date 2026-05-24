@@ -1,43 +1,40 @@
 import { z } from 'zod';
 
-// Nullable optional text with max length
 const nullableStr = (maxLen: number) =>
-	z.nullable(z.string().max(maxLen, `最大${maxLen}文字以内で入力してください`));
+	z.nullable(z.string().max(maxLen, `Must be ${maxLen} characters or fewer`));
 
-// Optional (possibly empty) email — accepts '' or a valid email address
 const optionalEmail = z
 	.string()
 	.max(254)
 	.refine((v) => !v || z.string().email().safeParse(v).success, {
-		message: 'メールアドレスの形式が正しくありません'
+		message: 'Invalid email address'
 	});
 
-// Nullable email — accepts null or a valid email address
 const nullableEmail = z.nullable(
 	z
 		.string()
 		.max(254)
 		.refine((v) => z.string().email().safeParse(v).success, {
-			message: 'メールアドレスの形式が正しくありません'
+			message: 'Invalid email address'
 		})
 );
 
 export const accountCreateSchema = z.object({
-	name: z.string().min(1, '名前は必須です').max(100, '名前は100文字以内で入力してください'),
-	email: z.string().email('メールアドレスの形式が正しくありません').max(254),
+	name: z.string().min(1, 'Name is required').max(100),
+	email: z.string().email('Invalid email address').max(254),
 	password: z
 		.string()
-		.min(8, 'パスワードは8文字以上で入力してください')
-		.max(128, 'パスワードは128文字以内で入力してください'),
-	role: z.enum(['admin', 'general'], { message: '権限の値が不正です' })
+		.min(8, 'Password must be at least 8 characters')
+		.max(128),
+	role: z.enum(['admin', 'general'], { message: 'Invalid role' })
 });
 
 export const accountUpdateSchema = z.object({
-	id: z.string().min(1, 'IDが必要です'),
-	name: z.string().min(1, '名前は必須です').max(100),
-	email: z.string().email('メールアドレスの形式が正しくありません').max(254),
+	id: z.string().min(1, 'ID is required'),
+	name: z.string().min(1, 'Name is required').max(100),
+	email: z.string().email('Invalid email address').max(254),
 	password: z.string().max(128).optional(),
-	role: z.enum(['admin', 'general'], { message: '権限の値が不正です' })
+	role: z.enum(['admin', 'general'], { message: 'Invalid role' })
 });
 
 const emptyToUndefined = (v: unknown) => (v === '' ? undefined : v);
@@ -59,13 +56,13 @@ export const settingsSchema = z.object({
 		.string()
 		.max(500)
 		.refine((v) => !v || v.startsWith('https://hooks.slack.com/'), {
-			message: 'Slack webhook URLは https://hooks.slack.com/ で始まる必要があります'
+			message: 'Slack webhook URL must start with https://hooks.slack.com/'
 		}),
 	email_locale: z.enum(['en', 'ja']).default('en'),
 });
 
 export const supplierSchema = z.object({
-	name: z.string().min(1, '仕入先名は必須です').max(100, '仕入先名は100文字以内で入力してください'),
+	name: z.string().min(1, 'Supplier name is required').max(100),
 	tel: nullableStr(30),
 	fax: nullableStr(30),
 	zipcode: nullableStr(10),
@@ -74,19 +71,16 @@ export const supplierSchema = z.object({
 });
 
 export const productSchema = z.object({
-	code: z.string().min(1, '商品コードは必須です').max(50, '商品コードは50文字以内で入力してください'),
-	name: z.string().min(1, '商品名は必須です').max(100, '商品名は100文字以内で入力してください'),
-	unit: z.string().min(1, '単位は必須です').max(20, '単位は20文字以内で入力してください'),
+	code: z.string().min(1, 'Product code is required').max(50),
+	name: z.string().min(1, 'Product name is required').max(100),
+	unit: z.string().min(1, 'Unit is required').max(20),
 	description: nullableStr(1000),
 	category_id: z.string().nullable().optional(),
-	min_quantity: z.number().min(0, '最小在庫数は0以上で入力してください')
+	min_quantity: z.number().min(0, 'Minimum stock must be 0 or greater')
 });
 
 export const customerSchema = z.object({
-	name: z
-		.string()
-		.min(1, '出荷先名は必須です')
-		.max(100, '出荷先名は100文字以内で入力してください'),
+	name: z.string().min(1, 'Customer name is required').max(100),
 	tel: nullableStr(30),
 	zipcode: nullableStr(10),
 	address: nullableStr(300),
@@ -95,9 +89,6 @@ export const customerSchema = z.object({
 });
 
 export const categorySchema = z.object({
-	name: z
-		.string()
-		.min(1, 'カテゴリ名は必須です')
-		.max(100, 'カテゴリ名は100文字以内で入力してください'),
+	name: z.string().min(1, 'Category name is required').max(100),
 	description: nullableStr(500)
 });

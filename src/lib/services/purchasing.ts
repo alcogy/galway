@@ -70,7 +70,7 @@ export async function getPurchaseOrder(ctx: ServiceCtx, id: string) {
 			.orderBy(asc(schema.purchaseOrderDetails.line_no)),
 	]);
 
-	if (!orderRows[0]) error(404, '発注が見つかりません');
+	if (!orderRows[0]) error(404, 'Purchase order not found');
 
 	const [receivingSlips, receivedByProduct] = await Promise.all([
 		ctx.db
@@ -123,8 +123,8 @@ export async function getPurchaseOrderForEdit(ctx: ServiceCtx, id: string) {
 		ctx.db.select({ id: schema.products.id, code: schema.products.code, name: schema.products.name }).from(schema.products).orderBy(asc(schema.products.code)),
 	]);
 
-	if (!orderRows[0]) error(404, '発注が見つかりません');
-	if (orderRows[0].status !== 'draft') error(403, '下書き状態の発注のみ編集できます');
+	if (!orderRows[0]) error(404, 'Purchase order not found');
+	if (orderRows[0].status !== 'draft') error(403, 'Only draft orders can be edited');
 	return { order: orderRows[0], details, suppliers, products };
 }
 
@@ -135,11 +135,11 @@ export async function createPurchaseOrder(ctx: ServiceCtx, data: {
 	note: string;
 	details: { product_id: string; quantity: number }[];
 }) {
-	if (!data.supplier_id) return fail(400, { error: '仕入先は必須です' });
-	if (!data.ordered_at) return fail(400, { error: '発注日は必須です' });
+	if (!data.supplier_id) return fail(400, { error: 'Supplier is required' });
+	if (!data.ordered_at) return fail(400, { error: 'Order date is required' });
 
 	const validDetails = data.details.filter((d) => d.product_id && d.quantity > 0);
-	if (validDetails.length === 0) return fail(400, { error: '有効な明細が必要です' });
+	if (validDetails.length === 0) return fail(400, { error: 'At least one valid line item is required' });
 
 	const year = new Date(data.ordered_at).getFullYear();
 	const [last] = await ctx.db
@@ -164,7 +164,7 @@ export async function createPurchaseOrder(ctx: ServiceCtx, data: {
 	} catch (err) {
 		if (newId) await ctx.db.delete(schema.purchaseOrders).where(eq(schema.purchaseOrders.id, newId)).catch(() => {});
 		const message = String(err);
-		if (message.includes('UNIQUE constraint failed') && message.includes('order_number')) return fail(409, { error: '発注番号が競合しました。再度お試しください。' });
+		if (message.includes('UNIQUE constraint failed') && message.includes('order_number')) return fail(409, { error: 'Order number conflict. Please try again.' });
 		throw err;
 	}
 
@@ -179,11 +179,11 @@ export async function updatePurchaseOrder(ctx: ServiceCtx, id: string, data: {
 	note: string;
 	details: { product_id: string; quantity: number }[];
 }) {
-	if (!data.supplier_id) return fail(400, { error: '仕入先は必須です' });
-	if (!data.ordered_at) return fail(400, { error: '発注日は必須です' });
+	if (!data.supplier_id) return fail(400, { error: 'Supplier is required' });
+	if (!data.ordered_at) return fail(400, { error: 'Order date is required' });
 
 	const validDetails = data.details.filter((d) => d.product_id && d.quantity > 0);
-	if (validDetails.length === 0) return fail(400, { error: '有効な明細が必要です' });
+	if (validDetails.length === 0) return fail(400, { error: 'At least one valid line item is required' });
 
 	try {
 		await ctx.db.update(schema.purchaseOrders).set({ supplier_id: data.supplier_id, ordered_at: data.ordered_at, expected_at: data.expected_at, note: data.note }).where(eq(schema.purchaseOrders.id, id));
@@ -193,7 +193,7 @@ export async function updatePurchaseOrder(ctx: ServiceCtx, id: string, data: {
 		}
 	} catch (err) {
 		console.error('Failed to update purchase order:', err);
-		return fail(500, { error: '発注の更新に失敗しました。' });
+		return fail(500, { error: 'Failed to update purchase order' });
 	}
 
 	await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'update', target_type: 'purchase_order', target_id: id, detail: { item_count: validDetails.length } });
@@ -201,7 +201,7 @@ export async function updatePurchaseOrder(ctx: ServiceCtx, id: string, data: {
 }
 
 export async function updatePurchaseOrderStatus(ctx: ServiceCtx, id: string, status: 'draft' | 'ordered' | 'received' | 'cancelled') {
-	if (!status) return fail(400, { error: 'ステータスが必要です' });
+	if (!status) return fail(400, { error: 'Status is required' });
 
 	try {
 		const [order] = await ctx.db.select({ order_number: schema.purchaseOrders.order_number }).from(schema.purchaseOrders).where(eq(schema.purchaseOrders.id, id));
@@ -210,7 +210,7 @@ export async function updatePurchaseOrderStatus(ctx: ServiceCtx, id: string, sta
 		return { success: true };
 	} catch (err) {
 		console.error('Failed to update status:', err);
-		return fail(500, { error: 'ステータスの更新に失敗しました。' });
+		return fail(500, { error: 'Failed to update status' });
 	}
 }
 
@@ -228,12 +228,12 @@ export async function convertToReceivingSlip(
 		.from(schema.purchaseOrders)
 		.where(eq(schema.purchaseOrders.id, id));
 
-	if (!orderRows) error(404, '発注が見つかりません');
-	if (orderRows.status !== 'ordered') return fail(400, { error: '発注済み状態の発注のみ入荷伝票を作成できます' });
-	if (!data.received_at) return fail(400, { error: '入荷日は必須です' });
+	if (!orderRows) error(404, 'Purchase order not found');
+	if (orderRows.status !== 'ordered') return fail(400, { error: 'Receiving slips can only be created for ordered purchases' });
+	if (!data.received_at) return fail(400, { error: 'Received date is required' });
 
 	const validDetails = data.details.filter((d) => d.product_id && d.quantity > 0);
-	if (validDetails.length === 0) return fail(400, { error: '入荷数が1以上の明細が必要です' });
+	if (validDetails.length === 0) return fail(400, { error: 'At least one line item with quantity > 0 is required' });
 
 	const now = new Date().toISOString();
 	const slipYear = new Date(data.received_at).getFullYear();
@@ -264,9 +264,9 @@ export async function convertToReceivingSlip(
 	} catch (err) {
 		if (newSlipId) await ctx.db.delete(schema.receivingSlips).where(eq(schema.receivingSlips.id, newSlipId)).catch(() => {});
 		const message = String(err);
-		if (message.includes('UNIQUE constraint failed') && message.includes('slip_number')) return fail(409, { error: '伝票番号が競合しました。再度お試しください。' });
+		if (message.includes('UNIQUE constraint failed') && message.includes('slip_number')) return fail(409, { error: 'Slip number conflict. Please try again.' });
 		console.error('Failed to convert PO to receiving slip:', err);
-		return fail(500, { error: '入荷伝票の作成に失敗しました。' });
+		return fail(500, { error: 'Failed to create receiving slip' });
 	}
 
 	await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'create', target_type: 'receiving_slip', target_id: newSlipId, detail: { from_purchase_order: id, order_number: orderRows.order_number } });
@@ -280,7 +280,7 @@ export async function deletePurchaseOrder(ctx: ServiceCtx, id: string) {
 		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'delete', target_type: 'purchase_order', target_id: id, target_label: order?.order_number });
 	} catch (err) {
 		console.error('Failed to delete purchase order:', err);
-		return fail(500, { error: '発注の削除に失敗しました。' });
+		return fail(500, { error: 'Failed to delete purchase order' });
 	}
 	redirect(303, '/purchasing');
 }

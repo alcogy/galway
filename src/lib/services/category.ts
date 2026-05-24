@@ -32,14 +32,14 @@ export async function createCategory(ctx: ServiceCtx, data: { name: string; desc
 		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'create', target_type: 'category', target_label: name });
 		return { success: true };
 	} catch (err: any) {
-		if (err?.message?.includes('UNIQUE')) return fail(409, { error: 'このカテゴリ名はすでに使用されています' });
+		if (err?.message?.includes('UNIQUE')) return fail(409, { error: 'That category name is already in use' });
 		console.error('Failed to create category:', err);
-		return fail(500, { error: 'カテゴリの登録に失敗しました。' });
+		return fail(500, { error: 'Failed to create category' });
 	}
 }
 
 export async function updateCategory(ctx: ServiceCtx, data: { id: string; name: string; description: string | null }) {
-	if (!data.id) return fail(400, { error: 'IDが必要です' });
+	if (!data.id) return fail(400, { error: 'ID is required' });
 	const parsed = categorySchema.safeParse(data);
 	if (!parsed.success) return fail(400, { error: parsed.error.issues[0].message });
 	const { name, description } = parsed.data;
@@ -52,14 +52,14 @@ export async function updateCategory(ctx: ServiceCtx, data: { id: string; name: 
 		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'update', target_type: 'category', target_id: data.id, target_label: name });
 		return { success: true };
 	} catch (err: any) {
-		if (err?.message?.includes('UNIQUE')) return fail(409, { error: 'このカテゴリ名はすでに使用されています' });
+		if (err?.message?.includes('UNIQUE')) return fail(409, { error: 'That category name is already in use' });
 		console.error('Failed to update category:', err);
-		return fail(500, { error: 'カテゴリの更新に失敗しました。' });
+		return fail(500, { error: 'Failed to update category' });
 	}
 }
 
 export async function deleteCategory(ctx: ServiceCtx, id: string) {
-	if (!id) return fail(400, { error: 'IDが必要です' });
+	if (!id) return fail(400, { error: 'ID is required' });
 
 	try {
 		const [target] = await ctx.db.select({ name: schema.productCategories.name }).from(schema.productCategories).where(eq(schema.productCategories.id, id));
@@ -68,6 +68,6 @@ export async function deleteCategory(ctx: ServiceCtx, id: string) {
 		return { success: true };
 	} catch (err) {
 		console.error('Failed to delete category:', err);
-		return fail(500, { error: 'カテゴリの削除に失敗しました。' });
+		return fail(500, { error: 'Failed to delete category' });
 	}
 }

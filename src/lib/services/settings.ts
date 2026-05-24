@@ -68,6 +68,6 @@ export async function saveSettings(
 		return { success: true };
 	} catch (err) {
 		console.error('Failed to save settings:', err);
-		return fail(500, { error: '設定の保存に失敗しました。' });
+		return fail(500, { error: 'Failed to save settings' });
 	}
 }

@@ -7,7 +7,7 @@ import { sendWelcomeEmail, sendPasswordChangedEmail } from '$lib/services/email'
 import type { ServiceCtx } from '$lib/services';
 
 export async function listAccounts(ctx: ServiceCtx, search: string, page: number) {
-	if (ctx.user.role !== 'admin') throw error(403, 'アクセス権限がありません');
+	if (ctx.user.role !== 'admin') throw error(403, 'Access denied');
 
 	const itemsPerPage = 30;
 	const currentPage = Math.max(1, page);
@@ -45,7 +45,7 @@ export async function createAccount(
 	ctx: ServiceCtx,
 	data: { name: string; email: string; password: string; role: 'admin' | 'general' }
 ) {
-	if (ctx.user.role !== 'admin') return fail(403, { error: 'アクセス権限がありません' });
+	if (ctx.user.role !== 'admin') return fail(403, { error: 'Access denied' });
 
 	const parsed = accountCreateSchema.safeParse(data);
 	if (!parsed.success) return fail(400, { error: parsed.error.issues[0].message });
@@ -55,7 +55,7 @@ export async function createAccount(
 		const existing = await ctx.db.query.accounts.findFirst({
 			where: eq(schema.accounts.email, email)
 		});
-		if (existing) return fail(400, { error: 'そのメールアドレスはすでに使用されています' });
+		if (existing) return fail(400, { error: 'That email address is already in use' });
 
 		const password_hash = await hashPassword(password);
 		const [inserted] = await ctx.db
@@ -70,7 +70,7 @@ export async function createAccount(
 		return { success: true };
 	} catch (err) {
 		console.error('Failed to create account:', err);
-		return fail(500, { error: 'アカウントの作成に失敗しました' });
+		return fail(500, { error: 'Failed to create account' });
 	}
 }
 
@@ -78,7 +78,7 @@ export async function updateAccount(
 	ctx: ServiceCtx,
 	data: { id: string; name: string; email: string; password?: string; role: 'admin' | 'general' }
 ) {
-	if (ctx.user.role !== 'admin') return fail(403, { error: 'アクセス権限がありません' });
+	if (ctx.user.role !== 'admin') return fail(403, { error: 'Access denied' });
 
 	const parsed = accountUpdateSchema.safeParse(data);
 	if (!parsed.success) return fail(400, { error: parsed.error.issues[0].message });
@@ -89,7 +89,7 @@ export async function updateAccount(
 			where: eq(schema.accounts.email, email)
 		});
 		if (existing && existing.id !== id)
-			return fail(400, { error: 'そのメールアドレスはすでに使用されています' });
+			return fail(400, { error: 'That email address is already in use' });
 
 		const updateData: Record<string, unknown> = { name, email, role };
 		if (password?.trim()) updateData.password_hash = await hashPassword(password);
@@ -98,14 +98,14 @@ export async function updateAccount(
 		return { success: true };
 	} catch (err) {
 		console.error('Failed to update account:', err);
-		return fail(500, { error: 'アカウントの更新に失敗しました' });
+		return fail(500, { error: 'Failed to update account' });
 	}
 }
 
 export async function deleteAccount(ctx: ServiceCtx, id: string) {
-	if (ctx.user.role !== 'admin') return fail(403, { error: 'アクセス権限がありません' });
-	if (!id) return fail(400, { error: 'IDが指定されていません' });
-	if (id === ctx.user.id) return fail(400, { error: '自分自身のアカウントは削除できません' });
+	if (ctx.user.role !== 'admin') return fail(403, { error: 'Access denied' });
+	if (!id) return fail(400, { error: 'ID is required' });
+	if (id === ctx.user.id) return fail(400, { error: 'Cannot delete your own account' });
 
 	try {
 		await ctx.db.delete(schema.accounts).where(eq(schema.accounts.id, id));
@@ -114,9 +114,9 @@ export async function deleteAccount(ctx: ServiceCtx, id: string) {
 		console.error('Failed to delete account:', err);
 		const message = err instanceof Error ? String(err.cause) : String(err);
 		if (message.includes('FOREIGN KEY constraint failed')) {
-			return fail(400, { error: 'このアカウントは使用されているため削除できません' });
+			return fail(400, { error: 'Cannot delete account: it is referenced by other records' });
 		}
-		return fail(500, { error: 'アカウントの削除に失敗しました' });
+		return fail(500, { error: 'Failed to delete account' });
 	}
 }
 

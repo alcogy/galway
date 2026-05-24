@@ -22,7 +22,7 @@ export const actions = {
 		try {
 			details = detailsJson ? JSON.parse(detailsJson) : [];
 		} catch {
-			return { error: '明細データが不正です' };
+			return { error: 'Invalid line item data' };
 		}
 		return convertToReceivingSlip(makeCtx(platform!, locals), params.id, {
 			received_at: f.get('received_at')?.toString() ?? '',

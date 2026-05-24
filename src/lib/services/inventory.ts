@@ -112,8 +112,8 @@ export async function getExportData(ctx: ServiceCtx, search: string, supplierId:
 }
 
 export async function stocktake(ctx: ServiceCtx, product_id: string, quantity: number) {
-	if (!product_id) return fail(400, { error: '商品を選択してください' });
-	if (isNaN(quantity) || quantity < 0) return fail(400, { error: '数量は0以上の数値で入力してください' });
+	if (!product_id) return fail(400, { error: 'Please select a product' });
+	if (isNaN(quantity) || quantity < 0) return fail(400, { error: 'Quantity must be 0 or greater' });
 
 	const now = new Date().toISOString();
 	try {
@@ -124,21 +124,22 @@ export async function stocktake(ctx: ServiceCtx, product_id: string, quantity: n
 		return { success: true };
 	} catch (err) {
 		console.error('Failed to update inventory:', err);
-		return fail(500, { error: '在庫の更新に失敗しました。' });
+		return fail(500, { error: 'Failed to update inventory' });
 	}
 }
 
 export async function importInventory(ctx: ServiceCtx, csvText: string, mode: string) {
-	if (mode !== 'append' && mode !== 'replace') return fail(400, { error: 'インポート方法が不正です' });
+	if (mode !== 'append' && mode !== 'replace') return fail(400, { error: 'Invalid import mode' });
 
 	const rows = parseCSV(csvText);
-	if (rows.length < 2) return fail(400, { error: 'CSVにデータがありません（ヘッダー行 + 1件以上のデータが必要です）' });
+	if (rows.length < 2) return fail(400, { error: 'CSV has no data (requires a header row plus at least one data row)' });
 
 	const [header, ...dataRows] = rows;
-	const codeIdx = header.findIndex((h) => h.trim() === '商品コード');
-	const qtyIdx = header.findIndex((h) => h.trim() === '数量' || h.trim() === '在庫数');
-	if (codeIdx === -1) return fail(400, { error: 'CSVに「商品コード」列が必要です' });
-	if (qtyIdx === -1) return fail(400, { error: 'CSVに「数量」または「在庫数」列が必要です' });
+	const codeIdx = header.findIndex((h) => h.trim() === 'Product Code');
+	const qtyIdx = header.findIndex((h) => h.trim() === 'Quantity' || h.trim() === 'Stock');
+	if (codeIdx === -1) return fail(400, { error: 'CSV must include a "Product Code" column' });
+	if (qtyIdx === -1) return fail(400, { error: 'CSV must include a "Quantity" or "Stock" column' })
+;
 
 	const allProducts = await ctx.db.select({ id: schema.products.id, code: schema.products.code }).from(schema.products);
 	const productMap = new Map(allProducts.map((p) => [p.code, p.id]));
@@ -153,7 +154,7 @@ export async function importInventory(ctx: ServiceCtx, csvText: string, mode: st
 		records.push({ product_id: productId, quantity: qty });
 	}
 
-	if (records.length === 0) return fail(400, { error: '有効なデータがありません' });
+	if (records.length === 0) return fail(400, { error: 'No valid data found' });
 
 	const now = new Date().toISOString();
 	try {
@@ -168,6 +169,6 @@ export async function importInventory(ctx: ServiceCtx, csvText: string, mode: st
 		return { success: true, count: records.length };
 	} catch (err) {
 		console.error('Failed to import inventory:', err);
-		return fail(500, { error: '在庫データのインポートに失敗しました。' });
+		return fail(500, { error: 'Failed to import inventory' });
 	}
 }

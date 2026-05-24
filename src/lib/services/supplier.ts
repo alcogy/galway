@@ -69,7 +69,7 @@ export async function createSupplier(
 		return { success: true };
 	} catch (err) {
 		console.error('Failed to create supplier:', err);
-		return fail(500, { error: '仕入先の登録に失敗しました。' });
+		return fail(500, { error: 'Failed to create supplier' });
 	}
 }
 
@@ -77,7 +77,7 @@ export async function updateSupplier(
 	ctx: ServiceCtx,
 	data: { id: string; name: string; tel: string | null; fax: string | null; zipcode: string | null; address: string | null; email: string | null }
 ) {
-	if (!data.id) return fail(400, { error: 'IDが必要です' });
+	if (!data.id) return fail(400, { error: 'ID is required' });
 	const parsed = supplierSchema.safeParse(data);
 	if (!parsed.success) return fail(400, { error: parsed.error.issues[0].message });
 	const { name, tel, fax, zipcode, address, email } = parsed.data;
@@ -91,12 +91,12 @@ export async function updateSupplier(
 		return { success: true };
 	} catch (err) {
 		console.error('Failed to update supplier:', err);
-		return fail(500, { error: '仕入先の更新に失敗しました。' });
+		return fail(500, { error: 'Failed to update supplier' });
 	}
 }
 
 export async function deleteSupplier(ctx: ServiceCtx, id: string) {
-	if (!id) return fail(400, { error: 'IDが必要です' });
+	if (!id) return fail(400, { error: 'ID is required' });
 
 	try {
 		const [target] = await ctx.db.select({ name: schema.suppliers.name }).from(schema.suppliers).where(eq(schema.suppliers.id, id));
@@ -105,7 +105,7 @@ export async function deleteSupplier(ctx: ServiceCtx, id: string) {
 		return { success: true };
 	} catch (err) {
 		console.error('Failed to delete supplier:', err);
-		return fail(500, { error: '仕入先の削除に失敗しました。' });
+		return fail(500, { error: 'Failed to delete supplier' });
 	}
 }
 
@@ -135,7 +135,7 @@ export async function setSupplierProducts(ctx: ServiceCtx, supplierId: string, p
 		return { success: true };
 	} catch (err) {
 		console.error('Failed to update supplier products:', err);
-		return fail(500, { error: '仕入先商品の更新に失敗しました。' });
+		return fail(500, { error: 'Failed to update supplier products' });
 	}
 }
 
@@ -145,20 +145,20 @@ export async function getExportData(ctx: ServiceCtx, search: string) {
 }
 
 export async function importSuppliers(ctx: ServiceCtx, csvText: string, mode: string) {
-	if (mode !== 'append' && mode !== 'replace') return fail(400, { error: '無効なインポートモードです' });
+	if (mode !== 'append' && mode !== 'replace') return fail(400, { error: 'Invalid import mode' });
 
 	const rows = parseCSV(csvText);
-	if (rows.length < 2) return fail(400, { error: 'CSVにデータがありません（ヘッダー行 + 1件以上のデータが必要です）' });
+	if (rows.length < 2) return fail(400, { error: 'CSV has no data (requires a header row plus at least one data row)' });
 
 	const [header, ...dataRows] = rows;
-	const nameIdx = header.findIndex((h) => h.trim() === '仕入先名');
-	if (nameIdx === -1) return fail(400, { error: 'CSVに「仕入先名」列が必要です' });
+	const nameIdx = header.findIndex((h) => h.trim() === 'Supplier Name');
+	if (nameIdx === -1) return fail(400, { error: 'CSV must include a "Supplier Name" column' });
 
-	const telIdx = header.findIndex((h) => h.trim() === '電話番号');
+	const telIdx = header.findIndex((h) => h.trim() === 'Phone');
 	const faxIdx = header.findIndex((h) => h.trim() === 'FAX');
-	const zipcodeIdx = header.findIndex((h) => h.trim() === '郵便番号');
-	const addressIdx = header.findIndex((h) => h.trim() === '住所');
-	const emailIdx = header.findIndex((h) => h.trim() === 'メールアドレス');
+	const zipcodeIdx = header.findIndex((h) => h.trim() === 'Zip Code');
+	const addressIdx = header.findIndex((h) => h.trim() === 'Address');
+	const emailIdx = header.findIndex((h) => h.trim() === 'Email');
 
 	const records = dataRows
 		.filter((row) => row[nameIdx]?.trim())
@@ -171,7 +171,7 @@ export async function importSuppliers(ctx: ServiceCtx, csvText: string, mode: st
 			email: emailIdx >= 0 ? row[emailIdx]?.trim() || null : null,
 		}));
 
-	if (records.length === 0) return fail(400, { error: '有効なデータがありません' });
+	if (records.length === 0) return fail(400, { error: 'No valid data found' });
 
 	try {
 		await ctx.db.transaction(async (tx) => {
@@ -182,6 +182,6 @@ export async function importSuppliers(ctx: ServiceCtx, csvText: string, mode: st
 		return { success: true, count: records.length };
 	} catch (err) {
 		console.error('Failed to import suppliers:', err);
-		return fail(500, { error: '仕入先のインポートに失敗しました。' });
+		return fail(500, { error: 'Failed to import suppliers' });
 	}
 }

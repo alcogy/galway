@@ -41,7 +41,7 @@ export async function createCustomer(
 		return { success: true };
 	} catch (err) {
 		console.error('Failed to create customer:', err);
-		return fail(500, { error: '出荷先の登録に失敗しました。' });
+		return fail(500, { error: 'Failed to create customer' });
 	}
 }
 
@@ -49,7 +49,7 @@ export async function updateCustomer(
 	ctx: ServiceCtx,
 	data: { id: string; name: string; tel: string | null; zipcode: string | null; address: string | null; email: string | null; note: string | null }
 ) {
-	if (!data.id) return fail(400, { error: 'IDが必要です' });
+	if (!data.id) return fail(400, { error: 'ID is required' });
 	const parsed = customerSchema.safeParse(data);
 	if (!parsed.success) return fail(400, { error: parsed.error.issues[0].message });
 	const { name, tel, zipcode, address, email, note } = parsed.data;
@@ -63,12 +63,12 @@ export async function updateCustomer(
 		return { success: true };
 	} catch (err) {
 		console.error('Failed to update customer:', err);
-		return fail(500, { error: '出荷先の更新に失敗しました。' });
+		return fail(500, { error: 'Failed to update customer' });
 	}
 }
 
 export async function deleteCustomer(ctx: ServiceCtx, id: string) {
-	if (!id) return fail(400, { error: 'IDが必要です' });
+	if (!id) return fail(400, { error: 'ID is required' });
 
 	try {
 		const [target] = await ctx.db.select({ name: schema.customers.name }).from(schema.customers).where(eq(schema.customers.id, id));
@@ -77,6 +77,6 @@ export async function deleteCustomer(ctx: ServiceCtx, id: string) {
 		return { success: true };
 	} catch (err) {
 		console.error('Failed to delete customer:', err);
-		return fail(500, { error: '出荷先の削除に失敗しました。' });
+		return fail(500, { error: 'Failed to delete customer' });
 	}
 }

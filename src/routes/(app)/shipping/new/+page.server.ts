@@ -10,13 +10,13 @@ export const actions = {
 	create: async ({ request, platform, locals }) => {
 		const f = await request.formData();
 		const detailsJson = f.get('details')?.toString();
-		if (!detailsJson) return fail(400, { error: '明細が必要です' });
+		if (!detailsJson) return fail(400, { error: 'Line items are required' });
 
 		let details: { product_id: string; quantity: number }[];
 		try {
 			details = JSON.parse(detailsJson);
 		} catch {
-			return fail(400, { error: '明細データが不正です' });
+			return fail(400, { error: 'Invalid line item data' });
 		}
 
 		return createShippingSlip(makeCtx(platform!, locals), {

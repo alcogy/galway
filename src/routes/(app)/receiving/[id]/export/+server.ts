@@ -6,7 +6,7 @@ import { generateCSV } from '$lib/utils/csv';
 export const GET: RequestHandler = async ({ params, platform, locals }) => {
 	const { slip, details } = await getSlipExportData(makeCtx(platform!, locals), params.id);
 
-	const headers = ['商品コード', '商品名', '数量', '単位'];
+	const headers = ['Product Code', 'Product Name', 'Quantity', 'Unit'];
 	const rows = details.map((d) => [d.product_code ?? '', d.product_name ?? '', String(d.quantity), d.unit ?? '']);
 
 	const csv = '﻿' + generateCSV(headers, rows);

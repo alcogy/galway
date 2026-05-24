@@ -30,7 +30,7 @@ export async function getSlipExportData(ctx: ServiceCtx, id: string) {
 			.where(eq(schema.receivingSlipDetails.slip_id, id))
 			.orderBy(schema.receivingSlipDetails.line_no),
 	]);
-	if (!slipRows[0]) error(404, '入荷伝票が見つかりません');
+	if (!slipRows[0]) error(404, 'Receiving slip not found');
 	return { slip: slipRows[0], details };
 }
 
@@ -136,7 +136,7 @@ export async function getReceivingSlip(ctx: ServiceCtx, id: string) {
 			.orderBy(asc(schema.products.code)),
 	]);
 
-	if (!slipRows[0]) error(404, '入荷伝票が見つかりません');
+	if (!slipRows[0]) error(404, 'Receiving slip not found');
 	return { slip: slipRows[0], details, suppliers, products };
 }
 
@@ -155,11 +155,11 @@ export async function createReceivingSlip(ctx: ServiceCtx, data: {
 	note: string;
 	details: { product_id: string; quantity: number }[];
 }) {
-	if (!data.received_at) return fail(400, { error: '入荷日は必須です' });
-	if (!data.supplier_id) return fail(400, { error: '仕入先は必須です' });
+	if (!data.received_at) return fail(400, { error: 'Received date is required' });
+	if (!data.supplier_id) return fail(400, { error: 'Supplier is required' });
 
 	const validDetails = data.details.filter((d) => d.product_id && d.quantity > 0);
-	if (validDetails.length === 0) return fail(400, { error: '有効な明細が必要です' });
+	if (validDetails.length === 0) return fail(400, { error: 'At least one valid line item is required' });
 
 	const slip_number = await nextReceivingSlipNumber(ctx.db, data.received_at);
 	const now = new Date().toISOString();
@@ -179,7 +179,7 @@ export async function createReceivingSlip(ctx: ServiceCtx, data: {
 		}
 	} catch (err) {
 		if (slipId) await ctx.db.delete(schema.receivingSlips).where(eq(schema.receivingSlips.id, slipId)).catch(() => {});
-		if (isSlipNumberConflict(err)) return fail(409, { error: '伝票番号が競合しました。再度お試しください。' });
+		if (isSlipNumberConflict(err)) return fail(409, { error: 'Slip number conflict. Please try again.' });
 		throw err;
 	}
 
@@ -195,11 +195,11 @@ export async function updateReceivingSlip(ctx: ServiceCtx, id: string, data: {
 	account_id?: string;
 	details: { product_id: string; quantity: number }[];
 }) {
-	if (!data.received_at) return fail(400, { error: '入荷日は必須です' });
-	if (!data.supplier_id) return fail(400, { error: '仕入先は必須です' });
+	if (!data.received_at) return fail(400, { error: 'Received date is required' });
+	if (!data.supplier_id) return fail(400, { error: 'Supplier is required' });
 
 	const validDetails = data.details.filter((d) => d.product_id && d.quantity > 0);
-	if (validDetails.length === 0) return fail(400, { error: '有効な明細が必要です' });
+	if (validDetails.length === 0) return fail(400, { error: 'At least one valid line item is required' });
 
 	const now = new Date().toISOString();
 	const updateFields: Record<string, unknown> = { received_at: data.received_at, supplier_id: data.supplier_id, note: data.note };
@@ -224,7 +224,7 @@ export async function updateReceivingSlip(ctx: ServiceCtx, id: string, data: {
 		}
 	} catch (err) {
 		console.error('Failed to update receiving slip:', err);
-		return fail(500, { error: '入荷伝票の更新に失敗しました。' });
+		return fail(500, { error: 'Failed to update receiving slip' });
 	}
 
 	await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'update', target_type: 'receiving_slip', target_id: id, detail: { item_count: validDetails.length } });
@@ -246,7 +246,7 @@ export async function deleteReceivingSlip(ctx: ServiceCtx, id: string) {
 		}
 	} catch (err) {
 		console.error('Failed to delete receiving slip:', err);
-		return fail(500, { error: '入荷伝票の削除に失敗しました。' });
+		return fail(500, { error: 'Failed to delete receiving slip' });
 	}
 
 	await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'delete', target_type: 'receiving_slip', target_id: id });
@@ -255,17 +255,17 @@ export async function deleteReceivingSlip(ctx: ServiceCtx, id: string) {
 }
 
 export async function importReceivingSlips(ctx: ServiceCtx, csvText: string, date: string, supplierId: string) {
-	if (!date) return fail(400, { error: '入荷日を選択してください' });
-	if (!supplierId) return fail(400, { error: '仕入先を選択してください' });
+	if (!date) return fail(400, { error: 'Please select a received date' });
+	if (!supplierId) return fail(400, { error: 'Please select a supplier' });
 
 	const rows = parseCSV(csvText);
-	if (rows.length < 2) return fail(400, { error: 'CSVにデータがありません（ヘッダー行 + 1件以上のデータが必要です）' });
+	if (rows.length < 2) return fail(400, { error: 'CSV has no data (requires a header row plus at least one data row)' });
 
 	const [header, ...dataRows] = rows;
-	const codeIdx = header.findIndex((h) => h.trim() === '商品コード');
-	const qtyIdx = header.findIndex((h) => h.trim() === '数量');
-	if (codeIdx === -1) return fail(400, { error: 'CSVに「商品コード」列が必要です' });
-	if (qtyIdx === -1) return fail(400, { error: 'CSVに「数量」列が必要です' });
+	const codeIdx = header.findIndex((h) => h.trim() === 'Product Code');
+	const qtyIdx = header.findIndex((h) => h.trim() === 'Quantity');
+	if (codeIdx === -1) return fail(400, { error: 'CSV must include a "Product Code" column' });
+	if (qtyIdx === -1) return fail(400, { error: 'CSV must include a "Quantity" column' });
 
 	const allProducts = await ctx.db.select({ id: schema.products.id, code: schema.products.code }).from(schema.products);
 	const productMap = new Map(allProducts.map((p) => [p.code, p.id]));
@@ -280,7 +280,7 @@ export async function importReceivingSlips(ctx: ServiceCtx, csvText: string, dat
 		detailRecords.push({ product_id: productId, quantity: qty });
 	}
 
-	if (detailRecords.length === 0) return fail(400, { error: '有効なデータがありません' });
+	if (detailRecords.length === 0) return fail(400, { error: 'No valid data found' });
 
 	const slip_number = await nextReceivingSlipNumber(ctx.db, date);
 	const now = new Date().toISOString();
@@ -303,9 +303,9 @@ export async function importReceivingSlips(ctx: ServiceCtx, csvText: string, dat
 		return { success: true, count: detailRecords.length };
 	} catch (err) {
 		if (slipId) await ctx.db.delete(schema.receivingSlips).where(eq(schema.receivingSlips.id, slipId)).catch(() => {});
-		if (isSlipNumberConflict(err)) return fail(409, { error: '伝票番号が競合しました。再度お試しください。' });
+		if (isSlipNumberConflict(err)) return fail(409, { error: 'Slip number conflict. Please try again.' });
 		console.error('Failed to import receiving slips:', err);
-		return fail(500, { error: '入荷伝票のインポートに失敗しました。' });
+		return fail(500, { error: 'Failed to import receiving slips' });
 	}
 }
 

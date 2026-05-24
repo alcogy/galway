@@ -36,7 +36,7 @@ export const load: PageServerLoad = async ({ params, platform }) => {
 			.orderBy(asc(schema.shippingSlipDetails.line_no)),
 	]);
 
-	if (!slipRows[0]) error(404, '出荷伝票が見つかりません');
+	if (!slipRows[0]) error(404, 'Shipping slip not found');
 
 	return { slip: slipRows[0], details };
 };

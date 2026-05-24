@@ -23,7 +23,7 @@ export const actions = {
 		const password = data.get('password')?.toString();
 
 		if (!email || !password) {
-			return fail(400, { error: 'メールアドレスとパスワードを入力してください' });
+			return fail(400, { error: 'Email and password are required' });
 		}
 
 		const db = drizzle(platform!.env.DB, { schema });
@@ -39,7 +39,7 @@ export const actions = {
 				(new Date(rateLimit.locked_until).getTime() - Date.now()) / 60000
 			);
 			return fail(429, {
-				error: `ログイン試行回数が上限を超えました。${mins}分後に再試行してください。`
+				error: `Too many login attempts. Please try again in ${mins} minute(s).`
 			});
 		}
 
@@ -62,7 +62,7 @@ export const actions = {
 					target: schema.loginRateLimits.ip,
 					set: { attempts, locked_until, last_attempt_at: now }
 				});
-			return fail(401, { error: 'メールアドレスまたはパスワードが正しくありません' });
+			return fail(401, { error: 'Invalid email address or password' });
 		}
 
 		// Success: reset rate limit and create session token
