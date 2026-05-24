@@ -44,6 +44,8 @@ A simple procurement management system for centrally managing suppliers, product
 - Status workflow: `Draft` → `Ordered` → `Received` / `Cancelled`
 - Order numbers: `PO-YYYY-NNN` format (auto-generated within a transaction)
 - Expected arrival date links to the Dashboard's Today's Receiving section
+- **Create Receiving Slip** directly from an ordered PO (with date and note fields); slip is linked via `purchase_order_number`
+- **Received Qty Summary**: per-product breakdown of ordered vs. total received quantities and the difference
 
 ### Receiving (`/receiving`)
 - List, create, view, edit, and delete receiving slips
@@ -188,4 +190,4 @@ wrangler pages deploy .svelte-kit/cloudflare
 
 ## License
 
-Private
+MIT
