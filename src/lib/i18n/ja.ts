@@ -47,6 +47,7 @@ const ja: Dict = {
 		zipcode: '郵便番号',
 		address: '住所',
 		email: 'メールアドレス',
+		all: 'すべて',
 		noData: 'データなし',
 		error: 'エラー',
 		search: '検索',

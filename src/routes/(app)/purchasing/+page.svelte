@@ -7,11 +7,11 @@
 
 	let { data }: { data: PageData } = $props();
 
+	type Status = '' | 'draft' | 'ordered' | 'received' | 'cancelled';
+
+	let statusFilter = $state<Status>('');
 	let currentPage = $state(1);
 	const ITEMS_PER_PAGE = 20;
-	const pagedOrders = $derived(
-		data.orders.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
-	);
 
 	const STATUS_LABELS = $derived<Record<string, string>>({
 		draft: t('purchasing.statusDraft'),
@@ -19,6 +19,27 @@
 		received: t('purchasing.statusReceived'),
 		cancelled: t('purchasing.statusCancelled'),
 	});
+
+	const STATUS_OPTIONS: { value: Status; label: () => string }[] = [
+		{ value: '', label: () => t('common.all') },
+		{ value: 'draft', label: () => t('purchasing.statusDraft') },
+		{ value: 'ordered', label: () => t('purchasing.statusOrdered') },
+		{ value: 'received', label: () => t('purchasing.statusReceived') },
+		{ value: 'cancelled', label: () => t('purchasing.statusCancelled') },
+	];
+
+	function setStatus(s: Status) {
+		statusFilter = s;
+		currentPage = 1;
+	}
+
+	const filteredOrders = $derived(
+		statusFilter ? data.orders.filter((o) => o.status === statusFilter) : data.orders
+	);
+
+	const pagedOrders = $derived(
+		filteredOrders.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+	);
 
 	const columns = $derived([
 		{ key: 'order_number', label: t('purchasing.orderNumber'), width: '150px' },
@@ -46,6 +67,19 @@
 		</div>
 	</div>
 
+	<div class="filters">
+		{#each STATUS_OPTIONS as opt (opt.value)}
+			<button
+				type="button"
+				class="chip"
+				class:active={statusFilter === opt.value}
+				onclick={() => setStatus(opt.value)}
+			>
+				{opt.label()}
+			</button>
+		{/each}
+	</div>
+
 	<div class="table-with-pagination">
 		<Table {columns} rows={pagedOrders} onrowclick={(row) => goto(`/purchasing/${row.id}`)}>
 			{#snippet cell(col, value)}
@@ -62,7 +96,7 @@
 			{/snippet}
 		</Table>
 		<Pagination
-			totalItems={data.orders.length}
+			totalItems={filteredOrders.length}
 			itemsPerPage={ITEMS_PER_PAGE}
 			currentPage={currentPage}
 			onPageChange={(p) => (currentPage = p)}
@@ -92,6 +126,42 @@
 	.page-actions {
 		display: flex;
 		gap: var(--space-sm);
+	}
+
+	.filters {
+		display: flex;
+		gap: var(--space-xs);
+		flex-wrap: wrap;
+	}
+
+	.chip {
+		display: inline-flex;
+		align-items: center;
+		padding: 4px 14px;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-full);
+		background-color: var(--color-bg);
+		color: var(--color-text-secondary);
+		font-size: 0.8125rem;
+		font-weight: 500;
+		font-family: inherit;
+		cursor: pointer;
+		transition:
+			background-color var(--transition-fast),
+			border-color var(--transition-fast),
+			color var(--transition-fast);
+
+		&:hover {
+			background-color: var(--color-hover);
+			color: var(--color-text);
+		}
+
+		&.active {
+			background-color: var(--color-bg-elevated);
+			border-color: var(--color-primary);
+			color: var(--color-primary);
+			font-weight: 600;
+		}
 	}
 
 	.table-with-pagination {

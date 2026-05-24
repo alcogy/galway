@@ -42,7 +42,6 @@
 	<div class="page-header">
 		<h1 class="page-title">{t('receiving.title')}</h1>
 		<div class="page-actions">
-			<SearchBar bind:value={searchQuery} onsubmit={handleSearch} />
 			<Button variant="secondary" size="sm" onclick={() => (showImportDialog = true)}>
 				<Upload size={14} />
 				{t('common.csvImport')}
@@ -52,6 +51,10 @@
 				{t('receiving.newSlip')}
 			</Button>
 		</div>
+	</div>
+
+	<div class="filters">
+		<SearchBar bind:value={searchQuery} onsubmit={handleSearch} />
 	</div>
 
 	{#if importNotification}
@@ -125,6 +128,11 @@
 	}
 
 	.page-actions {
+		display: flex;
+		gap: var(--space-sm);
+	}
+
+	.filters {
 		display: flex;
 		gap: var(--space-sm);
 	}

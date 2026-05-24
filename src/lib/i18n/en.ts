@@ -45,6 +45,7 @@ const en = {
 		zipcode: 'Zip Code',
 		address: 'Address',
 		email: 'Email',
+		all: 'All',
 		noData: 'No data',
 		error: 'Error',
 		search: 'Search',
