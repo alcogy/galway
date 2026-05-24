@@ -34,7 +34,7 @@ export const actions = {
 			return { testEmailSent: true };
 		} catch (err) {
 			console.error('[settings] sendTestEmail failed:', err);
-			return fail(500, { error: String(err) });
+			return fail(500, { error: 'Failed to send test email' });
 		}
 	},
 } satisfies Actions;

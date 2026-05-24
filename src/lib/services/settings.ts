@@ -1,4 +1,4 @@
-import { fail } from '@sveltejs/kit';
+import { fail, error } from '@sveltejs/kit';
 import * as schema from '$lib/server/db/schema';
 import { logAudit } from '$lib/server/audit';
 import { settingsSchema } from '$lib/validation';
@@ -14,6 +14,7 @@ const SETTING_KEYS = [
 type SettingKey = (typeof SETTING_KEYS)[number];
 
 export async function loadSettings(ctx: ServiceCtx) {
+	if (ctx.user.role !== 'admin') throw error(403, 'Access denied');
 	const rows = await ctx.db.select().from(schema.settings);
 	const map = Object.fromEntries(rows.map((r) => [r.key, r.value])) as Record<string, string>;
 	return {
@@ -37,6 +38,7 @@ export async function saveSettings(
 		email_locale: string;
 	}
 ) {
+	if (ctx.user.role !== 'admin') throw error(403, 'Access denied');
 	const parsed = settingsSchema.safeParse(data);
 	if (!parsed.success) return fail(400, { error: parsed.error.issues[0].message });
 	const { notification_email, low_stock_alert_enabled, alert_email_enabled, slack_webhook_url, email_locale } =

@@ -1,10 +1,12 @@
+import { error } from '@sveltejs/kit';
 import { desc, count, eq, and, like } from 'drizzle-orm';
 import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import { ACTION_LABELS, TARGET_LABELS } from '$lib/server/audit';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ platform, url }) => {
+export const load: PageServerLoad = async ({ platform, locals, url }) => {
+	if (locals.user?.role !== 'admin') throw error(403, 'Access denied');
 	const db = getDb(platform!.env.DB);
 
 	const itemsPerPage = 30;
