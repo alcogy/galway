@@ -31,6 +31,11 @@
 		onclick?: () => void;
 	}
 
+	interface NavGroup {
+		groupLabel?: string;
+		items: NavItem[];
+	}
+
 	interface Props {
 		role?: 'admin' | 'general';
 		onsignout?: () => void;
@@ -42,20 +47,39 @@
 	let collapsed = $state(false);
 	let mobileOpen = $state(false);
 
-	const primaryNavItems = $derived<NavItem[]>([
-		{ href: '/', label: t('nav.dashboard'), icon: LayoutDashboard },
-		{ href: '/suppliers', label: t('nav.suppliers'), icon: Building2 },
-		{ href: '/products', label: t('nav.products'), icon: Package },
-		{ href: '/categories', label: t('nav.categories'), icon: Tag },
-		{ href: '/purchasing', label: t('nav.purchasing'), icon: ClipboardSignature },
-		{ href: '/receiving', label: t('nav.receiving'), icon: PackageCheck },
-		{ href: '/shipping', label: t('nav.shipping'), icon: Truck },
-		{ href: '/customers', label: t('nav.customers'), icon: MapPin },
-		{ href: '/inventory', label: t('nav.inventory'), icon: Boxes },
-		{ href: '/inventory-schedules', label: t('nav.inventorySchedules'), icon: CalendarCheck },
-		{ href: '/reports', label: t('nav.reports'), icon: BarChart3 },
-		{ href: '/accounts', label: t('nav.accounts'), icon: Shield, adminOnly: true },
-		{ href: '/audit-logs', label: t('nav.auditLogs'), icon: ScrollText, adminOnly: true }
+	const primaryNavGroups = $derived<NavGroup[]>([
+		{
+			items: [
+				{ href: '/', label: t('nav.dashboard'), icon: LayoutDashboard },
+			],
+		},
+		{
+			groupLabel: t('nav.groupMaster'),
+			items: [
+				{ href: '/suppliers', label: t('nav.suppliers'), icon: Building2 },
+				{ href: '/products', label: t('nav.products'), icon: Package },
+				{ href: '/categories', label: t('nav.categories'), icon: Tag },
+				{ href: '/customers', label: t('nav.customers'), icon: MapPin },
+			],
+		},
+		{
+			groupLabel: t('nav.groupTransactions'),
+			items: [
+				{ href: '/purchasing', label: t('nav.purchasing'), icon: ClipboardSignature },
+				{ href: '/receiving', label: t('nav.receiving'), icon: PackageCheck },
+				{ href: '/shipping', label: t('nav.shipping'), icon: Truck },
+			],
+		},
+		{
+			groupLabel: t('nav.groupManagement'),
+			items: [
+				{ href: '/inventory', label: t('nav.inventory'), icon: Boxes },
+				{ href: '/inventory-schedules', label: t('nav.inventorySchedules'), icon: CalendarCheck },
+				{ href: '/reports', label: t('nav.reports'), icon: BarChart3 },
+				{ href: '/accounts', label: t('nav.accounts'), icon: Shield, adminOnly: true },
+				{ href: '/audit-logs', label: t('nav.auditLogs'), icon: ScrollText, adminOnly: true },
+			],
+		},
 	]);
 
 	const secondaryNavItems = $derived<NavItem[]>([
@@ -71,6 +95,10 @@
 
 	function closeMobile() {
 		mobileOpen = false;
+	}
+
+	function visibleItems(items: NavItem[]): NavItem[] {
+		return items.filter((item) => !item.adminOnly || role === 'admin');
 	}
 </script>
 
@@ -99,24 +127,34 @@
 		{/if}
 	</div>
 
-	<!-- Nav -->
+	<!-- Primary Nav -->
 	<nav class="sidebar-nav">
-		<div class="nav-group">
-			{#each primaryNavItems as item (item.href)}
-				{#if !item.adminOnly || role === 'admin'}
-					<a
-						href={item.href}
-						class="nav-item"
-						class:active={isActive(item.href)}
-						onclick={closeMobile}
-					>
-						<item.icon size={18} />
-						<span class="nav-label">{item.label}</span>
-					</a>
+		<div class="nav-primary">
+			{#each primaryNavGroups as group, gi}
+				{@const items = visibleItems(group.items)}
+				{#if items.length > 0}
+					<div class="nav-group" class:has-label={!!group.groupLabel}>
+						{#if group.groupLabel}
+							<span class="group-label">{group.groupLabel}</span>
+						{/if}
+						{#each items as item (item.href)}
+							<a
+								href={item.href}
+								class="nav-item"
+								class:active={isActive(item.href)}
+								onclick={closeMobile}
+							>
+								<item.icon size={18} class="nav-icon" />
+								<span class="nav-label">{item.label}</span>
+							</a>
+						{/each}
+					</div>
 				{/if}
 			{/each}
 		</div>
-		<div class="nav-group">
+
+		<!-- Secondary Nav -->
+		<div class="nav-group secondary">
 			{#each secondaryNavItems as item (item.href)}
 				{#if !item.adminOnly || role === 'admin'}
 					{#if item.onclick}
@@ -124,7 +162,7 @@
 							class="nav-item"
 							onclick={() => { item.onclick?.(); closeMobile(); }}
 						>
-							<item.icon size={18} />
+							<item.icon size={18} class="nav-icon" />
 							<span class="nav-label">{item.label}</span>
 						</button>
 					{:else}
@@ -134,7 +172,7 @@
 							class:active={isActive(item.href)}
 							onclick={closeMobile}
 						>
-							<item.icon size={18} />
+							<item.icon size={18} class="nav-icon" />
 							<span class="nav-label">{item.label}</span>
 						</a>
 					{/if}
@@ -163,7 +201,8 @@
 			width: 56px;
 
 			.logo-text,
-			.nav-label {
+			.nav-label,
+			.group-label {
 				opacity: 0;
 				width: 0;
 				overflow: hidden;
@@ -172,6 +211,14 @@
 			.nav-item {
 				justify-content: center;
 				padding: var(--space-sm);
+			}
+
+			.nav-group.has-label {
+				padding-top: var(--space-sm);
+
+				&::before {
+					display: none;
+				}
 			}
 		}
 	}
@@ -200,13 +247,43 @@
 		display: flex;
 		flex-direction: column;
 		justify-content: space-between;
-		gap: var(--space-sm);
+		gap: var(--space-xs);
+	}
+
+	.nav-primary {
+		display: flex;
+		flex-direction: column;
+		gap: 0;
 	}
 
 	.nav-group {
 		display: flex;
 		flex-direction: column;
 		gap: 2px;
+		padding-bottom: var(--space-xs);
+
+		&.has-label {
+			padding-top: var(--space-md);
+		}
+
+		&.secondary {
+			border-top: 1px solid var(--sidebar-border);
+			padding-top: var(--space-sm);
+		}
+	}
+
+	.group-label {
+		display: block;
+		padding: 0 var(--space-md);
+		margin-bottom: 2px;
+		font-size: 0.6875rem;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--sidebar-text);
+		opacity: 0.5;
+		white-space: nowrap;
+		transition: opacity var(--transition-base);
 	}
 
 	.nav-item {
@@ -287,7 +364,8 @@
 				width: var(--sidebar-width);
 
 				.logo-text,
-				.nav-label {
+				.nav-label,
+				.group-label {
 					opacity: 1;
 					width: auto;
 				}

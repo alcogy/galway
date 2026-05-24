@@ -3,6 +3,9 @@ import type { Dict } from './en.js';
 const ja: Dict = {
 	nav: {
 		dashboard: 'ダッシュボード',
+		groupMaster: 'マスタ',
+		groupTransactions: '入出荷',
+		groupManagement: '管理',
 		suppliers: '仕入先管理',
 		products: '商品管理',
 		categories: 'カテゴリ管理',

@@ -1,6 +1,9 @@
 const en = {
 	nav: {
 		dashboard: 'Dashboard',
+		groupMaster: 'Master',
+		groupTransactions: 'Transactions',
+		groupManagement: 'Management',
 		suppliers: 'Suppliers',
 		products: 'Products',
 		categories: 'Categories',
