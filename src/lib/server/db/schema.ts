@@ -104,6 +104,7 @@ export const receivingSlips = sqliteTable('receiving_slips', {
 	account_id: text('account_id')
 		.notNull()
 		.references(() => accounts.id),
+	purchase_order_number: text('purchase_order_number'),
 	note: text('note').notNull(),
 	created_at: text('created_at')
 		.notNull()

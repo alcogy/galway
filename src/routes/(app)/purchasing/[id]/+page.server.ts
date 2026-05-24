@@ -26,6 +26,7 @@ export const actions = {
 		}
 		return convertToReceivingSlip(makeCtx(platform!, locals), params.id, {
 			received_at: f.get('received_at')?.toString() ?? '',
+			note: f.get('note')?.toString() ?? '',
 			details,
 		});
 	},

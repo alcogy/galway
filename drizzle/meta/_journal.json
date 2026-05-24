@@ -64,6 +64,13 @@
       "when": 1779169754143,
       "tag": "0008_mature_mandarin",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1779589149212,
+      "tag": "0009_lucky_captain_britain",
+      "breakpoints": true
     }
   ]
 }

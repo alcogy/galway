@@ -40,14 +40,15 @@ export const accountUpdateSchema = z.object({
 	role: z.enum(['admin', 'general'], { message: '権限の値が不正です' })
 });
 
+const emptyToUndefined = (v: unknown) => (v === '' ? undefined : v);
+
 export const profileUpdateSchema = z.object({
 	name: z.string().min(1, 'Name is required').max(100),
-	currentPassword: z.string().max(128).optional(),
-	newPassword: z
-		.string()
-		.min(8, 'New password must be at least 8 characters')
-		.max(128)
-		.optional()
+	currentPassword: z.preprocess(emptyToUndefined, z.string().max(128).optional()),
+	newPassword: z.preprocess(
+		emptyToUndefined,
+		z.string().min(8, 'New password must be at least 8 characters').max(128).optional()
+	),
 });
 
 export const settingsSchema = z.object({

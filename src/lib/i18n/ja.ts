@@ -175,6 +175,9 @@ const ja: Dict = {
 		orderedQty: '発注数',
 		actualQty: '実入荷数',
 		createReceivingSlipHint: '未入荷の商品は0を入力してください（分割入荷対応）。ステータスは自動で変更されません。',
+		receivedQtySummary: '入荷実数',
+		totalReceived: '入荷数合計',
+		diff: '差分',
 	},
 	receiving: {
 		pageTitle: '入荷管理 — Galway',

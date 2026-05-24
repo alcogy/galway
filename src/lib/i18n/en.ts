@@ -173,6 +173,9 @@ const en = {
 		orderedQty: 'Ordered',
 		actualQty: 'Actual Received',
 		createReceivingSlipHint: 'Enter 0 for items not yet received (partial delivery). Status will not change automatically.',
+		receivedQtySummary: 'Received Quantities',
+		totalReceived: 'Total Received',
+		diff: 'Difference',
 	},
 	receiving: {
 		pageTitle: 'Receiving — Galway',

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { ArrowLeft, Pencil, Trash2 } from '@lucide/svelte';
-	import { Button, Card, ConfirmDialog, Modal, Table, Label, Input } from '$lib/ui';
+	import { Button, Card, ConfirmDialog, Modal, Table, Label, Input, Textarea } from '$lib/ui';
 	import { goto, invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
 	import { t } from '$lib/i18n';
@@ -24,10 +24,12 @@
 	};
 
 	let receiveDate = $state('');
+	let receiveNote = $state('');
 	let receiveItems = $state<ReceiveItem[]>([]);
 
 	function openReceiveModal() {
 		receiveDate = data.order.expected_at ?? new Date().toISOString().slice(0, 10);
+		receiveNote = '';
 		receiveItems = data.details.map((d) => ({
 			product_id: d.product_id,
 			product_code: d.product_code,
@@ -194,6 +196,36 @@
 		{/if}
 	</section>
 
+	<section>
+		<h2 class="section-title">{t('purchasing.receivedQtySummary')}</h2>
+		<div class="summary-table-wrap">
+			<table class="summary-table">
+				<thead>
+					<tr class="history-row">
+						<th>{t('purchasing.productName')}</th>
+						<th class="num">{t('purchasing.orderedQty')}</th>
+						<th class="num">{t('purchasing.totalReceived')}</th>
+						<th class="num">{t('purchasing.diff')}</th>
+					</tr>
+				</thead>
+				<tbody>
+					{#each data.details as detail (detail.product_id)}
+						{@const received = Number(data.receivedByProduct.find((r) => r.product_id === detail.product_id)?.total_received ?? 0)}
+						{@const diff = received - detail.quantity}
+						<tr>
+							<td>{detail.product_name ?? '—'}</td>
+							<td class="num">{detail.quantity.toLocaleString('ja-JP')}</td>
+							<td class="num">{received.toLocaleString('ja-JP')}</td>
+							<td class="num diff" class:diff-pos={diff > 0} class:diff-zero={diff === 0 && received > 0} class:diff-neg={diff < 0}>
+								{diff > 0 ? '+' : ''}{diff.toLocaleString('ja-JP')}
+							</td>
+						</tr>
+					{/each}
+				</tbody>
+			</table>
+		</div>
+	</section>
+
 	{#if data.order.status === 'draft' || data.order.status === 'cancelled'}
 		<section class="danger-zone">
 			<h2 class="danger-title">{t('common.delete')}</h2>
@@ -285,6 +317,11 @@
 			name="details"
 			value={JSON.stringify(receiveItems.map((it) => ({ product_id: it.product_id, quantity: it.actual_qty })))}
 		/>
+
+		<div class="receive-note-row">
+			<Label>{t('common.note')}</Label>
+			<Textarea name="note" bind:value={receiveNote} rows={2} />
+		</div>
 
 		<div class="receive-actions">
 			<Button type="button" variant="secondary" onclick={() => (showReceiveModal = false)}>
@@ -433,58 +470,86 @@
 		margin: 0;
 	}
 
-	.history-table-wrap {
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-md);
-		overflow: hidden;
+	/* Shared styles for history + summary tables — matches Table component */
+	.history-table-wrap,
+	.summary-table-wrap {
+		overflow-x: auto;
+		border: 1px solid var(--color-border-light);
+		border-radius: var(--radius-lg);
+		background-color: var(--color-bg-elevated);
 	}
 
-	.history-table {
+	.history-table,
+	.summary-table {
 		width: 100%;
 		border-collapse: collapse;
-		font-size: 0.875rem;
+		font-size: 0.8125rem;
+		background-color: var(--color-bg-elevated);
+
+		thead {
+			background-color: var(--color-bg-sunken);
+		}
 
 		th {
-			padding: var(--space-sm) var(--space-md);
+			padding: var(--space-md) var(--space-lg);
 			text-align: left;
-			font-size: 0.75rem;
 			font-weight: 600;
 			color: var(--color-text-secondary);
-			background-color: var(--color-bg-sunken);
-			border-bottom: 1px solid var(--color-border);
+			border-bottom: 1px solid var(--color-border-light);
+			white-space: nowrap;
 
 			&.num {
 				text-align: right;
+			}
+		}
+
+		tbody tr {
+			background-color: var(--color-bg-elevated);
+			transition: background-color var(--transition-fast);
+
+			&:hover {
+				background-color: var(--color-hover);
+			}
+
+			&:not(:last-child) td {
+				border-bottom: 1px solid var(--color-border-light);
 			}
 		}
 
 		td {
-			padding: var(--space-sm) var(--space-md);
-			border-bottom: 1px solid var(--color-border-light);
+			padding: var(--space-md) var(--space-lg);
+			color: var(--color-text);
 
 			&.num {
 				text-align: right;
 				font-variant-numeric: tabular-nums;
+				white-space: nowrap;
 			}
 
 			&.slip-number {
 				font-family: monospace;
-				font-size: 0.8125rem;
 				color: var(--color-primary);
 			}
-		}
-
-		tr:last-child td {
-			border-bottom: none;
 		}
 	}
 
 	.history-row {
 		cursor: pointer;
-		transition: background-color var(--transition-fast);
+	}
 
-		&:hover td {
-			background-color: var(--color-hover);
+	.diff {
+		color: var(--color-text-secondary);
+
+		&.diff-pos {
+			color: var(--color-warning);
+		}
+
+		&.diff-zero {
+			color: var(--color-success);
+		}
+
+		&.diff-neg {
+			color: var(--color-text-secondary);
 		}
 	}
 
@@ -582,6 +647,12 @@
 			border-color: var(--color-primary);
 			box-shadow: 0 0 0 2px var(--color-primary-light);
 		}
+	}
+
+	.receive-note-row {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-xs);
 	}
 
 	.receive-actions {
