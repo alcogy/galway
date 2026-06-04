@@ -1,4 +1,4 @@
-import { fail } from '@sveltejs/kit';
+import { fail, error } from '@sveltejs/kit';
 import { eq, asc, count } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
 import { logAudit } from '$lib/server/audit';
@@ -7,6 +7,7 @@ import type { ServiceCtx } from '$lib/services';
 import type { ProductCategory } from '$lib/types/product';
 
 export async function listCategories(ctx: ServiceCtx) {
+	if (ctx.user.role !== 'admin') throw error(403, 'Access denied');
 	const rows = await ctx.db
 		.select({
 			id: schema.productCategories.id,
@@ -23,6 +24,7 @@ export async function listCategories(ctx: ServiceCtx) {
 }
 
 export async function createCategory(ctx: ServiceCtx, data: { name: string; description: string | null }) {
+	if (ctx.user.role !== 'admin') return fail(403, { error: 'Access denied' });
 	const parsed = categorySchema.safeParse(data);
 	if (!parsed.success) return fail(400, { error: parsed.error.issues[0].message });
 	const { name, description } = parsed.data;
@@ -39,6 +41,7 @@ export async function createCategory(ctx: ServiceCtx, data: { name: string; desc
 }
 
 export async function updateCategory(ctx: ServiceCtx, data: { id: string; name: string; description: string | null }) {
+	if (ctx.user.role !== 'admin') return fail(403, { error: 'Access denied' });
 	if (!data.id) return fail(400, { error: 'ID is required' });
 	const parsed = categorySchema.safeParse(data);
 	if (!parsed.success) return fail(400, { error: parsed.error.issues[0].message });
@@ -59,6 +62,7 @@ export async function updateCategory(ctx: ServiceCtx, data: { id: string; name: 
 }
 
 export async function deleteCategory(ctx: ServiceCtx, id: string) {
+	if (ctx.user.role !== 'admin') return fail(403, { error: 'Access denied' });
 	if (!id) return fail(400, { error: 'ID is required' });
 
 	try {
