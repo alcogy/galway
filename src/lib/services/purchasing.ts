@@ -200,13 +200,30 @@ export async function updatePurchaseOrder(ctx: ServiceCtx, id: string, data: {
 	redirect(303, `/purchasing/${id}`);
 }
 
+const ALLOWED_TRANSITIONS: Record<string, string[]> = {
+	draft: ['ordered', 'cancelled'],
+	ordered: ['received', 'cancelled'],
+	received: [],
+	cancelled: [],
+};
+
 export async function updatePurchaseOrderStatus(ctx: ServiceCtx, id: string, status: 'draft' | 'ordered' | 'received' | 'cancelled') {
 	if (!status) return fail(400, { error: 'Status is required' });
 
+	const [order] = await ctx.db
+		.select({ order_number: schema.purchaseOrders.order_number, status: schema.purchaseOrders.status })
+		.from(schema.purchaseOrders)
+		.where(eq(schema.purchaseOrders.id, id));
+	if (!order) return fail(404, { error: 'Purchase order not found' });
+
+	const allowed = ALLOWED_TRANSITIONS[order.status] ?? [];
+	if (!allowed.includes(status)) {
+		return fail(400, { error: `Cannot transition from "${order.status}" to "${status}"` });
+	}
+
 	try {
-		const [order] = await ctx.db.select({ order_number: schema.purchaseOrders.order_number }).from(schema.purchaseOrders).where(eq(schema.purchaseOrders.id, id));
 		await ctx.db.update(schema.purchaseOrders).set({ status }).where(eq(schema.purchaseOrders.id, id));
-		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'status_change', target_type: 'purchase_order', target_id: id, target_label: order?.order_number, detail: { status } });
+		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'status_change', target_type: 'purchase_order', target_id: id, target_label: order.order_number, detail: { status } });
 		return { success: true };
 	} catch (err) {
 		console.error('Failed to update status:', err);
