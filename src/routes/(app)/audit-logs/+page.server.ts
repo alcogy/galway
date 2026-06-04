@@ -2,7 +2,6 @@ import { error } from '@sveltejs/kit';
 import { desc, count, eq, and, like } from 'drizzle-orm';
 import { getDb } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
-import { ACTION_LABELS, TARGET_LABELS } from '$lib/server/audit';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ platform, locals, url }) => {
@@ -41,7 +40,5 @@ export const load: PageServerLoad = async ({ platform, locals, url }) => {
 		filterAction,
 		filterTarget,
 		filterUser,
-		actionLabels: ACTION_LABELS,
-		targetLabels: TARGET_LABELS,
 	};
 };

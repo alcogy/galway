@@ -59,25 +59,3 @@ export async function logAudit({
 	}
 }
 
-export const ACTION_LABELS: Record<AuditAction, string> = {
-	create: '作成',
-	update: '更新',
-	delete: '削除',
-	import: 'インポート',
-	status_change: 'ステータス変更',
-	stocktake: '棚卸',
-	settings_save: '設定保存',
-};
-
-export const TARGET_LABELS: Record<AuditTargetType, string> = {
-	product: '商品',
-	supplier: '仕入先',
-	receiving_slip: '入荷伝票',
-	shipping_slip: '出荷伝票',
-	inventory: '在庫',
-	purchase_order: '発注',
-	customer: '出荷先',
-	category: 'カテゴリ',
-	account: 'アカウント',
-	settings: '設定',
-};
