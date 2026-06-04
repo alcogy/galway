@@ -158,17 +158,15 @@ export async function importInventory(ctx: ServiceCtx, csvText: string, mode: st
 
 	const now = new Date().toISOString();
 	try {
-		await ctx.db.transaction(async (tx) => {
-			if (mode === 'replace') await tx.delete(schema.inventory);
-			for (const r of records) {
-				await tx.insert(schema.inventory).values({ product_id: r.product_id, quantity: r.quantity, updated_at: now })
-					.onConflictDoUpdate({ target: schema.inventory.product_id, set: { quantity: r.quantity, updated_at: now } });
-			}
-		});
-		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'import', target_type: 'inventory', detail: { count: records.length, mode } });
-		return { success: true, count: records.length };
+		if (mode === 'replace') await ctx.db.delete(schema.inventory);
+		for (const r of records) {
+			await ctx.db.insert(schema.inventory).values({ product_id: r.product_id, quantity: r.quantity, updated_at: now })
+				.onConflictDoUpdate({ target: schema.inventory.product_id, set: { quantity: r.quantity, updated_at: now } });
+		}
 	} catch (err) {
 		console.error('Failed to import inventory:', err);
 		return fail(500, { error: 'Failed to import inventory' });
 	}
+	await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'import', target_type: 'inventory', detail: { count: records.length, mode } });
+	return { success: true, count: records.length };
 }

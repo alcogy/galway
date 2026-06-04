@@ -126,12 +126,10 @@ export async function getSupplierProducts(ctx: ServiceCtx, supplierId: string) {
 
 export async function setSupplierProducts(ctx: ServiceCtx, supplierId: string, productIds: string[]) {
 	try {
-		await ctx.db.transaction(async (tx) => {
-			await tx.delete(schema.supplierProducts).where(eq(schema.supplierProducts.supplier_id, supplierId));
-			if (productIds.length > 0) {
-				await tx.insert(schema.supplierProducts).values(productIds.map((product_id) => ({ supplier_id: supplierId, product_id })));
-			}
-		});
+		await ctx.db.delete(schema.supplierProducts).where(eq(schema.supplierProducts.supplier_id, supplierId));
+		if (productIds.length > 0) {
+			await ctx.db.insert(schema.supplierProducts).values(productIds.map((product_id) => ({ supplier_id: supplierId, product_id })));
+		}
 		return { success: true };
 	} catch (err) {
 		console.error('Failed to update supplier products:', err);
@@ -174,14 +172,12 @@ export async function importSuppliers(ctx: ServiceCtx, csvText: string, mode: st
 	if (records.length === 0) return fail(400, { error: 'No valid data found' });
 
 	try {
-		await ctx.db.transaction(async (tx) => {
-			if (mode === 'replace') await tx.delete(schema.suppliers);
-			await tx.insert(schema.suppliers).values(records);
-		});
-		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'import', target_type: 'supplier', detail: { count: records.length, mode } });
-		return { success: true, count: records.length };
+		if (mode === 'replace') await ctx.db.delete(schema.suppliers);
+		await ctx.db.insert(schema.suppliers).values(records);
 	} catch (err) {
 		console.error('Failed to import suppliers:', err);
 		return fail(500, { error: 'Failed to import suppliers' });
 	}
+	await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'import', target_type: 'supplier', detail: { count: records.length, mode } });
+	return { success: true, count: records.length };
 }

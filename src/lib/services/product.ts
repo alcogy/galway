@@ -66,24 +66,25 @@ export async function createProduct(
 	const { code, name, unit, description, category_id, min_quantity } = parsed.data;
 
 	const now = new Date().toISOString();
+	let productId: string | null = null;
 	try {
-		await ctx.db.transaction(async (tx) => {
-			const [product] = await tx
-				.insert(schema.products)
-				.values({ code, name, unit, description, category_id: category_id ?? null, min_quantity })
-				.returning({ id: schema.products.id });
-			await tx
-				.insert(schema.inventory)
-				.values({ product_id: product.id, quantity: 0, updated_at: now })
-				.onConflictDoNothing();
-		});
-		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'create', target_type: 'product', target_label: `${code} ${name}` });
-		return { success: true };
+		const [product] = await ctx.db
+			.insert(schema.products)
+			.values({ code, name, unit, description, category_id: category_id ?? null, min_quantity })
+			.returning({ id: schema.products.id });
+		productId = product.id;
+		await ctx.db
+			.insert(schema.inventory)
+			.values({ product_id: product.id, quantity: 0, updated_at: now })
+			.onConflictDoNothing();
 	} catch (err: any) {
+		if (productId) await ctx.db.delete(schema.products).where(eq(schema.products.id, productId)).catch(() => {});
 		if (err?.message?.includes('UNIQUE')) return fail(409, { error: 'That product code is already in use' });
 		console.error('Failed to create product:', err);
 		return fail(500, { error: 'Failed to create product' });
 	}
+	await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'create', target_type: 'product', target_label: `${code} ${name}` });
+	return { success: true };
 }
 
 export async function updateProduct(
@@ -178,18 +179,16 @@ export async function importProducts(ctx: ServiceCtx, csvText: string, mode: str
 
 	const now = new Date().toISOString();
 	try {
-		await ctx.db.transaction(async (tx) => {
-			if (mode === 'replace') await tx.delete(schema.products);
-			const inserted = await tx.insert(schema.products).values(records).returning({ id: schema.products.id });
-			for (const p of inserted) {
-				await tx.insert(schema.inventory).values({ product_id: p.id, quantity: 0, updated_at: now }).onConflictDoNothing();
-			}
-		});
-		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'import', target_type: 'product', detail: { count: records.length, mode } });
-		return { success: true, count: records.length };
+		if (mode === 'replace') await ctx.db.delete(schema.products);
+		const inserted = await ctx.db.insert(schema.products).values(records).returning({ id: schema.products.id });
+		for (const p of inserted) {
+			await ctx.db.insert(schema.inventory).values({ product_id: p.id, quantity: 0, updated_at: now }).onConflictDoNothing();
+		}
 	} catch (err: any) {
 		if (err?.message?.includes('UNIQUE')) return fail(409, { error: 'Duplicate product codes detected' });
 		console.error('Failed to import products:', err);
 		return fail(500, { error: 'Failed to import products' });
 	}
+	await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'import', target_type: 'product', detail: { count: records.length, mode } });
+	return { success: true, count: records.length };
 }
