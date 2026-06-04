@@ -1,7 +1,7 @@
 import { fail, error } from '@sveltejs/kit';
 import { eq, desc, or, like, count } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
-import { hashPassword, verifyPassword } from '$lib/server/auth';
+import { hashPassword, verifyPassword, deleteAllSessionsForAccount, createSession } from '$lib/server/auth';
 import { accountCreateSchema, accountUpdateSchema, profileUpdateSchema } from '$lib/validation';
 import { sendWelcomeEmail, sendPasswordChangedEmail } from '$lib/services/email';
 import type { ServiceCtx } from '$lib/services';
@@ -138,7 +138,8 @@ export async function getProfile(ctx: ServiceCtx) {
 
 export async function updateProfile(
 	ctx: ServiceCtx,
-	data: { name: string; currentPassword?: string; newPassword?: string }
+	data: { name: string; currentPassword?: string; newPassword?: string },
+	currentToken?: string
 ) {
 	const parsed = profileUpdateSchema.safeParse(data);
 	if (!parsed.success) return fail(400, { error: parsed.error.issues[0].message });
@@ -161,7 +162,11 @@ export async function updateProfile(
 	try {
 		await ctx.db.update(schema.accounts).set(updateData).where(eq(schema.accounts.id, ctx.user.id));
 		if (newPassword) {
+			// Invalidate all sessions and issue a fresh one so only the current device stays logged in.
+			await deleteAllSessionsForAccount(ctx.env.DB, ctx.user.id);
+			const newToken = await createSession(ctx.env.DB, ctx.user.id);
 			sendPasswordChangedEmail(ctx, ctx.user.id);
+			return { success: true, newToken };
 		}
 		return { success: true };
 	} catch (err) {

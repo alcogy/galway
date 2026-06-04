@@ -89,6 +89,11 @@ export async function deleteSession(d1: D1Database, token: string): Promise<void
 	await db.delete(schema.sessions).where(eq(schema.sessions.id, token));
 }
 
+export async function deleteAllSessionsForAccount(d1: D1Database, accountId: string): Promise<void> {
+	const db = drizzle(d1, { schema });
+	await db.delete(schema.sessions).where(eq(schema.sessions.account_id, accountId));
+}
+
 export async function getSession(event: RequestEvent) {
 	const token = event.cookies.get('session');
 	if (!token || token.length !== 64) return null;
