@@ -97,7 +97,10 @@ A simple procurement management system for centrally managing suppliers, product
 
 ### Settings (`/settings`) — Admin only
 - Toggle low stock alert on/off
-- Set notification email and Slack webhook URL (placeholder for future email notification feature)
+- Set admin notification email address (for low-stock alerts and other admin alerts)
+- Toggle email alerts on/off
+- Select email language (English / Japanese)
+- Test email sending
 
 ---
 
