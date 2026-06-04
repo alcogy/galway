@@ -372,8 +372,6 @@ const ja: Dict = {
 		emailNotificationDesc: '低在庫アラートを管理者メールアドレスに送信します。本番環境では Cloudflare Email、ローカルでは設定済みHTTPプロバイダーを使用します。',
 		notificationEmail: 'アラート送信先メールアドレス',
 		notificationEmailDesc: '管理者アラート（低在庫など）の送信先メールアドレスです。',
-		slackWebhookUrl: 'Slack Webhook URL',
-		slackDesc: '設定すると Slack チャンネルへの通知が有効になります（実装予定）。',
 		emailLocale: 'メール言語',
 		emailLocaleDesc: '管理者アラートメールおよびアカウント通知メールの言語です。',
 		testEmail: 'テストメール送信',

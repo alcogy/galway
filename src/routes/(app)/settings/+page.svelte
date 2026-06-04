@@ -11,14 +11,12 @@
 	let notificationEmail = $state('');
 	let lowStockAlertEnabled = $state(true);
 	let alertEmailEnabled = $state(false);
-	let slackWebhookUrl = $state('');
 	let emailLocale = $state<'en' | 'ja'>('en');
 
 	$effect(() => {
 		notificationEmail = data.settings.notification_email;
 		lowStockAlertEnabled = data.settings.low_stock_alert_enabled;
 		alertEmailEnabled = data.settings.alert_email_enabled;
-		slackWebhookUrl = data.settings.slack_webhook_url;
 		emailLocale = data.settings.email_locale;
 	});
 
@@ -171,16 +169,6 @@
 						disabled={!alertEmailEnabled}
 					/>
 					<span class="field-hint">{t('settings.notificationEmailDesc')}</span>
-				</div>
-
-				<div class="setting-field">
-					<Label>{t('settings.slackWebhookUrl')}</Label>
-					<Input
-						name="slack_webhook_url"
-						bind:value={slackWebhookUrl}
-						placeholder="https://hooks.slack.com/services/..."
-					/>
-					<span class="field-hint">{t('settings.slackDesc')}</span>
 				</div>
 
 				<div class="setting-row">

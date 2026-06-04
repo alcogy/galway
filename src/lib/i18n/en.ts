@@ -370,8 +370,6 @@ const en = {
 		emailNotificationDesc: 'Send low-stock alerts to the admin email address via Cloudflare Email (production) or the configured HTTP provider.',
 		notificationEmail: 'Admin Alert Email',
 		notificationEmailDesc: 'Email address to receive admin alerts (low stock, etc.).',
-		slackWebhookUrl: 'Slack Webhook URL',
-		slackDesc: 'When set, Slack channel notifications will be enabled (coming soon).',
 		emailLocale: 'Email Language',
 		emailLocaleDesc: 'Language used for admin alert emails and account notification emails.',
 		testEmail: 'Send Test Email',

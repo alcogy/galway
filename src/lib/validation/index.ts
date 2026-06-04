@@ -52,12 +52,6 @@ export const settingsSchema = z.object({
 	notification_email: optionalEmail,
 	low_stock_alert_enabled: z.boolean(),
 	alert_email_enabled: z.boolean(),
-	slack_webhook_url: z
-		.string()
-		.max(500)
-		.refine((v) => !v || v.startsWith('https://hooks.slack.com/'), {
-			message: 'Slack webhook URL must start with https://hooks.slack.com/'
-		}),
 	email_locale: z.enum(['en', 'ja']).default('en'),
 });
 

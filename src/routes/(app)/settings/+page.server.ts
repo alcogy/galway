@@ -17,7 +17,6 @@ export const actions = {
 			notification_email: f.get('notification_email')?.toString().trim() ?? '',
 			low_stock_alert_enabled: f.get('low_stock_alert_enabled') === 'on',
 			alert_email_enabled: f.get('alert_email_enabled') === 'on',
-			slack_webhook_url: f.get('slack_webhook_url')?.toString().trim() ?? '',
 			email_locale: f.get('email_locale')?.toString() ?? 'en',
 		});
 	},
