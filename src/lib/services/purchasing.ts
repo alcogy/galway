@@ -274,10 +274,17 @@ export async function convertToReceivingSlip(
 }
 
 export async function deletePurchaseOrder(ctx: ServiceCtx, id: string) {
+	const [order] = await ctx.db
+		.select({ order_number: schema.purchaseOrders.order_number, status: schema.purchaseOrders.status })
+		.from(schema.purchaseOrders)
+		.where(eq(schema.purchaseOrders.id, id));
+	if (!order) return fail(404, { error: 'Purchase order not found' });
+	if (order.status !== 'draft' && order.status !== 'cancelled') {
+		return fail(400, { error: 'Only draft or cancelled orders can be deleted' });
+	}
 	try {
-		const [order] = await ctx.db.select({ order_number: schema.purchaseOrders.order_number }).from(schema.purchaseOrders).where(eq(schema.purchaseOrders.id, id));
 		await ctx.db.delete(schema.purchaseOrders).where(eq(schema.purchaseOrders.id, id));
-		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'delete', target_type: 'purchase_order', target_id: id, target_label: order?.order_number });
+		await logAudit({ db: ctx.db, user_id: ctx.user.id, user_name: ctx.user.name, action: 'delete', target_type: 'purchase_order', target_id: id, target_label: order.order_number });
 	} catch (err) {
 		console.error('Failed to delete purchase order:', err);
 		return fail(500, { error: 'Failed to delete purchase order' });
