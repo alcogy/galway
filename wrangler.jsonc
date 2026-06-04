@@ -12,7 +12,8 @@
 	"preview_urls": true,
 	"d1_databases": [
 		{
-			// Run `wrangler d1 create galway-db` to get the real database_id for remote deployment
+			// REQUIRED FOR REMOTE DEPLOYMENT: replace with the real UUID from `wrangler d1 create galway-db`
+			// Local dev works with any placeholder value — only remote deploy/migrate needs the real ID.
 			"binding": "DB",
 			"database_name": "galway-db",
 			"database_id": "00000000-0000-0000-0000-000000000000",
