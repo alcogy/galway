@@ -1,30 +1,48 @@
 import { error, redirect, fail } from '@sveltejs/kit';
-import { eq, desc, count, like, asc } from 'drizzle-orm';
+import { eq, desc, count, like, asc, and } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
 import { logAudit } from '$lib/server/audit';
 import type { ServiceCtx } from '$lib/services';
 
-export async function listPurchaseOrders(ctx: ServiceCtx) {
-	const orders = await ctx.db
-		.select({
-			id: schema.purchaseOrders.id,
-			order_number: schema.purchaseOrders.order_number,
-			ordered_at: schema.purchaseOrders.ordered_at,
-			expected_at: schema.purchaseOrders.expected_at,
-			supplier_name: schema.suppliers.name,
-			status: schema.purchaseOrders.status,
-			item_count: count(schema.purchaseOrderDetails.id),
-			user_name: schema.accounts.name,
-		})
-		.from(schema.purchaseOrders)
-		.leftJoin(schema.suppliers, eq(schema.purchaseOrders.supplier_id, schema.suppliers.id))
-		.leftJoin(schema.accounts, eq(schema.purchaseOrders.account_id, schema.accounts.id))
-		.leftJoin(schema.purchaseOrderDetails, eq(schema.purchaseOrders.id, schema.purchaseOrderDetails.order_id))
-		.groupBy(schema.purchaseOrders.id)
-		.orderBy(desc(schema.purchaseOrders.ordered_at));
+export async function listPurchaseOrders(ctx: ServiceCtx, status = '', page = 1) {
+	const itemsPerPage = 20;
+	const currentPage = Math.max(1, page);
+	const offset = (currentPage - 1) * itemsPerPage;
 
-	return { orders };
+	const whereClause = status ? eq(schema.purchaseOrders.status, status as 'draft' | 'ordered' | 'received' | 'cancelled') : undefined;
+
+	const [countResult, orders] = await Promise.all([
+		ctx.db.select({ count: count() }).from(schema.purchaseOrders).where(whereClause),
+		ctx.db
+			.select({
+				id: schema.purchaseOrders.id,
+				order_number: schema.purchaseOrders.order_number,
+				ordered_at: schema.purchaseOrders.ordered_at,
+				expected_at: schema.purchaseOrders.expected_at,
+				supplier_name: schema.suppliers.name,
+				status: schema.purchaseOrders.status,
+				item_count: count(schema.purchaseOrderDetails.id),
+				user_name: schema.accounts.name,
+			})
+			.from(schema.purchaseOrders)
+			.leftJoin(schema.suppliers, eq(schema.purchaseOrders.supplier_id, schema.suppliers.id))
+			.leftJoin(schema.accounts, eq(schema.purchaseOrders.account_id, schema.accounts.id))
+			.leftJoin(schema.purchaseOrderDetails, eq(schema.purchaseOrders.id, schema.purchaseOrderDetails.order_id))
+			.where(whereClause)
+			.groupBy(schema.purchaseOrders.id)
+			.orderBy(desc(schema.purchaseOrders.ordered_at))
+			.limit(itemsPerPage)
+			.offset(offset),
+	]);
+
+	return {
+		orders,
+		totalItems: countResult[0]?.count ?? 0,
+		itemsPerPage,
+		currentPage,
+		statusFilter: status,
+	};
 }
 
 export async function getPurchaseOrderForNew(ctx: ServiceCtx) {

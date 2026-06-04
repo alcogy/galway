@@ -2,16 +2,13 @@
 	import { Plus } from '@lucide/svelte';
 	import { Button, Table, Pagination } from '$lib/ui';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import type { PageData } from './$types';
 	import { t } from '$lib/i18n';
 
 	let { data }: { data: PageData } = $props();
 
 	type Status = '' | 'draft' | 'ordered' | 'received' | 'cancelled';
-
-	let statusFilter = $state<Status>('');
-	let currentPage = $state(1);
-	const ITEMS_PER_PAGE = 20;
 
 	const STATUS_LABELS = $derived<Record<string, string>>({
 		draft: t('purchasing.statusDraft'),
@@ -29,17 +26,17 @@
 	];
 
 	function setStatus(s: Status) {
-		statusFilter = s;
-		currentPage = 1;
+		const params = new URLSearchParams(page.url.searchParams);
+		if (s) params.set('status', s); else params.delete('status');
+		params.delete('page');
+		goto(`/purchasing?${params}`);
 	}
 
-	const filteredOrders = $derived(
-		statusFilter ? data.orders.filter((o) => o.status === statusFilter) : data.orders
-	);
-
-	const pagedOrders = $derived(
-		filteredOrders.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
-	);
+	function handlePageChange(p: number) {
+		const params = new URLSearchParams(page.url.searchParams);
+		params.set('page', String(p));
+		goto(`/purchasing?${params}`);
+	}
 
 	const columns = $derived([
 		{ key: 'order_number', label: t('purchasing.orderNumber'), width: '150px' },
@@ -72,7 +69,7 @@
 			<button
 				type="button"
 				class="chip"
-				class:active={statusFilter === opt.value}
+				class:active={data.statusFilter === opt.value}
 				onclick={() => setStatus(opt.value)}
 			>
 				{opt.label()}
@@ -81,7 +78,7 @@
 	</div>
 
 	<div class="table-with-pagination">
-		<Table {columns} rows={pagedOrders} onrowclick={(row) => goto(`/purchasing/${row.id}`)}>
+		<Table {columns} rows={data.orders} onrowclick={(row) => goto(`/purchasing/${row.id}`)}>
 			{#snippet cell(col, value)}
 				{#if col.key === 'status'}
 					<span class="status-badge status-{value}">{STATUS_LABELS[value as string] ?? value}</span>
@@ -96,10 +93,10 @@
 			{/snippet}
 		</Table>
 		<Pagination
-			totalItems={filteredOrders.length}
-			itemsPerPage={ITEMS_PER_PAGE}
-			currentPage={currentPage}
-			onPageChange={(p) => (currentPage = p)}
+			totalItems={data.totalItems}
+			itemsPerPage={data.itemsPerPage}
+			currentPage={data.currentPage}
+			onPageChange={handlePageChange}
 		/>
 	</div>
 </div>
